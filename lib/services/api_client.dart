@@ -147,7 +147,19 @@ class ApiClient {
 
   Map<String, dynamic> _decode(http.Response response) {
     final body = response.body.trim();
-    final decoded = body.isEmpty ? <String, dynamic>{} : jsonDecode(body);
+    dynamic decoded;
+    if (body.isEmpty) {
+      decoded = <String, dynamic>{};
+    } else {
+      try {
+        decoded = jsonDecode(body);
+      } catch (_) {
+        // Cuerpo no-JSON (p.ej. un 404/500 en texto plano de la plataforma).
+        // Sin esto, jsonDecode lanzaba un FormatException críptico que
+        // enmascaraba el status real (ej. el 404 del chat).
+        decoded = <String, dynamic>{'raw': body};
+      }
+    }
     final json = decoded is Map
         ? Map<String, dynamic>.from(decoded)
         : <String, dynamic>{'data': decoded};

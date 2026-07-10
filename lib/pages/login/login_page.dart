@@ -75,8 +75,11 @@ class _LoginCard extends StatelessWidget {
               _BoxedField(
                 controller: controller.codeController,
                 palette: palette,
-                hint: 'Tu código de alumno',
-                keyboardType: TextInputType.number,
+                // El alumno usa su código numérico y el docente/JP un usuario
+                // alfanumérico (p.ej. "hquintan"), así que el teclado debe ser
+                // de texto, no numérico.
+                hint: 'Tu código o usuario',
+                keyboardType: TextInputType.text,
                 textInputAction: TextInputAction.next,
                 autofillHints: const [AutofillHints.username],
               ),

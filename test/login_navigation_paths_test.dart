@@ -72,6 +72,19 @@ void main() {
   tearDown(Get.reset);
 
   testWidgets(
+    'el campo de código usa teclado de TEXTO (el docente/JP ingresa un usuario '
+    'alfanumérico como "hquintan", no un código numérico)',
+    (tester) async {
+      await tester.pumpWidget(_buildApp(initialRoute: '/login'));
+      await tester.pumpAndSettle();
+
+      // El primer TextField es el de código; el segundo, la contraseña.
+      final codeField = tester.widget<TextField>(find.byType(TextField).first);
+      expect(codeField.keyboardType, TextInputType.text);
+    },
+  );
+
+  testWidgets(
     'Camino 1 — reset desde el login (login → forgot → reset → offAllToLogin): '
     'era el bug; los campos repintan por tecla',
     (tester) async {

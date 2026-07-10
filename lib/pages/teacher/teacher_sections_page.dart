@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import '../../components/skeleton.dart';
 import '../../configs/themes.dart';
 import '../../models/advising_models.dart';
+import '../chat/chat_page.dart';
 import 'teacher_sections_controller.dart';
 
 class TeacherSectionsPage extends StatelessWidget {
@@ -130,58 +131,81 @@ class _SectionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: MaterialTheme.cardBg(brightness),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: MaterialTheme.borderColor(brightness)),
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => Get.to(
+        () => ChatPage(
+          sectionId: section.sectionId.toString(),
+          courseName: section.courseName,
+        ),
       ),
-      child: Row(
-        children: [
-          Container(
-            width: 42,
-            height: 42,
-            decoration: BoxDecoration(
-              color: MaterialTheme.espPrincipalBg(brightness),
-              borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: MaterialTheme.cardBg(brightness),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: MaterialTheme.borderColor(brightness)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: MaterialTheme.espPrincipalBg(brightness),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(
+                Icons.school_outlined,
+                color: MaterialTheme.primaryDark,
+                size: 21,
+              ),
             ),
-            child: const Icon(
-              Icons.school_outlined,
-              color: MaterialTheme.primaryDark,
-              size: 21,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    section.courseName,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: MaterialTheme.textPrimary(brightness),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    section.sectionCode,
+                    style: const TextStyle(
+                      color: MaterialTheme.primaryColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            const SizedBox(width: 8),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Text(
-                  section.courseName,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: MaterialTheme.textPrimary(brightness),
-                    fontSize: 15,
-                    fontWeight: FontWeight.w800,
-                  ),
+                _Badge(
+                  text: section.rol,
+                  color: MaterialTheme.textMuted(brightness),
                 ),
-                const SizedBox(height: 5),
-                Text(
-                  section.sectionCode,
-                  style: const TextStyle(
-                    color: MaterialTheme.primaryColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w800,
-                  ),
+                const SizedBox(height: 10),
+                Icon(
+                  Icons.forum_outlined,
+                  size: 20,
+                  color: MaterialTheme.primaryColor,
                 ),
               ],
             ),
-          ),
-          const SizedBox(width: 8),
-          _Badge(text: section.rol, color: MaterialTheme.textMuted(brightness)),
-        ],
+          ],
+        ),
       ),
     );
   }

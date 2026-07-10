@@ -19,7 +19,8 @@ class AlertService extends GetxService {
 
   Future<void> fetchAlerts() async {
     final user = AuthService.to.currentUser;
-    if (user == null) return;
+    // Las alertas de riesgo son de alumno; un docente recibe 403 en /alerts/me.
+    if (user == null || user.isTeacher) return;
 
     _loading.value = true;
     try {

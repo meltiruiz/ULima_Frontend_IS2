@@ -54,6 +54,9 @@ class HorarioController extends GetxController {
   void onInit() {
     super.onInit();
     _startClock();
+    // El horario es de alumno: sus endpoints /schedule|/sections/me devuelven
+    // 403 para un docente. Evitamos disparar esas cargas si hay docente logueado.
+    if (AuthService.to.currentUser?.isTeacher ?? false) return;
     _loadDays();
     _loadSecciones();
     _loadAssessments();

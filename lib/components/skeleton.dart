@@ -133,6 +133,7 @@ class SkeletonCardList extends StatelessWidget {
     return SkeletonPulse(
       child: ListView.separated(
         padding: padding,
+        shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: count,
         separatorBuilder: (_, _) => const SizedBox(height: 12),

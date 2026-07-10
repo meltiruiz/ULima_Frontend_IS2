@@ -88,14 +88,21 @@ class MallaController extends GetxController {
     super.onClose();
   }
 
+  Future<void> _preloadSyllabus() async {
+    try {
+      await EvaluationSyllabusService().loadEvaluationData();
+    } catch (_) {
+      // Silencioso: la precarga de sílabos es opcional para el sheet de curso.
+    }
+  }
+
   Future<void> _bootstrap() async {
     loading.value = true;
     try {
-      await Future.wait([
-        _malla.load(),
-        // HU21: Cargar sílabos para que el sheet muestre el botón
-        EvaluationSyllabusService().loadEvaluationData(),
-      ]);
+      await _malla.load();
+      // HU21: precargar sílabos en segundo plano (best-effort). NO debe
+      // bloquear ni tumbar el render de la malla si el endpoint tarda o falla.
+      _preloadSyllabus();
       final code = user?.code;
 
       final backendStatuses = <String, CourseStatus>{};

@@ -102,11 +102,10 @@ class MallaListController extends GetxController {
     loading.value = true;
     error.value = null;
     try {
-      await Future.wait([
-        _malla.load(),
-        // HU21: Cargar sílabos para que el sheet muestre el botón
-        EvaluationSyllabusService().loadEvaluationData(),
-      ]);
+      await _malla.load();
+      // HU21: precargar sílabos en segundo plano (best-effort). NO debe
+      // bloquear ni tumbar el render de la malla si el endpoint tarda o falla.
+      _preloadSyllabus();
       _rebuild();
       _initExpansion();
     } catch (_) {
@@ -114,6 +113,14 @@ class MallaListController extends GetxController {
           'No pudimos cargar tu malla. Revisa tu conexión e inténtalo de nuevo.';
     } finally {
       loading.value = false;
+    }
+  }
+
+  Future<void> _preloadSyllabus() async {
+    try {
+      await EvaluationSyllabusService().loadEvaluationData();
+    } catch (_) {
+      // Silencioso: la precarga de sílabos es opcional para el sheet de curso.
     }
   }
 

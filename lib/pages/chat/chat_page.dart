@@ -7,10 +7,14 @@ class ChatPage extends StatefulWidget {
   final String sectionId;
   final String courseName;
 
+  /// Inyectable para tests; en producción usa el `ChatRepository` real.
+  final ChatRepositoryContract? repository;
+
   const ChatPage({
     super.key,
     required this.sectionId,
     required this.courseName,
+    this.repository,
   });
 
   @override
@@ -18,7 +22,8 @@ class ChatPage extends StatefulWidget {
 }
 
 class _ChatPageState extends State<ChatPage> {
-  final ChatRepository _chatRepository = ChatRepository();
+  late final ChatRepositoryContract _chatRepository =
+      widget.repository ?? ChatRepository();
   final TextEditingController _textController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 

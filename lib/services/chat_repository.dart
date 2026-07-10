@@ -39,11 +39,20 @@ class ChatSession {
   }
 }
 
-class ChatRepository {
+/// Contrato del repositorio de chat que consume `ChatPage`. Permite inyectar
+/// una implementación falsa en tests sin tocar FlutterFire.
+abstract class ChatRepositoryContract {
+  Future<ChatSession> signInWithCustomToken(String sectionId);
+  Stream<List<ChatMessage>> getMessages(String sectionId);
+  Future<void> sendMessage(String sectionId, String text, ChatSession session);
+}
+
+class ChatRepository implements ChatRepositoryContract {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseDatabase _database = FirebaseDatabase.instance;
   final ApiClient _apiClient = ApiClient();
 
+  @override
   Future<ChatSession> signInWithCustomToken(String sectionId) async {
     try {
       final response = await _apiClient.postJson(
@@ -71,6 +80,7 @@ class ChatRepository {
     }
   }
 
+  @override
   Stream<List<ChatMessage>> getMessages(String sectionId) {
     return _database
         .ref('sections/$sectionId/messages')
@@ -93,6 +103,7 @@ class ChatRepository {
         });
   }
 
+  @override
   Future<void> sendMessage(
     String sectionId,
     String text,

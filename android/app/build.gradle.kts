@@ -48,6 +48,16 @@ android {
     }
 
     signingConfigs {
+        // Debug COMPARTIDO: keystore versionado (android/app/debug.keystore) para que
+        // TODO el equipo firme sus builds debug (flutter run) con el MISMO SHA-1,
+        // registrado una sola vez en Firebase (así el chat conecta en cualquier
+        // laptop del equipo). Un debug keystore no es secreto (pass "android").
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         if (hasReleaseKeystore) {
             create("release") {
                 keyAlias = keystoreProperties["keyAlias"] as String

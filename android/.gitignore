@@ -12,3 +12,5 @@ GeneratedPluginRegistrant.java
 key.properties
 **/*.keystore
 **/*.jks
+# Excepción: la debug keystore compartida SÍ se versiona (no es secreta).
+!/app/debug.keystore

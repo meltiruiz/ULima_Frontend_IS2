@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "ULima+ · backend Vercel (nube)",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define=API_BASE_URL=https://u-lima-backend-is-2-tau.vercel.app"
+      ]
+    },
+    {
+      "name": "ULima+ · backend local :3000",
+      "request": "launch",
+      "type": "dart",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define=API_BASE_URL=http://10.0.2.2:3000"
+      ]
+    },
+    {
+      "name": "ULima+ · profile (Vercel)",
+      "request": "launch",
+      "type": "dart",
+      "flutterMode": "profile",
+      "program": "lib/main.dart",
+      "args": [
+        "--dart-define=API_BASE_URL=https://u-lima-backend-is-2-tau.vercel.app"
+      ]
+    }
+  ]
+}

@@ -48,6 +48,9 @@ app.*.map.json
 /android/key.properties
 **/*.jks
 **/*.keystore
+# Excepción: la debug keystore SÍ se versiona (compartida por el equipo; no es
+# secreta, pass "android"). Da un SHA-1 único para todos los builds debug.
+!/android/app/debug.keystore
 
 # Artefactos de Swift Package Manager (Xcode los regenera)
 ios/**/xcshareddata/swiftpm/

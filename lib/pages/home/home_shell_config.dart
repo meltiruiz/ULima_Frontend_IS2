@@ -10,6 +10,7 @@ import '../malla/malla_list_page.dart';
 import '../perfil/perfil.dart';
 import '../teacher/teacher_home_page.dart';
 import '../teacher/teacher_sections_page.dart';
+import '../teacher/teacher_grades_page.dart';
 
 class HomeShellConfig {
   const HomeShellConfig({required this.pages, required this.footerItems});
@@ -26,12 +27,14 @@ class HomeShellConfig {
     return const HomeShellConfig(
       pages: [
         TeacherSectionsPage(),
+        TeacherGradesPage(),
         HorarioPage(),
         TeacherHomePage(embedded: true),
         ProfilePage(),
       ],
       footerItems: [
         AppFooterItem(icon: LucideIcons.layers, label: 'Secciones'),
+        AppFooterItem(icon: LucideIcons.clipboardList, label: 'Calificar'),
         AppFooterItem(icon: LucideIcons.calendar, label: 'Horario'),
         AppFooterItem(icon: LucideIcons.calendarPlus, label: 'Asesorias'),
         AppFooterItem(icon: LucideIcons.user, label: 'Perfil'),

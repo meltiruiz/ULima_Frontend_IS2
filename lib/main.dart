@@ -21,6 +21,11 @@ import 'pages/teacher/create_advising_binding.dart';
 import 'pages/teacher/create_advising_page.dart';
 import 'pages/teacher/attendees_binding.dart';
 import 'pages/teacher/attendees_page.dart';
+import 'pages/teacher/teacher_grades_controller.dart';
+import 'pages/teacher/teacher_grade_section_binding.dart';
+import 'pages/teacher/teacher_grade_section_page.dart';
+import 'pages/mis_notas/mis_notas_binding.dart';
+import 'pages/mis_notas/mis_notas_page.dart';
 import 'pages/login/login_page.dart';
 import 'pages/malla/malla_controller.dart';
 import 'pages/malla/malla_list_controller.dart';
@@ -129,6 +134,7 @@ class MyApp extends StatelessWidget {
             Get.lazyPut(() => MallaListController());
             Get.lazyPut(() => TeacherSectionsController());
             Get.lazyPut(() => TeacherHomeController());
+            Get.lazyPut(() => TeacherGradesController());
           }),
         ),
         // TT07 (#103): la malla clásica vuelve como "Vista mapa (clásica)" de
@@ -168,6 +174,18 @@ class MyApp extends StatelessWidget {
           name: '/teacher-advising-attendees',
           page: () => const AttendeesPage(),
           binding: AttendeesBinding(),
+        ),
+        // Calificación oficial: grilla de una sección (docente). Binding por ruta.
+        GetPage(
+          name: '/teacher-grade-section',
+          page: () => const TeacherGradeSectionPage(),
+          binding: TeacherGradeSectionBinding(),
+        ),
+        // Notas oficiales del alumno (solo lectura). Binding por ruta.
+        GetPage(
+          name: '/mis-notas',
+          page: () => const MisNotasPage(),
+          binding: MisNotasBinding(),
         ),
         GetPage(
           name: '/chatbot',

@@ -5,6 +5,7 @@ import '../../models/evaluation_model.dart';
 import '../../services/evaluations_service.dart';
 import '../../services/courses_service.dart';
 import '../../services/notas_service.dart';
+import '../../services/simulated_grades_service.dart';
 import '../../services/auth_service.dart';
 
 class CalculadoraController extends GetxController {
@@ -13,6 +14,7 @@ class CalculadoraController extends GetxController {
   late EvaluationSyllabusService _syllabusService;
   late CoursesService _coursesService;
   late NotasService _notasService;
+  late SimulatedGradesService _simGradesService;
 
   late String _idEstudianteActual;
 
@@ -24,6 +26,7 @@ class CalculadoraController extends GetxController {
     _syllabusService = EvaluationSyllabusService();
     _coursesService = CoursesService();
     _notasService = NotasService();
+    _simGradesService = SimulatedGradesService();
 
     _cargarDatosSyllabus();
     _inicializarCursos();
@@ -97,8 +100,72 @@ class CalculadoraController extends GetxController {
       debugPrint(
         '✓ Cursos y secciones cargados correctamente: ${cursos.length} secciones.',
       );
+
+      // Sincroniza con el backend (fuente de verdad entre dispositivos). Si el
+      // backend no responde, se conservan las notas locales ya cargadas.
+      await _sincronizarConBackend();
     } catch (e) {
       debugPrint('✗ Error al inicializar cursos: $e');
+    }
+  }
+
+  /// Trae las notas simuladas del backend y las fusiona con lo mostrado:
+  /// el backend es la fuente de verdad; las notas que solo existían en local
+  /// (aún no subidas) se conservan y se suben (migración one-time). Reconstruye
+  /// título/peso desde el sílabo. Ante cualquier error, mantiene lo local.
+  Future<void> _sincronizarConBackend() async {
+    try {
+      await _syllabusService.loadEvaluationData(); // idempotente; da título/peso
+      final backend = await _simGradesService.fetchAll();
+
+      final bySection = <String, List<Map<String, dynamic>>>{};
+      for (final g in backend) {
+        (bySection[g['sectionId'].toString()] ??= []).add(g);
+      }
+
+      for (final curso in cursos) {
+        final sectionId = curso['id'].toString();
+        final evals = _syllabusService.getEvaluationsByCourseId(sectionId);
+        final notas = curso['notas'] as RxList<dynamic>;
+
+        final merged = <Map<String, dynamic>>[];
+        final seen = <String>{};
+
+        // 1) Notas del backend (fuente de verdad).
+        for (final g in (bySection[sectionId] ?? const [])) {
+          final evalId = g['assessmentId'].toString();
+          final ev = evals.firstWhereOrNull((e) => e.id == evalId);
+          merged.add({
+            'titulo': ev?.nombre ?? 'Evaluación',
+            'peso': ev?.peso ?? 0,
+            'valor': g['value'],
+            'evaluacionId': evalId,
+          });
+          seen.add(evalId);
+        }
+
+        // 2) Notas presentes solo en local: se conservan y se suben al backend.
+        for (final ln in List<Map<String, dynamic>>.from(notas)) {
+          final evalId = ln['evaluacionId']?.toString();
+          if (evalId == null || evalId.isEmpty || seen.contains(evalId)) continue;
+          merged.add(ln);
+          seen.add(evalId);
+          final aid = int.tryParse(evalId);
+          final valor = double.tryParse(ln['valor']?.toString() ?? '');
+          if (aid != null && valor != null) {
+            _simGradesService.upsertOne(aid, valor).catchError(
+              (e) => debugPrint('✗ subir nota local al backend: $e'),
+            );
+          }
+        }
+
+        notas.assignAll(merged);
+      }
+
+      cursos.refresh();
+      _guardarNotasLocal(); // refresca la caché local con lo sincronizado
+    } catch (e) {
+      debugPrint('✗ No se pudo sincronizar notas con el backend, uso local: $e');
     }
   }
 
@@ -124,6 +191,14 @@ class CalculadoraController extends GetxController {
       });
       cursos.refresh();
       _guardarNotasLocal();
+
+      // Persiste en el backend (optimista): si falla, la nota queda en local.
+      final aid = int.tryParse(evaluacionId);
+      if (aid != null) {
+        _simGradesService.upsertOne(aid, valor).catchError(
+          (e) => debugPrint('✗ guardar nota en backend: $e'),
+        );
+      }
     }
   }
 
@@ -131,9 +206,19 @@ class CalculadoraController extends GetxController {
     if (cursoIndex >= 0 && cursoIndex < cursos.length) {
       final notas = cursos[cursoIndex]['notas'] as RxList<dynamic>;
       if (notaIndex >= 0 && notaIndex < notas.length) {
+        final removed = Map<String, dynamic>.from(notas[notaIndex] as Map);
         notas.removeAt(notaIndex);
         cursos.refresh();
         _guardarNotasLocal();
+
+        // Borra también en el backend.
+        final evalId = removed['evaluacionId']?.toString();
+        final aid = evalId != null ? int.tryParse(evalId) : null;
+        if (aid != null) {
+          _simGradesService.deleteOne(aid).catchError(
+            (e) => debugPrint('✗ borrar nota en backend: $e'),
+          );
+        }
       }
     }
   }

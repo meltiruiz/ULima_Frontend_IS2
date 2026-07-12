@@ -24,13 +24,24 @@ class CalculadoraPage extends GetView<CalculadoraController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  "Calculadora de Notas",
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: colors.onSurface,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        "Calculadora de Notas",
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w900,
+                          color: colors.onSurface,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Notas oficiales',
+                      onPressed: () => Get.toNamed('/mis-notas'),
+                      icon: Icon(Icons.school_outlined, color: colors.onSurface),
+                    ),
+                  ],
                 ),
                 Obx(() {
                   final cursosConNotas = controller.cursos

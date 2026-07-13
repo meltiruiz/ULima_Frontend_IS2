@@ -74,8 +74,7 @@ class NetworkingController extends GetxController {
     return parts.join(' · ');
   }
 
-  bool get showLabelField =>
-      platform.value == 'website' || platform.value == 'other';
+  bool get showLabelField => networkingPlatformRequiresLabel(platform.value);
 
   bool get canSave => hasUnsavedChanges && !isSaving.value;
 
@@ -106,22 +105,17 @@ class NetworkingController extends GetxController {
   }
 
   void _syncUrlText() {
-    formRevision.value++;
-    saveMessage.value = '';
-    saveSucceeded.value = false;
+    _markFormChanged();
   }
 
   void _syncLabelText() {
-    formRevision.value++;
-    saveMessage.value = '';
-    saveSucceeded.value = false;
+    _markFormChanged();
   }
 
   Future<void> load() async {
     status.value = NetworkingViewStatus.loading;
     loadError.value = '';
-    saveMessage.value = '';
-    saveSucceeded.value = false;
+    _clearSaveFeedback();
     try {
       final card = await _gateway.fetchMine();
       if (isClosed) return;
@@ -141,18 +135,14 @@ class NetworkingController extends GetxController {
 
   void setOptIn(bool value) {
     optIn.value = value;
-    formRevision.value++;
-    saveMessage.value = '';
-    saveSucceeded.value = false;
+    _markFormChanged();
   }
 
   void setPlatform(String? value) {
     if (value == null || !supportedPlatforms.contains(value)) return;
     platform.value = value;
     if (!showLabelField) labelController.clear();
-    formRevision.value++;
-    saveMessage.value = '';
-    saveSucceeded.value = false;
+    _markFormChanged();
   }
 
   void startAddingLink() {
@@ -161,16 +151,13 @@ class NetworkingController extends GetxController {
     platform.value = supportedPlatforms.first;
     urlController.clear();
     labelController.clear();
-    formRevision.value++;
-    saveMessage.value = '';
+    _markFormChanged();
   }
 
   void startEditingLink() {
     if (!hasLinkDraft.value) return;
     isEditingLink.value = true;
-    formRevision.value++;
-    saveMessage.value = '';
-    saveSucceeded.value = false;
+    _markFormChanged();
   }
 
   void removeLink() {
@@ -178,9 +165,7 @@ class NetworkingController extends GetxController {
     isEditingLink.value = false;
     urlController.clear();
     labelController.clear();
-    formRevision.value++;
-    saveMessage.value = '';
-    saveSucceeded.value = false;
+    _markFormChanged();
   }
 
   Future<void> save() async {
@@ -188,16 +173,14 @@ class NetworkingController extends GetxController {
 
     final validationMessage = _validateBeforeSave();
     if (validationMessage != null) {
-      saveSucceeded.value = false;
-      saveMessage.value = validationMessage;
+      _setSaveError(validationMessage);
       return;
     }
 
     final link = draftLink;
 
     isSaving.value = true;
-    saveMessage.value = '';
-    saveSucceeded.value = false;
+    _clearSaveFeedback();
     try {
       final updated = await _gateway.updateMine(
         NetworkingCardDto(optIn: optIn.value, links: [?link]),
@@ -205,15 +188,13 @@ class NetworkingController extends GetxController {
       if (isClosed) return;
       _applyCard(updated);
       isEditingLink.value = false;
-      saveMessage.value = 'Carnet actualizado correctamente.';
-      saveSucceeded.value = true;
+      _setSaveSuccess('Carnet actualizado correctamente.');
     } on ApiException catch (error) {
       if (isClosed) return;
-      saveMessage.value = error.message;
+      _setSaveError(error.message);
     } catch (_) {
       if (isClosed) return;
-      saveMessage.value =
-          'No se pudieron guardar los cambios. Intenta nuevamente.';
+      _setSaveError('No se pudieron guardar los cambios. Intenta nuevamente.');
     } finally {
       if (!isClosed) isSaving.value = false;
     }
@@ -223,18 +204,16 @@ class NetworkingController extends GetxController {
     final link = previewLink;
     final validationError = validateNetworkingUrl(link?.url);
     if (link == null || validationError != null) {
-      saveSucceeded.value = false;
-      saveMessage.value =
-          validationError ?? 'Agrega un enlace para poder probarlo.';
+      _setSaveError(validationError ?? 'Agrega un enlace para poder probarlo.');
       return;
     }
 
     try {
       final opened = await _linkLauncher.open(Uri.parse(link.url));
       if (isClosed) return;
-      if (!opened) saveMessage.value = 'No se pudo abrir este enlace.';
+      if (!opened) _setSaveError('No se pudo abrir este enlace.');
     } catch (_) {
-      if (!isClosed) saveMessage.value = 'No se pudo abrir este enlace.';
+      if (!isClosed) _setSaveError('No se pudo abrir este enlace.');
     }
   }
 
@@ -244,11 +223,27 @@ class NetworkingController extends GetxController {
     final urlError = validateNetworkingUrl(urlController.text);
     if (urlError != null) return urlError;
 
-    if (showLabelField && labelController.text.trim().isEmpty) {
-      return 'Escribe un nombre visible para este enlace.';
-    }
+    return validateNetworkingLabel(platform.value, labelController.text);
+  }
 
-    return null;
+  void _markFormChanged() {
+    formRevision.value++;
+    _clearSaveFeedback();
+  }
+
+  void _clearSaveFeedback() {
+    saveMessage.value = '';
+    saveSucceeded.value = false;
+  }
+
+  void _setSaveError(String message) {
+    saveSucceeded.value = false;
+    saveMessage.value = message;
+  }
+
+  void _setSaveSuccess(String message) {
+    saveMessage.value = message;
+    saveSucceeded.value = true;
   }
 
   void _applyCard(NetworkingCardDto card) {

@@ -11,7 +11,7 @@ class ContactoService {
   // No atrapa el error: propaga la ApiException para que el caller distinga
   // "falló la carga" de "sin contactos" (ver docs/AUDITORIA_TECNICA.md §6.1).
   // Incluye el carnet de networking (opt-in) de cada contacto.
-  Future<Map<String, dynamic>> fetchContactos(String idSeccion) async {
+  Future<ContactosCursoResult> fetchContactos(String idSeccion) async {
     final data = await _api.getJson(
       '/course-detail/sections/$idSeccion/contacts',
     );
@@ -48,11 +48,11 @@ class ContactoService {
       return compare;
     });
 
-    return {
-      'docente': docente,
-      'jefePractica': jefePractica,
-      'alumnos': contactos,
-    };
+    return ContactosCursoResult(
+      docente: docente,
+      jefePractica: jefePractica,
+      alumnos: contactos,
+    );
   }
 
   int _rolePriority(String role) {

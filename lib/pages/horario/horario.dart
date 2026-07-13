@@ -759,7 +759,7 @@ class _TeacherCourseDetailSheetState extends State<_TeacherCourseDetailSheet> {
           .fetchContactos(widget.idSeccion)
           .catchError((e) {
         debugPrint('detalle: contactos falló: $e');
-        return <String, dynamic>{};
+        return const ContactosCursoResult.empty();
       });
       // Endpoints exclusivos para docentes: no se llaman si el usuario es alumno.
       final assessmentsFuture = isTeacher
@@ -786,24 +786,21 @@ class _TeacherCourseDetailSheetState extends State<_TeacherCourseDetailSheet> {
         assessmentsFuture,
         atRiskFuture,
       ]);
-      final contacts = results[0];
-      final assessmentsData = results[1];
-      final atRiskData = results[2];
+      final contacts = results[0] as ContactosCursoResult;
+      final assessmentsData = results[1] as Map<String, dynamic>;
+      final atRiskData = results[2] as Map<String, dynamic>;
       final summary = atRiskData['summary'] as Map<String, dynamic>?;
       final impedido = (summary?['impedido'] as num?)?.toInt() ?? 0;
       final enRiesgo = (summary?['en_riesgo'] as num?)?.toInt() ?? 0;
       _atRiskCount = impedido + enRiesgo;
 
-      final List<dynamic> alumnos = contacts['alumnos'] ?? [];
-      for (final a in alumnos) {
-        if (a is ContactoCurso) {
-          final role = a.roleInSection;
-          final fullName = a.user.fullName;
-          if (role == 'delegado') {
-            _delegateName = fullName;
-          } else if (role == 'subdelegado') {
-            _subdelegateName = fullName;
-          }
+      for (final contact in contacts.alumnos) {
+        final role = contact.roleInSection;
+        final fullName = contact.user.fullName;
+        if (role == 'delegado') {
+          _delegateName = fullName;
+        } else if (role == 'subdelegado') {
+          _subdelegateName = fullName;
         }
       }
 

@@ -174,10 +174,10 @@ class DescripCursosController extends GetxController {
 
   Future<void> fetchContactos(String idSeccion) async {
     try {
-      final data = await _contactoService.fetchContactos(idSeccion);
-      docenteContacto.value = data['docente'] as Docente?;
-      jpContacto.value = data['jefePractica'] as Docente?;
-      alumnosContacto.value = List<ContactoCurso>.from(data['alumnos'] ?? []);
+      final result = await _contactoService.fetchContactos(idSeccion);
+      docenteContacto.value = result.docente;
+      jpContacto.value = result.jefePractica;
+      alumnosContacto.value = result.alumnos;
       contactosError.value = false;
     } catch (e) {
       debugPrint('contactos falló: $e');

@@ -29,8 +29,9 @@ Esta spec implementa el primer escenario de HU25. El nombre HU27 se conserva
   académico cuando este existe y antes de Seguridad.
 - La pantalla permite consultar, agregar, editar, reemplazar o quitar una sola
   red y cambiar el opt-in.
-- Contactos, remitentes del chat y compartir el carnet quedan fuera de este
-  escenario.
+- Contactos y chat consumen el carnet publico mediante el backend; esta spec
+  documenta la integracion existente, aunque el refactor se concentra en la
+  pantalla propia de networking.
 - No se modifica el esquema ni la migración de base de datos.
 
 ## Business Rules
@@ -111,12 +112,18 @@ Ruta /networking → Binding → Controller → NetworkingService → ApiClient
 - Los widgets no llaman HTTP ni interpretan JSON.
 - El service es la frontera de API y el controller solo coordina estado de
   presentación, edición del formulario y mensajes.
+- `networking_model.dart` actua como **DTO Mapper** del cliente: convierte JSON
+  de backend a objetos Dart y serializa el payload de `PUT /networking/me`.
+- `networking_validators.dart` concentra validaciones defensivas de URL y
+  reglas simples de formulario; el backend sigue siendo autoritativo.
 
 ## API Dependencies
 
 - `GET /networking/me` — devuelve `{ "optIn": boolean, "links": [...] }`.
 - `PUT /networking/me` — recibe `{ "optIn": boolean, "links": [...] }` y
   devuelve el carnet actualizado.
+- `GET /networking/users/:userId` — devuelve el carnet publico visible para
+  contactos y mensajes de chat.
   `[@test] ../../../test/services/networking_service_test.dart`
 - Ambas rutas requieren el bearer token gestionado por `ApiClient`.
 

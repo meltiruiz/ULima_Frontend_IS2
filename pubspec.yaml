@@ -62,6 +62,7 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
   flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.4
 
 flutter_launcher_icons:
   android: true
@@ -70,6 +71,16 @@ flutter_launcher_icons:
   remove_alpha_ios: true
   image_path: "assets/images/UL_fondo_naranja_grande.png"
   min_sdk_android: 21
+
+# Splash al abrir la app: fondo naranja de marca (#E77330, tomado del ícono) con
+# el logo ULima++ centrado (la misma imagen del ícono, así el splash "hereda" el
+# logo sin costuras). Regenerar con: dart run flutter_native_splash:create
+flutter_native_splash:
+  color: "#E77330"
+  image: assets/images/UL_fondo_naranja_grande.png
+  android_12:
+    color: "#E77330"
+    image: assets/images/UL_fondo_naranja_grande.png
 
 
 # For information on the generic Dart part of this file, see the

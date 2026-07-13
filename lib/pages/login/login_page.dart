@@ -77,11 +77,15 @@ class _LoginCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Center(
-                child: SvgPicture.asset(
-                  'assets/images/Universidad_de_Lima_logo.svg',
-                  width: 150,
-                  colorMapper: palette.logoColorMapper,
-                  semanticsLabel: 'Universidad de Lima',
+                // Mismo logo que el ícono de la app y el splash (ULima++).
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(22),
+                  child: Image.asset(
+                    'assets/images/UL_fondo_naranja_grande.png',
+                    width: 96,
+                    height: 96,
+                    semanticLabel: 'ULima+',
+                  ),
                 ),
               ),
               const SizedBox(height: 32),

@@ -34,4 +34,7 @@ targets:
 
 ## Verification
 
-- Add linked tests for score validation and average calculations.
+- Score entry validates the 0 to 20 range, and the average updates after changes (R6, R9).
+  `[@test] ../../../test/HU07_aurelio/calculadora_flujo_cajanegra_test.dart`
+- Registered assessments are excluded from the syllabus dropdown (R8).
+  `[@test] ../../../test/HU06_aurelio/calculadora_evaluaciones_unitaria_test.dart`

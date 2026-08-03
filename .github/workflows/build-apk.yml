@@ -103,7 +103,7 @@ jobs:
           key: android-cmake-${{ runner.os }}-3.22.1
 
       - name: Compilar APK
-        run: flutter build apk --release --dart-define=API_BASE_URL=https://u-lima-backend-is-2-tau.vercel.app
+        run: flutter build apk --release --dart-define=API_BASE_URL=https://u-lima-backend-is-2-jeffangeloss-projects.vercel.app
 
       - name: Verificar firma y autorización de Firebase Auth
         shell: bash

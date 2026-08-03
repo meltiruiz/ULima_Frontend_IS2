@@ -241,30 +241,25 @@ class _ChatAreaState extends State<_ChatArea> {
   final TextEditingController _text = TextEditingController();
   Worker? _msgWorker;
   Worker? _typingWorker;
-  Worker? _loadWorker;
   bool _showScrollDown = false;
 
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
+    // El ARRANQUE en el mensaje más reciente lo garantiza el ListView con
+    // `reverse: true` (offset 0 = fondo), sin importar la vía de entrada (lista
+    // de conversaciones o burbuja) ni el largo del historial. Estos workers solo
+    // pegan el chat abajo cuando llega un mensaje nuevo o el "escribiendo…".
     _msgWorker = ever(widget.controller.messages, (_) => _scrollToBottom());
     _typingWorker = ever(widget.controller.isTyping, (_) => _scrollToBottom());
-    // Al abrir/cambiar de conversación: cuando terminan de cargar los mensajes,
-    // arrancar posicionado en el ÚLTIMO mensaje (sin animación). Antes esto no
-    // pasaba porque durante la carga se ve el skeleton y el ScrollController aún
-    // no tiene el ListView, así que el auto-scroll no agarraba y quedaba arriba.
-    _loadWorker = ever(widget.controller.loadingMessages, (loading) {
-      if (loading == false) _scrollToBottom(animate: false);
-    });
-    // Caso: los mensajes ya estaban cargados cuando se montó este widget.
-    _scrollToBottom(animate: false);
   }
 
-  // Muestra el botón "bajar" cuando el usuario se alejó del final.
+  // Con reverse:true el fondo (mensaje más reciente) es offset 0; alejarse de él
+  // sube `pixels`. Mostramos el botón "bajar" cuando el usuario se alejó del fondo.
   void _onScroll() {
     if (!_scroll.hasClients) return;
-    final show = _scroll.position.maxScrollExtent - _scroll.position.pixels > 200;
+    final show = _scroll.position.pixels > 200;
     if (show != _showScrollDown) {
       setState(() => _showScrollDown = show);
     }
@@ -273,7 +268,7 @@ class _ChatAreaState extends State<_ChatArea> {
   void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scroll.hasClients) return;
-      final target = _scroll.position.maxScrollExtent;
+      final target = _scroll.position.minScrollExtent; // reverse:true → 0 = fondo
       if (animate && !MediaQuery.of(context).disableAnimations) {
         _scroll.animateTo(
           target,
@@ -283,7 +278,6 @@ class _ChatAreaState extends State<_ChatArea> {
       } else {
         _scroll.jumpTo(target);
       }
-      if (_showScrollDown && mounted) setState(() => _showScrollDown = false);
     });
   }
 
@@ -298,7 +292,6 @@ class _ChatAreaState extends State<_ChatArea> {
   void dispose() {
     _msgWorker?.dispose();
     _typingWorker?.dispose();
-    _loadWorker?.dispose();
     _scroll.removeListener(_onScroll);
     _scroll.dispose();
     _text.dispose();
@@ -318,7 +311,8 @@ class _ChatAreaState extends State<_ChatArea> {
               return const SkeletonCardList(count: 6);
             }
 
-            final count = controller.messages.length + (controller.isTyping.value ? 1 : 0);
+            final typing = controller.isTyping.value;
+            final count = controller.messages.length + (typing ? 1 : 0);
 
             if (count == 0) {
               return _EmptyChat(brightness: brightness);
@@ -328,14 +322,19 @@ class _ChatAreaState extends State<_ChatArea> {
               children: [
                 ListView.builder(
                   controller: _scroll,
+                  reverse: true,
                   padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
                   itemCount: count,
                   itemBuilder: (context, index) {
-                    if (index >= controller.messages.length) {
+                    // reverse:true → index 0 es el fondo (el mensaje más reciente
+                    // o el indicador "escribiendo…"); el historial sube hacia arriba.
+                    if (typing && index == 0) {
                       return _TypingBubble(brightness: brightness);
                     }
+                    final msgIndex =
+                        controller.messages.length - 1 - (typing ? index - 1 : index);
                     return _MessageBubble(
-                      message: controller.messages[index],
+                      message: controller.messages[msgIndex],
                       brightness: brightness,
                     );
                   },

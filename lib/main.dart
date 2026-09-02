@@ -25,6 +25,8 @@ import 'pages/teacher/teacher_grades_controller.dart';
 import 'pages/teacher/teacher_grade_section_binding.dart';
 import 'pages/teacher/teacher_grade_section_page.dart';
 import 'pages/mis_notas/mis_notas_binding.dart';
+import 'pages/portal_sync/portal_sync_binding.dart';
+import 'pages/portal_sync/portal_sync_page.dart';
 import 'pages/mis_notas/mis_notas_page.dart';
 import 'pages/login/login_page.dart';
 import 'pages/malla/malla_controller.dart';
@@ -188,6 +190,14 @@ class MyApp extends StatelessWidget {
           name: '/mis-notas',
           page: () => const MisNotasPage(),
           binding: MisNotasBinding(),
+        ),
+        // Carga de ciclo desde miUlima. Binding por ruta, como el resto: un
+        // Get.put dentro de build() ataría el controller al overlay del
+        // snackbar y GetX destruiría sus TextEditingController.
+        GetPage(
+          name: '/portal-sync',
+          page: () => const PortalSyncPage(),
+          binding: PortalSyncBinding(),
         ),
         GetPage(
           name: '/chatbot',

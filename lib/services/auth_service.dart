@@ -92,6 +92,27 @@ class AuthService extends GetxService {
     return match != null ? match['name']?.toString() ?? '' : '';
   }
 
+  /// Recarga el usuario actual desde `/auth/me` SIN cerrar la sesión si falla.
+  ///
+  /// Existe aparte de [tryRestoreSession] a propósito: ese hace
+  /// `clearSession()` ante cualquier excepción, así que usarlo como refresco
+  /// significaría que un hipo de red al volver de importar echa al alumno de la
+  /// app. Acá un fallo simplemente deja el usuario como estaba.
+  ///
+  /// Reasignar `_currentUser.value` dispara los `ever()` que ambos controllers
+  /// de malla instalan sobre `currentUserRx`, así que el nivel y la carrera se
+  /// propagan solos.
+  Future<void> refreshCurrentUser() async {
+    final token = await _storage.savedToken;
+    if (token == null || token.isEmpty) return;
+    try {
+      final response = await _api.getJson('/auth/me', token: token);
+      _currentUser.value = UserModel.fromJson(_mapFrom(response['user']));
+    } catch (_) {
+      // A propósito sin clearSession: un refresco fallido no cierra sesión.
+    }
+  }
+
   Future<bool> tryRestoreSession() async {
     final token = await _storage.savedToken;
     if (token == null || token.isEmpty) return false;

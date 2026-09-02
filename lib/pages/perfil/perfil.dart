@@ -635,7 +635,84 @@ class _SeguridadSection extends StatelessWidget {
           ),
         ),
         const _ResetPasswordCard(),
+        // Solo alumnos: portal-sync exige rol de alumno y un docente
+        // recibiría 403 del backend.
+        if (!(AuthService.to.currentUser?.isTeacher ?? false)) ...[
+          const SizedBox(height: 10),
+          const _CargarDesdeMiUlimaCard(),
+        ],
       ],
+    );
+  }
+}
+
+/// Tarjeta "Actualizar desde miUlima": repite la carga de ciclo cuando ya se
+/// hizo una vez (por ejemplo tras una matrícula complementaria). El aviso del
+/// Home solo aparece cuando el alumno no tiene cursos, así que sin esta entrada
+/// no habría forma de volver a cargar.
+class _CargarDesdeMiUlimaCard extends StatelessWidget {
+  const _CargarDesdeMiUlimaCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    return GestureDetector(
+      onTap: () => Get.toNamed<dynamic>('/portal-sync'),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: MaterialTheme.cardBg(brightness),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: MaterialTheme.borderColor(brightness)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: MaterialTheme.espPrincipalBg(brightness),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                LucideIcons.refreshCw,
+                color: MaterialTheme.primaryDark,
+                size: 20,
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Actualizar desde miUlima',
+                    style: TextStyle(
+                      color: MaterialTheme.textPrimary(brightness),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Vuelve a traer tus cursos, horario y avance del ciclo',
+                    style: TextStyle(
+                      color: MaterialTheme.textSecondary(brightness),
+                      fontSize: 11,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              LucideIcons.chevronRight,
+              size: 18,
+              color: MaterialTheme.textMuted(brightness),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

@@ -142,8 +142,11 @@ class _Cargando extends StatelessWidget {
       children: [
         SizedBox(
           width: 46, height: 46,
+          // Mismo motivo que el ícono del resumen: con `buttonBackground` el
+          // indicador no se veía en modo oscuro, y son ~40 s de espera sin
+          // ninguna señal de que algo está pasando.
           child: CircularProgressIndicator(
-            strokeWidth: 3, color: palette.buttonBackground,
+            strokeWidth: 3, color: palette.cursor,
           ),
         ),
         const SizedBox(height: 24),
@@ -181,7 +184,10 @@ class _Resumen extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(Icons.check_circle_rounded, size: 54, color: palette.buttonBackground),
+        // `palette.cursor` y NO `buttonBackground`: en modo oscuro el fondo del
+        // botón es 0x00000000 (transparente, el botón es solo borde), así que
+        // pintar con él dejaba el ícono INVISIBLE sobre la tarjeta negra.
+        Icon(Icons.check_circle_rounded, size: 54, color: palette.cursor),
         const SizedBox(height: 16),
         Text(
           r == null || r.periodCode.isEmpty
@@ -198,7 +204,11 @@ class _Resumen extends StatelessWidget {
           _Fila(palette: palette, etiqueta: 'Clases en tu horario', valor: s.sessionsUpserted),
           _Fila(palette: palette, etiqueta: 'Cursos de tu avance', valor: s.progressUpserted),
           if (s.syllabiUpserted > 0)
-            _Fila(palette: palette, etiqueta: 'Sílabos encontrados', valor: s.syllabiUpserted),
+            // "nuevos" y no "encontrados": el backend cuenta filas realmente
+            // escritas (su upsert es `on conflict do nothing`), así que al
+            // reimportar un ciclo ya cargado esto es 0 aunque los sílabos
+            // existan. Por eso la fila se oculta en ese caso.
+            _Fila(palette: palette, etiqueta: 'Sílabos nuevos', valor: s.syllabiUpserted),
           if (s.enrollmentsWithdrawn > 0)
             _Fila(palette: palette, etiqueta: 'Cursos que retiraste', valor: s.enrollmentsWithdrawn),
         ],

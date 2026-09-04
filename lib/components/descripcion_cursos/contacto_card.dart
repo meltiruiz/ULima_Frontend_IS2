@@ -7,6 +7,12 @@ class ContactoCard extends StatelessWidget {
   final bool networkingVisible;
   final VoidCallback? onNetworkingTap;
 
+  /// false para un delegado que miUlima publica pero que todavía no tiene
+  /// cuenta en ULima++. Cambia el subtítulo y el tooltip del carnet: sin esto
+  /// la tarjeta diría "Carnet oculto", que sugiere una decisión de privacidad
+  /// de alguien que ni siquiera está en la app.
+  final bool enUlimaPlus;
+
   const ContactoCard({
     super.key,
     required this.nombres,
@@ -14,6 +20,7 @@ class ContactoCard extends StatelessWidget {
     required this.rol,
     this.networkingVisible = false,
     this.onNetworkingTap,
+    this.enUlimaPlus = true,
   });
 
   @override
@@ -92,12 +99,25 @@ class ContactoCard extends StatelessWidget {
                       ),
                     ),
                   ),
+
+                if (!enUlimaPlus)
+                  Text(
+                    'Aún no está en ULima++',
+
+                    style: TextStyle(
+                      color: colors.onSurfaceVariant,
+
+                      fontSize: 11,
+                    ),
+                  ),
               ],
             ),
           ),
 
           Tooltip(
-            message: networkingVisible
+            message: !enUlimaPlus
+                ? 'Aún no está en ULima++'
+                : networkingVisible
                 ? 'Ver carnet'
                 : 'Carnet oculto',
             child: IconButton(

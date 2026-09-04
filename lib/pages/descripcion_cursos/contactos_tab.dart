@@ -103,6 +103,22 @@ class ContactosTab extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 12),
+          // Delegados que miUlima publica pero que todavía no usan ULima++.
+          // Van PRIMERO, como los delegados con cuenta: el orden de la lista
+          // es por cargo, y que uno no se haya instalado la app no lo mueve de
+          // lugar. No abren el carnet: no hay carnet que abrir.
+          ...control.representantesPendientes.map(
+            (rep) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: ContactoCard(
+                nombres: rep.firstName,
+                apellidos: rep.lastName,
+                rol: rep.rolEnEspanol,
+                networkingVisible: false,
+                enUlimaPlus: false,
+              ),
+            ),
+          ),
           ...control.alumnosContacto.map((contacto) {
             final user = contacto.user;
             final role = contacto.roleInSection;

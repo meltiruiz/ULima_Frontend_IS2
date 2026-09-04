@@ -6,7 +6,11 @@ import 'package:ulima_plus/models/user_model.dart';
 import 'api_client.dart';
 
 class ContactoService {
-  final ApiClient _api = ApiClient();
+  // Inyectable para poder probar el parseo sin red, igual que PortalSyncService.
+  // Por defecto arma el suyo, así que ningún llamador existente cambia.
+  ContactoService({ApiClient? api}) : _api = api ?? ApiClient();
+
+  final ApiClient _api;
 
   // No atrapa el error: propaga la ApiException para que el caller distinga
   // "falló la carga" de "sin contactos" (ver docs/AUDITORIA_TECNICA.md §6.1).
@@ -48,10 +52,23 @@ class ContactoService {
       return compare;
     });
 
+    // Clave hermana de `alumnos`: los representantes que el portal publica pero
+    // que aún no son usuarios. Si el backend es viejo y no la manda, la lista
+    // queda vacía y la pantalla se comporta como antes.
+    final List<dynamic> pendientesRaw = data['representantesPendientes'] ?? [];
+    final pendientes = pendientesRaw
+        .map(
+          (raw) => RepresentantePendiente.fromJson(
+            Map<String, dynamic>.from(raw as Map),
+          ),
+        )
+        .toList();
+
     return {
       'docente': docente,
       'jefePractica': jefePractica,
       'alumnos': contactos,
+      'representantesPendientes': pendientes,
     };
   }
 

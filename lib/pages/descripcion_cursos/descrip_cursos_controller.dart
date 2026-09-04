@@ -27,6 +27,11 @@ class DescripCursosController extends GetxController {
   RxList<Anuncio> anuncios = <Anuncio>[].obs;
   RxList<Asesoria> asesorias = <Asesoria>[].obs;
   RxList<ContactoCurso> alumnosContacto = <ContactoCurso>[].obs;
+  // Delegados que el portal publica pero que todavía no usan ULima++. Van
+  // aparte de `alumnosContacto` porque no son usuarios: no tienen correo,
+  // carrera ni carnet.
+  RxList<RepresentantePendiente> representantesPendientes =
+      <RepresentantePendiente>[].obs;
   Rxn<Docente> docenteContacto = Rxn<Docente>();
   Rxn<Docente> jpContacto = Rxn<Docente>(); // HU18: jefe de práctica (0 o 1)
   RxInt selectedTab = 0.obs;
@@ -178,6 +183,9 @@ class DescripCursosController extends GetxController {
       docenteContacto.value = data['docente'] as Docente?;
       jpContacto.value = data['jefePractica'] as Docente?;
       alumnosContacto.value = List<ContactoCurso>.from(data['alumnos'] ?? []);
+      representantesPendientes.value = List<RepresentantePendiente>.from(
+        data['representantesPendientes'] ?? [],
+      );
       contactosError.value = false;
     } catch (e) {
       debugPrint('contactos falló: $e');
@@ -191,6 +199,7 @@ class DescripCursosController extends GetxController {
     anuncios.clear();
     asesorias.clear();
     alumnosContacto.clear();
+    representantesPendientes.clear();
     docenteContacto.value = null;
     jpContacto.value = null;
     anunciosError.value = false;

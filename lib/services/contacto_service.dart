@@ -28,14 +28,39 @@ class ContactoService {
     final jefePractica = jpRaw == null
         ? null
         : Docente.fromJson(Map<String, dynamic>.from(jpRaw as Map));
+    // Lo que el portal dice sobre los cargos de la sección. Llega en una clave
+    // hermana de `alumnos` porque un representante puede no tener cuenta.
+    final List<dynamic> pendientesRaw = data['representantesPendientes'] ?? [];
+    final claims = pendientesRaw
+        .map(
+          (raw) => RepresentantePendiente.fromJson(
+            Map<String, dynamic>.from(raw as Map),
+          ),
+        )
+        .toList();
+    final claimPorCodigo = {for (final c in claims) c.code: c};
+
     final List<dynamic> alumnosRaw = data['alumnos'] ?? [];
     final contactos = alumnosRaw.map((raw) {
       final json = Map<String, dynamic>.from(raw as Map);
+      final user = UserModel.fromJson(
+        Map<String, dynamic>.from(json['user'] as Map),
+      );
+      final rolDelBackend = json['roleInSection']?.toString() ?? 'estudiante';
+
+      // Un compañero puede TENER cuenta y aun así no figurar en
+      // section_representative: esa tabla solo se escribe cuando él mismo
+      // importa desde miUlima. Sin este cruce, el delegado que ya es usuario
+      // pero nunca sincronizó se pinta como un alumno más y el portal queda
+      // desmentido en pantalla.
+      final claim = claimPorCodigo[user.code];
+      final role = (claim != null && rolDelBackend == 'estudiante')
+          ? claim.rolEnEspanol
+          : rolDelBackend;
+
       return ContactoCurso(
-        user: UserModel.fromJson(
-          Map<String, dynamic>.from(json['user'] as Map),
-        ),
-        roleInSection: json['roleInSection']?.toString() ?? 'estudiante',
+        user: user,
+        roleInSection: role,
         networking: _parseNetworking(json['networking']),
       );
     }).toList();
@@ -52,16 +77,12 @@ class ContactoService {
       return compare;
     });
 
-    // Clave hermana de `alumnos`: los representantes que el portal publica pero
-    // que aún no son usuarios. Si el backend es viejo y no la manda, la lista
-    // queda vacía y la pantalla se comporta como antes.
-    final List<dynamic> pendientesRaw = data['representantesPendientes'] ?? [];
-    final pendientes = pendientesRaw
-        .map(
-          (raw) => RepresentantePendiente.fromJson(
-            Map<String, dynamic>.from(raw as Map),
-          ),
-        )
+    // Tarjeta propia SOLO para el representante que no está en la lista de
+    // alumnos, o sea el que de verdad no tiene cuenta. Al que sí la tiene ya se
+    // le corrigió el cargo arriba, así que pintarlo aparte lo duplicaría.
+    final codigosConCuenta = contactos.map((c) => c.user.code).toSet();
+    final pendientes = claims
+        .where((c) => !codigosConCuenta.contains(c.code))
         .toList();
 
     return {

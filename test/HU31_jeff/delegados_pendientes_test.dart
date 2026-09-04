@@ -110,6 +110,99 @@ void main() {
     });
   });
 
+  group('cruce por código (regresión de producción 2026-09-04)', () {
+    Map<String, dynamic> alumno(String code, {String rol = 'estudiante'}) => {
+      'user': {'code': code, 'firstName': 'JUAN', 'lastName': 'PEREZ'},
+      'roleInSection': rol,
+      'networking': null,
+    };
+
+    test(
+      'un delegado CON cuenta que nunca sincronizó recibe igual su badge',
+      () async {
+        // El caso que rompió en producción: el compañero existe como usuario
+        // (cuenta sembrada) pero nunca importó, así que no tiene fila en
+        // section_representative y el backend lo manda con roleInSection
+        // "estudiante". Sin este cruce quedaba pintado como un alumno más y el
+        // portal desmentido en pantalla.
+        final servicio = ContactoService(
+          api: _FakeApiClient({
+            'docente': null,
+            'jefePractica': null,
+            'alumnos': [alumno('20209999')],
+            'representantesPendientes': [
+              {
+                'code': '20209999',
+                'firstName': 'JUAN',
+                'lastName': 'PEREZ',
+                'position': 'delegate',
+                'contactable': false,
+              },
+            ],
+          }),
+        );
+
+        final data = await servicio.fetchContactos('1');
+        final alumnos = data['alumnos'] as List<ContactoCurso>;
+
+        expect(alumnos.single.roleInSection, 'delegado');
+        // Y NO se pinta aparte: eso lo duplicaría en la misma pantalla.
+        expect(data['representantesPendientes'], isEmpty);
+      },
+    );
+
+    test('el que no tiene cuenta sí se pinta aparte', () async {
+      final servicio = ContactoService(
+        api: _FakeApiClient({
+          'docente': null,
+          'jefePractica': null,
+          'alumnos': [alumno('20200001')],
+          'representantesPendientes': [
+            {
+              'code': '20209999',
+              'firstName': 'ANA',
+              'lastName': 'TORRES',
+              'position': 'subdelegate',
+              'contactable': false,
+            },
+          ],
+        }),
+      );
+
+      final data = await servicio.fetchContactos('1');
+      final pendientes =
+          data['representantesPendientes'] as List<RepresentantePendiente>;
+
+      expect(pendientes.single.code, '20209999');
+      expect((data['alumnos'] as List).length, 1);
+    });
+
+    test('un cargo real del backend no lo pisa el claim', () async {
+      // Si section_representative ya dice que es delegado, esa es la verdad
+      // con permisos y el claim no debe degradarla ni cambiarla.
+      final servicio = ContactoService(
+        api: _FakeApiClient({
+          'docente': null,
+          'jefePractica': null,
+          'alumnos': [alumno('20209999', rol: 'delegado')],
+          'representantesPendientes': [
+            {
+              'code': '20209999',
+              'firstName': 'JUAN',
+              'lastName': 'PEREZ',
+              'position': 'subdelegate',
+              'contactable': false,
+            },
+          ],
+        }),
+      );
+
+      final data = await servicio.fetchContactos('1');
+      final alumnos = data['alumnos'] as List<ContactoCurso>;
+      expect(alumnos.single.roleInSection, 'delegado');
+    });
+  });
+
   group('ContactoCard sin cuenta en ULima++', () {
     Widget montar(Widget hijo) =>
         MaterialApp(home: Scaffold(body: hijo));

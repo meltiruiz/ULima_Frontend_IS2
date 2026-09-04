@@ -130,6 +130,7 @@ class PortalSyncResult {
     required this.career,
     required this.summary,
     required this.warnings,
+    this.token,
   });
 
   final String periodCode;
@@ -137,6 +138,13 @@ class PortalSyncResult {
   final String career;
   final PortalSyncSummary summary;
   final List<PortalSyncWarning> warnings;
+
+  /// JWT re-firmado cuando la importación cambió el cargo del alumno, en
+  /// cualquiera de los dos sentidos. El rol viaja DENTRO del token y solo se
+  /// calculaba al iniciar sesión, así que sin reemplazarlo un delegado nuevo no
+  /// veía su pestaña —y un ex delegado la seguía viendo— hasta el próximo
+  /// login. `null` si el backend no lo mandó.
+  final String? token;
 
   factory PortalSyncResult.fromJson(Map<String, dynamic> json) {
     final periodo = json['period'];
@@ -160,6 +168,9 @@ class PortalSyncResult {
               .map(PortalSyncWarning.fromJson)
               .toList()
           : const <PortalSyncWarning>[],
+      token: json['token'] is String && (json['token'] as String).isNotEmpty
+          ? json['token'] as String
+          : null,
     );
   }
 }

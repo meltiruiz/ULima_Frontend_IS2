@@ -123,7 +123,14 @@ class PortalSyncService {
   ///
   /// Nada acá puede lanzar: el import ya salió bien y un fallo del refresco no
   /// debe convertirse en un error para el alumno.
-  Future<void> refreshAfterImport() async {
+  Future<void> refreshAfterImport({String? token}) async {
+    // El token PRIMERO: trae el cargo recalculado y `refreshCurrentUser` va a
+    // usarlo para pedir /auth/me. Al revés se consultaría con el token viejo.
+    if (token != null) {
+      try {
+        await AuthService.to.replaceToken(token);
+      } catch (_) { /* seguir con el token viejo es peor que nada, no fatal */ }
+    }
     try {
       await AuthService.to.refreshCurrentUser();
     } catch (_) { /* el import ya salió bien */ }

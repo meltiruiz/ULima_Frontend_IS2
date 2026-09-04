@@ -102,6 +102,19 @@ class AuthService extends GetxService {
   /// Reasignar `_currentUser.value` dispara los `ever()` que ambos controllers
   /// de malla instalan sobre `currentUserRx`, así que el nivel y la carrera se
   /// propagan solos.
+  /// Reemplaza el JWT guardado por uno re-firmado por el backend.
+  ///
+  /// Lo usa la carga de ciclo: el rol de delegado va DENTRO del token y hasta
+  /// ahora solo se calculaba al iniciar sesión, así que un delegado recién
+  /// electo no veía su pestaña —y un ex delegado la seguía viendo— hasta el
+  /// próximo login. El backend re-firma con la MISMA `token_version`, así que
+  /// esto no invalida la sesión ni provoca el 401 que el ApiClient trata como
+  /// expiración.
+  Future<void> replaceToken(String token) async {
+    if (token.isEmpty) return;
+    await _storage.saveToken(token);
+  }
+
   Future<void> refreshCurrentUser() async {
     final token = await _storage.savedToken;
     if (token == null || token.isEmpty) return;

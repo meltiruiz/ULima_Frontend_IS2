@@ -76,7 +76,9 @@ class PortalSyncController extends GetxController {
       // Apenas se usó, se borra: si el alumno vuelve atrás no queda escrita.
       passwordCtrl.clear();
       passcodeCtrl.clear();
-      await _service.refreshAfterImport();
+      // El token viaja con el resultado: trae el cargo recalculado, así que
+      // la pestaña de delegado aparece o desaparece sin volver a entrar.
+      await _service.refreshAfterImport(token: r.token);
       await _refrescarPantallas();
       result.value = r;
       step.value = PortalSyncStep.done;

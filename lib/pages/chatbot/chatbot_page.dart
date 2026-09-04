@@ -241,26 +241,42 @@ class _ChatAreaState extends State<_ChatArea> {
   final TextEditingController _text = TextEditingController();
   Worker? _msgWorker;
   Worker? _typingWorker;
+  bool _showScrollDown = false;
 
   @override
   void initState() {
     super.initState();
+    _scroll.addListener(_onScroll);
+    // El ARRANQUE en el mensaje más reciente lo garantiza el ListView con
+    // `reverse: true` (offset 0 = fondo), sin importar la vía de entrada (lista
+    // de conversaciones o burbuja) ni el largo del historial. Estos workers solo
+    // pegan el chat abajo cuando llega un mensaje nuevo o el "escribiendo…".
     _msgWorker = ever(widget.controller.messages, (_) => _scrollToBottom());
     _typingWorker = ever(widget.controller.isTyping, (_) => _scrollToBottom());
   }
 
-  void _scrollToBottom() {
+  // Con reverse:true el fondo (mensaje más reciente) es offset 0; alejarse de él
+  // sube `pixels`. Mostramos el botón "bajar" cuando el usuario se alejó del fondo.
+  void _onScroll() {
+    if (!_scroll.hasClients) return;
+    final show = _scroll.position.pixels > 200;
+    if (show != _showScrollDown) {
+      setState(() => _showScrollDown = show);
+    }
+  }
+
+  void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_scroll.hasClients) return;
-      final target = _scroll.position.maxScrollExtent;
-      if (MediaQuery.of(context).disableAnimations) {
-        _scroll.jumpTo(target);
-      } else {
+      if (!mounted || !_scroll.hasClients) return;
+      final target = _scroll.position.minScrollExtent; // reverse:true → 0 = fondo
+      if (animate && !MediaQuery.of(context).disableAnimations) {
         _scroll.animateTo(
           target,
           duration: const Duration(milliseconds: 260),
           curve: Curves.easeOutCubic,
         );
+      } else {
+        _scroll.jumpTo(target);
       }
     });
   }
@@ -276,6 +292,7 @@ class _ChatAreaState extends State<_ChatArea> {
   void dispose() {
     _msgWorker?.dispose();
     _typingWorker?.dispose();
+    _scroll.removeListener(_onScroll);
     _scroll.dispose();
     _text.dispose();
     super.dispose();
@@ -294,25 +311,44 @@ class _ChatAreaState extends State<_ChatArea> {
               return const SkeletonCardList(count: 6);
             }
 
-            final count = controller.messages.length + (controller.isTyping.value ? 1 : 0);
+            final typing = controller.isTyping.value;
+            final count = controller.messages.length + (typing ? 1 : 0);
 
             if (count == 0) {
               return _EmptyChat(brightness: brightness);
             }
 
-            return ListView.builder(
-              controller: _scroll,
-              padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
-              itemCount: count,
-              itemBuilder: (context, index) {
-                if (index >= controller.messages.length) {
-                  return _TypingBubble(brightness: brightness);
-                }
-                return _MessageBubble(
-                  message: controller.messages[index],
-                  brightness: brightness,
-                );
-              },
+            return Stack(
+              children: [
+                ListView.builder(
+                  controller: _scroll,
+                  reverse: true,
+                  padding: const EdgeInsets.fromLTRB(14, 16, 14, 16),
+                  itemCount: count,
+                  itemBuilder: (context, index) {
+                    // reverse:true → index 0 es el fondo (el mensaje más reciente
+                    // o el indicador "escribiendo…"); el historial sube hacia arriba.
+                    if (typing && index == 0) {
+                      return _TypingBubble(brightness: brightness);
+                    }
+                    final msgIndex =
+                        controller.messages.length - 1 - (typing ? index - 1 : index);
+                    return _MessageBubble(
+                      message: controller.messages[msgIndex],
+                      brightness: brightness,
+                    );
+                  },
+                ),
+                Positioned(
+                  right: 12,
+                  bottom: 12,
+                  child: _ScrollDownButton(
+                    visible: _showScrollDown,
+                    brightness: brightness,
+                    onTap: _scrollToBottom,
+                  ),
+                ),
+              ],
             );
           }),
         ),
@@ -323,6 +359,57 @@ class _ChatAreaState extends State<_ChatArea> {
           onSubmit: _submit,
         ),
       ],
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Botón flotante "bajar al último mensaje" (aparece al alejarse del final).
+// ─────────────────────────────────────────────────────────────────────────────
+class _ScrollDownButton extends StatelessWidget {
+  const _ScrollDownButton({
+    required this.visible,
+    required this.brightness,
+    required this.onTap,
+  });
+
+  final bool visible;
+  final Brightness brightness;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final reduce = MediaQuery.of(context).disableAnimations;
+    return IgnorePointer(
+      ignoring: !visible,
+      child: AnimatedScale(
+        scale: visible ? 1 : 0.6,
+        duration: Duration(milliseconds: reduce ? 0 : 180),
+        curve: Curves.easeOutBack,
+        child: AnimatedOpacity(
+          opacity: visible ? 1 : 0,
+          duration: Duration(milliseconds: reduce ? 0 : 160),
+          child: Material(
+            color: MaterialTheme.cardBg(brightness),
+            shape: CircleBorder(
+              side: BorderSide(color: MaterialTheme.borderColor(brightness)),
+            ),
+            elevation: 3,
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.all(9),
+                child: Icon(
+                  LucideIcons.chevronDown,
+                  size: 22,
+                  color: MaterialTheme.textPrimary(brightness),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

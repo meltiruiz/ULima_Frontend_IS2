@@ -7,7 +7,7 @@
       "type": "dart",
       "program": "lib/main.dart",
       "args": [
-        "--dart-define=API_BASE_URL=https://u-lima-backend-is-2-tau.vercel.app"
+        "--dart-define=API_BASE_URL=https://u-lima-backend-is-2-one.vercel.app"
       ]
     },
     {
@@ -26,7 +26,7 @@
       "flutterMode": "profile",
       "program": "lib/main.dart",
       "args": [
-        "--dart-define=API_BASE_URL=https://u-lima-backend-is-2-tau.vercel.app"
+        "--dart-define=API_BASE_URL=https://u-lima-backend-is-2-one.vercel.app"
       ]
     }
   ]

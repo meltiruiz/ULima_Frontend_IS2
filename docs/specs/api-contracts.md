@@ -442,3 +442,32 @@ fuente de verdad y no se modifica el esquema para este escenario.
   el mensaje del backend sin reinterpretar autorización o reglas de negocio.
 
 La consulta pública y el uso en contactos/chat quedan fuera del Escenario 1.
+
+## Portal Sync (carga de ciclo desde miUlima) — PROPUESTO, pendiente de implementar
+
+Importa los datos oficiales del alumno desde el portal miUlima usando la **sesión del portal que el alumno abrió en un WebView de la app**. El backend nunca recibe contraseña ni código TOTP. Ver `specs/features/portal-sync/portal-sync.spec.md`.
+
+Alumno (`requireRole(student|delegate|subdelegate)`, `studentId` y `code` del JWT):
+
+- `GET /portal-sync/status`
+  - Response: `{ "activePeriod": { "id": number, "code": "2026-2" } | null, "enrollmentsInActivePeriod": number, "needsImport": boolean }`
+  - `needsImport` = no hay período activo o el alumno no tiene `enrollment` activa en él.
+- `POST /portal-sync/import`
+  - Body: `{ "cookies": { "JSESSIONID": string, "LtpaToken2": string, "LtpaToken": string|null } }` (cookies de `webaloe.ulima.edu.pe`; nunca se persisten ni se registran en logs)
+  - Response `200`:
+    ```json
+    {
+      "period": { "id": 12, "code": "2026-2", "created": false },
+      "identity": { "portalCode": "20235218", "fullName": "string", "career": "INGENIERÍA DE SISTEMAS" },
+      "summary": {
+        "coursesCreated": 0, "teachersCreated": 0, "sectionsCreated": 0, "sectionsUpdated": 5,
+        "sessionsUpserted": 12, "enrollmentsUpserted": 5, "enrollmentsWithdrawn": 0,
+        "progressUpserted": 53, "progressSkipped": 4, "alertsCreated": 1
+      },
+      "warnings": [ { "code": "PERIOD_DATES_DEFAULTED" | "TEACHER_MISSING" | "PARSER_FAILED" | "CAREER_MISMATCH" | "PROGRESS_SKIPPED" | "WITHDRAW_SKIPPED_WOULD_LOCK_OUT" | "LEVEL_OUT_OF_RANGE" | "GRADE_NOT_NUMERIC", "block": "string", "message": "string" } ]
+    }
+    ```
+  - Errores: **`409 PORTAL_SESSION_INVALID`** (el portal devolvió `inicio.jsp` o pidió passcode — es 409 y no 401 a propósito: `ApiClient` del frontend trata todo 401 como expiración del JWT y cerraría la sesión del usuario), `403 PORTAL_IDENTITY_MISMATCH` (código del portal ≠ `app_user.code`), `422 PORTAL_IDENTITY_UNVERIFIABLE` (no se pudo leer el código del portal), `502 PORTAL_UNAVAILABLE`, `504 PORTAL_TIMEOUT`, `429 TOO_MANY_REQUESTS` (máx. 5 importaciones por alumno por hora).
+  - La verificación de identidad ocurre ANTES de cualquier escritura y no se degrada a `warnings`.
+  - Idempotente: repetir la importación deja el mismo estado (todos los upsert usan `ON CONFLICT` sobre constraints existentes). No toca `simulated_grades`, simulación de malla, especialidades, anuncios, asesorías, representantes, chat, networking, `schedule_session.color_hex` ni las horas de asistencia.
+  - **La primera importación de un ciclo nuevo activa ese `academic_period` para TODOS los alumnos** (`is_active` es único global). Solo avanza el ciclo, nunca lo retrocede.

@@ -1,6 +1,7 @@
 import 'dart:async';
+import 'package:flutter/material.dart';
+import '../../configs/course_colors.dart';
 
-import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import '../../services/api_client.dart';
@@ -350,6 +351,47 @@ class HorarioController extends GetxController {
 
   void toggleListView() {
     isListView.value = !isListView.value;
+  }
+
+  /// Color final de cada sección del alumno, ya sin repetidos.
+  ///
+  /// El backend guarda el color en `schedule_session`, fila que comparten todos
+  /// los alumnos de la sección, así que no puede saber qué otros cursos lleva
+  /// cada uno: dos cursos distintos pueden traer el mismo color. Pasa de verdad
+  /// (en 2026-2, Seguridad de Sistemas y Paradigmas traen el mismo índigo), y
+  /// por eso el desempate se hace acá, sobre el horario completo del alumno.
+  ///
+  /// Se calcula sobre TODAS las secciones y no sobre el día visible, para que un
+  /// curso no cambie de color al pasar de lunes a martes. Las claves se ordenan
+  /// para que el reparto sea estable entre recargas.
+  Map<String, Color> get colorPorCurso {
+    final claves = <String>[];
+    final hexPorClave = <String, String?>{};
+
+    for (final section in _todasLasSecciones) {
+      if (section['isAdvising'] == true) continue;
+      final id = section['idSeccion']?.toString() ?? '';
+      if (id.isEmpty || hexPorClave.containsKey(id)) continue;
+
+      // El color vive en el horario, no en la sección: a nivel de sección suele
+      // venir un naranja por defecto que no distingue cursos.
+      String? hex;
+      final horarios = section['horarios'];
+      if (horarios is List) {
+        for (final h in horarios) {
+          final c = (h is Map ? h['color']?.toString() : null)?.trim();
+          if (c != null && c.isNotEmpty) {
+            hex = c;
+            break;
+          }
+        }
+      }
+      hexPorClave[id] = hex;
+      claves.add(id);
+    }
+
+    claves.sort();
+    return asignarColoresSinRepetir(claves, (k) => hexPorClave[k]);
   }
 
   List<Map<String, dynamic>> get uniqueEnrolledCourses {

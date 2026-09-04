@@ -20,6 +20,7 @@ This index connects real user stories, product requirements, Flutter files, mock
 | 12 | Release Build | `specs/features/release-build/release-build.spec.md` | Infra | Build config | `android/`, `pubspec.yaml` | Documentado |
 | 13 | Chatbot Asistente Académico | `specs/features/chatbot/chatbot.spec.md` | HU-CHATBOT-01, HU-CHATBOT-02 | Chatbot con IA para consultas académicas | `lib/pages/chatbot/**`, `lib/services/chatbot_service.dart`, `lib/components/chatbot_fab.dart`, `lib/models/chatbot_models.dart` | **Diseñada — pendiente de implementar** |
 | 14 | Carnet de networking | `specs/features/networking/networking.spec.md` | HU25 (issues históricos HU27) | Opt-in y una red social propia | `lib/pages/networking/**`, `lib/services/networking_service.dart` | Escenario 1 implementado |
+| 15 | Portal Sync (carga de ciclo desde miUlima) | `specs/features/portal-sync/portal-sync.spec.md` | HU-SYNC-01, HU-SYNC-02 | Login en WebView de miUlima + importación al backend; banner en Home y opción en Perfil | `lib/pages/portal_sync/**`, `lib/services/portal_sync_service.dart` | **Diseñada — pendiente de aprobación e implementación** |
 
 ## Workflow
 

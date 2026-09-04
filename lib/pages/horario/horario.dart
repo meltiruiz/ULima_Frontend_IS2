@@ -318,10 +318,14 @@ class HorarioPage extends StatelessWidget {
                           final double heightVal =
                               (endVal - startVal) * hourHeight - 8.0;
 
-                          final courseColor = _resolveScheduleColor(
-                            colorStr,
-                            colors,
-                          );
+                          // El color sale del reparto sin repetidos que hace el
+                          // controlador sobre TODO el horario; el hex crudo del
+                          // backend solo se usa como respaldo, porque dos cursos
+                          // del alumno pueden traer el mismo.
+                          final courseColor =
+                              controller.colorPorCurso[course['idSeccion']
+                                  ?.toString()] ??
+                              _resolveScheduleColor(colorStr, colors);
 
                           return Positioned(
                             top: topPosition,

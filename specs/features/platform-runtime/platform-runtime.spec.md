@@ -30,6 +30,6 @@ targets:
 
 - `flutter analyze`
 - `flutter test`
-- `flutter run --dart-define=API_BASE_URL=https://u-lima-backend-is-2-tau.vercel.app`
-- `flutter build apk --dart-define=API_BASE_URL=https://u-lima-backend-is-2-tau.vercel.app`
+- `flutter run --dart-define=API_BASE_URL=https://u-lima-backend-is-2-one.vercel.app`
+- `flutter build apk --dart-define=API_BASE_URL=https://u-lima-backend-is-2-one.vercel.app`
 - `[@test] ../../../test/services/api_client_test.dart`

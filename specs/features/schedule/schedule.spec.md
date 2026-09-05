@@ -29,7 +29,10 @@ targets:
 - **Course block tap**: Al tocar un bloque de curso, se navega a `DescripCursosPage` con el `idSeccion` correspondiente (no existe un details dialog separado para evaluaciones).
 - **High-load alert**: If the active academic week has 3 or more assessments, `isActiveWeekHighLoad` is true and the UI shows the existing warning banner under the day selector.
 - **Portrait calendar fit**: In vertical orientation, the calendar grid renders the complete 7:00-22:00 day without vertical scrolling by compressing hour rows and course block content to the available viewport.
-- **Landscape weekly calendar**: In horizontal orientation, `HorarioPage` remains the same page and renders a weekly grid from Monday to Friday with the existing time blocks, course colors, evaluation markers, advising markers, tap behavior, and current-time indicator when applicable.
+- **Course block alignment**: Course blocks align visually with the hour separators and keep a small inset from the start/end hour lines so their time range reads accurately.
+- **Landscape weekly calendar**: In horizontal orientation, `HorarioPage` remains the same page and renders a weekly grid from Monday to Saturday with the current backend-backed class blocks, course colors, evaluation markers, advising markers, tap behavior, and current-time indicator when applicable.
+- **Landscape reference layout**: The horizontal calendar follows the compact timetable reference from `PrograMovil/lib/pages/horario/horario_semanal.dart`: an orange day/date strip, a narrow hour gutter, full-height day columns, compact rounded course blocks, and a dark student identity strip with code, full name, and current cycle.
+- **Landscape chrome removal**: When `HorarioPage` is shown horizontally from the authenticated shell, the global header and footer are hidden to maximize the schedule grid area.
 - **Schedule-only rotation**: `HorarioPage` is the only authenticated footer page that may rotate horizontally for students, delegates, subdelegates, teachers, and teaching assistants; every other footer page remains portrait-only.
 
 ## API Dependencies

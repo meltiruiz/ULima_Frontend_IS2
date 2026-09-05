@@ -25,6 +25,9 @@ targets:
   subdelegado, profesor o jefe de práctica.
 - La única excepción es la pestaña `Horario`, donde el shell permite orientación
   vertical y horizontal para alumnos, profesores y jefes de práctica.
+- La ruta standalone `/malla-clasica` también permite orientación horizontal
+  mientras está activa, porque no pertenece al footer y conserva su propio
+  título interno.
 - Al cambiar desde `Horario` hacia cualquier otra pestaña del footer, el shell
   vuelve a restringir la orientación a vertical.
 - Al salir o destruir el shell autenticado, la orientación global vuelve a

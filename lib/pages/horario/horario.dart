@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:get/get.dart';
@@ -116,19 +118,6 @@ class HorarioPage extends StatelessWidget {
     );
   }
 
-  String _shortDayName(String dayName) {
-    final normalized = dayName.trim().toLowerCase();
-    return {
-          'lunes': 'Lun',
-          'martes': 'Mar',
-          'miércoles': 'Mie',
-          'miercoles': 'Mie',
-          'jueves': 'Jue',
-          'viernes': 'Vie',
-        }[normalized] ??
-        dayName;
-  }
-
   String _hourLabel(double hourVal) {
     final isPm = hourVal >= 12;
     final displayHour = hourVal > 12 ? (hourVal - 12).toInt() : hourVal.toInt();
@@ -136,18 +125,28 @@ class HorarioPage extends StatelessWidget {
   }
 
   List<DaySchedule> _weekDays(HorarioController controller) {
-    const expected = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes'];
+    const expected = [
+      'lunes',
+      'martes',
+      'miércoles',
+      'jueves',
+      'viernes',
+      'sábado',
+    ];
     final days = <DaySchedule>[];
     for (final expectedDay in expected) {
       for (final day in controller.daysList) {
-        if (day.dayName.trim().toLowerCase() == expectedDay) {
+        final normalized = day.dayName.trim().toLowerCase();
+        if (normalized == expectedDay ||
+            (expectedDay == 'miércoles' && normalized == 'miercoles') ||
+            (expectedDay == 'sábado' && normalized == 'sabado')) {
           days.add(day);
           break;
         }
       }
     }
     if (days.isNotEmpty) return days;
-    return controller.daysList.take(5).toList();
+    return controller.daysList.take(6).toList();
   }
 
   double _dynamicHourHeight({
@@ -236,10 +235,16 @@ class HorarioPage extends StatelessWidget {
     final startVal = _timeToHours(startStr);
     final endVal = _timeToHours(endStr);
 
-    final double topPosition = (startVal - startHour) * hourHeight + 4.0;
-    final double heightVal = ((endVal - startVal) * hourHeight - 4.0)
-        .clamp(14.0, double.infinity)
-        .toDouble();
+    const blockTopInset = 10.0;
+    const blockVerticalGap = 14.0;
+    final double topPosition =
+        (startVal - startHour) * hourHeight + blockTopInset;
+    final durationHeight = (endVal - startVal) * hourHeight;
+    final double heightVal = durationHeight <= blockVerticalGap + 8
+        ? (durationHeight - 2).clamp(8.0, durationHeight).toDouble()
+        : (durationHeight - blockVerticalGap)
+              .clamp(18.0, double.infinity)
+              .toDouble();
 
     final courseColor =
         controller.colorPorCurso[course['idSeccion']?.toString()] ??
@@ -249,8 +254,8 @@ class HorarioPage extends StatelessWidget {
         : isEvaluation
         ? 'EVAL ${course['evalSigla']}'
         : null;
-    final titleFontSize = compact ? 8.0 : 12.0;
-    final metaFontSize = compact ? 7.0 : 10.0;
+    final titleFontSize = compact ? 9.5 : 13.5;
+    final metaFontSize = compact ? 8.0 : 11.0;
     final horizontalPadding = compact ? 5.0 : 10.0;
 
     return Positioned(
@@ -552,149 +557,204 @@ class HorarioPage extends StatelessWidget {
     required HorarioController controller,
     required bool isDark,
   }) {
-    final colors = Theme.of(context).colorScheme;
     final weekDays = _weekDays(controller);
     if (weekDays.isEmpty) return const SizedBox.shrink();
 
-    return Column(
-      children: [
-        Container(
-          color: isDark ? const Color(0xFF262630) : const Color(0xFFFFF2EC),
-          padding: const EdgeInsets.fromLTRB(44, 5, 8, 5),
-          child: Row(
+    const stripOrange = Color(0xFFF26522);
+    const stripDark = Color(0xFF2E2E2E);
+    final bg = isDark ? const Color(0xFF1E1E26) : Colors.white;
+    final lineColor = isDark
+        ? const Color(0xFF2C2C38)
+        : const Color(0xFFE6E6E6);
+    final user = AuthService.to.currentUser;
+    final studentCode = user?.code ?? '';
+    final studentName = user == null
+        ? ''
+        : '${user.lastName} ${user.firstName}'.toUpperCase();
+    final cycle = user?.currentCycle ?? '';
+
+    return Container(
+      color: bg,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const headerThickness = 32.0;
+          const identityThickness = 26.0;
+          const gutter = 34.0;
+          final totalHours = (endHour - startHour).toInt();
+          final gridHeight = math.max(
+            0.0,
+            constraints.maxHeight - headerThickness - identityThickness,
+          );
+          final hourH = gridHeight / totalHours;
+
+          return Column(
             children: [
-              for (final day in weekDays)
-                Expanded(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+              SizedBox(
+                height: headerThickness,
+                child: Row(
+                  children: [
+                    const SizedBox(width: gutter),
+                    for (final day in weekDays)
+                      Expanded(
+                        child: Container(
+                          alignment: Alignment.center,
+                          color: stripOrange,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                day.dayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              if (day.dateText.isNotEmpty) ...[
+                                const SizedBox(height: 1),
+                                Text(
+                                  day.dateText.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.75),
+                                    fontSize: 7.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: gridHeight,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: gutter,
+                      child: Stack(
+                        children: [
+                          for (int i = 0; i <= totalHours; i++)
+                            Positioned(
+                              top: i * hourH - 6,
+                              left: 0,
+                              right: 2,
+                              child: Text(
+                                _hourLabel(startHour + i).toUpperCase(),
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? const Color(0xFF9090A0)
+                                      : const Color(0xFF9E9E9E),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    for (final day in weekDays)
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(color: lineColor, width: 1),
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              for (int i = 0; i <= totalHours; i++)
+                                Positioned(
+                                  top: i * hourH,
+                                  left: 0,
+                                  right: 0,
+                                  child: Container(height: 1, color: lineColor),
+                                ),
+                              ...controller
+                                  .coursesForDay(day)
+                                  .map(
+                                    (course) => _courseBlock(
+                                      context: context,
+                                      controller: controller,
+                                      course: course,
+                                      hourHeight: hourH,
+                                      left: 2,
+                                      right: 2,
+                                      compact: true,
+                                    ),
+                                  ),
+                              if (controller.isCurrentLimaDay(day) &&
+                                  controller.currentLimaHourDecimal >=
+                                      startHour &&
+                                  controller.currentLimaHourDecimal <= endHour)
+                                Positioned(
+                                  top:
+                                      (controller.currentLimaHourDecimal -
+                                              startHour) *
+                                          hourH +
+                                      4.0,
+                                  left: 2,
+                                  right: 0,
+                                  child: _currentTimeLine(),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: identityThickness,
+                child: Container(
+                  color: stripDark,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        _shortDayName(day.dayName),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: colors.primary,
+                        studentCode,
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontSize: 11,
-                          fontWeight: FontWeight.w900,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          studentName,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
                       Text(
-                        day.dateText,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: isDark
-                              ? const Color(0xFFB0B0C0)
-                              : const Color(0xFF666666),
-                          fontSize: 8,
+                        cycle,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
                     ],
                   ),
                 ),
+              ),
             ],
-          ),
-        ),
-        const Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
-        Expanded(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              const timeColumnWidth = 42.0;
-              const topPadding = 4.0;
-              const bottomPadding = 4.0;
-              final dynamicHourHeight = _dynamicHourHeight(
-                availableHeight: constraints.maxHeight,
-                topPadding: topPadding,
-                bottomPadding: bottomPadding,
-                minHeight: 8,
-              );
-              final currentHour = controller.currentLimaHourDecimal;
-
-              return Padding(
-                padding: const EdgeInsets.only(
-                  top: topPadding,
-                  bottom: bottomPadding,
-                ),
-                child: Row(
-                  children: [
-                    SizedBox(
-                      width: timeColumnWidth,
-                      child: _hourLines(
-                        hourHeight: dynamicHourHeight,
-                        timeColumnWidth: timeColumnWidth,
-                        labelLeftPadding: 5,
-                        fontSize: 8,
-                        isDark: isDark,
-                      ),
-                    ),
-                    Expanded(
-                      child: Row(
-                        children: [
-                          for (final day in weekDays)
-                            Expanded(
-                              child: Stack(
-                                children: [
-                                  Column(
-                                    children: List.generate(
-                                      (endHour - startHour).toInt() + 1,
-                                      (_) => Container(
-                                        height: dynamicHourHeight,
-                                        decoration: BoxDecoration(
-                                          border: Border(
-                                            top: BorderSide(
-                                              color: isDark
-                                                  ? const Color(0xFF2C2C38)
-                                                  : const Color(0xFFECECEC),
-                                            ),
-                                            left: BorderSide(
-                                              color: isDark
-                                                  ? const Color(0xFF2C2C38)
-                                                  : const Color(0xFFECECEC),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  ...controller
-                                      .coursesForDay(day)
-                                      .map(
-                                        (course) => _courseBlock(
-                                          context: context,
-                                          controller: controller,
-                                          course: course,
-                                          hourHeight: dynamicHourHeight,
-                                          left: 3,
-                                          right: 3,
-                                          compact: true,
-                                        ),
-                                      ),
-                                  if (controller.isCurrentLimaDay(day) &&
-                                      currentHour >= startHour &&
-                                      currentHour <= endHour)
-                                    Positioned(
-                                      top:
-                                          (currentHour - startHour) *
-                                              dynamicHourHeight +
-                                          4.0,
-                                      left: 3,
-                                      right: 0,
-                                      child: _currentTimeLine(),
-                                    ),
-                                ],
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        ),
-      ],
+          );
+        },
+      ),
     );
   }
 

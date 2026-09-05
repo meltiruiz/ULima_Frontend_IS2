@@ -11,6 +11,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../../configs/themes.dart';
@@ -20,20 +21,49 @@ import 'widgets/course_card.dart';
 import 'widgets/course_detail_sheet.dart';
 import 'widgets/prerequisite_painter.dart';
 
-class MallaPage extends GetView<MallaController> {
+class MallaPage extends StatefulWidget {
   const MallaPage({super.key});
 
   @override
+  State<MallaPage> createState() => _MallaPageState();
+}
+
+class _MallaPageState extends State<MallaPage> {
+  static const List<DeviceOrientation> _mallaMapOrientations = [
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ];
+  static const List<DeviceOrientation> _portraitOnly = [
+    DeviceOrientation.portraitUp,
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    SystemChrome.setPreferredOrientations(_mallaMapOrientations);
+  }
+
+  @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations(_portraitOnly);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final c = controller; // registrado por el binding de /malla-clasica
+    final c = Get.find<MallaController>(); // registrado por /malla-clasica
     final colors = Theme.of(context).colorScheme;
     final brightness = Theme.of(context).brightness;
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
 
     return Scaffold(
       backgroundColor: MaterialTheme.pageBg(brightness),
       appBar: AppBar(
         backgroundColor: MaterialTheme.headerColor(brightness),
         foregroundColor: Colors.white,
+        toolbarHeight: isLandscape ? 44 : null,
         title: const Text(
           'Vista mapa (clásica)',
           style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
@@ -41,8 +71,8 @@ class MallaPage extends GetView<MallaController> {
       ),
       body: Column(
         children: [
-          _ProgressBar(controller: c, colors: colors),
-          _ZoomToolbar(controller: c),
+          if (!isLandscape) _ProgressBar(controller: c, colors: colors),
+          if (!isLandscape) _ZoomToolbar(controller: c),
           Expanded(
             child: Obx(
               () => c.loading.value
@@ -315,7 +345,11 @@ class _IconBtn extends StatelessWidget {
           width: 32,
           height: 32,
           child: Center(
-            child: Icon(icon, size: 18, color: MaterialTheme.textSecondary(brightness)),
+            child: Icon(
+              icon,
+              size: 18,
+              color: MaterialTheme.textSecondary(brightness),
+            ),
           ),
         ),
       ),
@@ -599,7 +633,9 @@ class _MallaCanvasState extends State<_MallaCanvas> {
   }
 
   Offset _initialFocusFocalPoint(Size viewportSize) {
-    const verticalFocusAnchor = 0.06;
+    final verticalFocusAnchor = viewportSize.width > viewportSize.height
+        ? 0.16
+        : 0.06;
     return Offset(
       viewportSize.width / 2,
       viewportSize.height * verticalFocusAnchor,

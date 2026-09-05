@@ -96,20 +96,25 @@ class _HomePageState extends State<HomePage> {
     final colors = Theme.of(context).colorScheme;
 
     final u = user;
-    final showBubble = u != null && !u.isTeacher;
+    final isScheduleLandscape =
+        _isHorarioTabActive &&
+        MediaQuery.of(context).orientation == Orientation.landscape;
+    final showBubble = u != null && !u.isTeacher && !isScheduleLandscape;
     return Scaffold(
       backgroundColor: colors.surface,
       body: Column(
         children: [
-          AppHeader(showScheduleToggle: _isHorarioTabActive),
+          if (!isScheduleLandscape)
+            AppHeader(showScheduleToggle: _isHorarioTabActive),
           // Aviso de carga de ciclo. Sin esto, un alumno sin matrícula ve un
           // esqueleto permanente en Horario y una calculadora vacía, sin nada
           // que le diga qué hacer.
-          Obx(
-            () => control.mostrarBannerCarga
-                ? _PortalSyncBanner(controller: control)
-                : const SizedBox.shrink(),
-          ),
+          if (!isScheduleLandscape)
+            Obx(
+              () => control.mostrarBannerCarga
+                  ? _PortalSyncBanner(controller: control)
+                  : const SizedBox.shrink(),
+            ),
           Expanded(
             // La burbuja del chatbot va en un Stack sobre el body (no en el slot
             // fijo del FAB) para poder arrastrarla; las zonas vacías del Stack
@@ -120,11 +125,13 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
-      bottomNavigationBar: AppFooter(
-        currentIndex: _currentIndex,
-        items: _config.footerItems,
-        onTap: _onTabTap,
-      ),
+      bottomNavigationBar: isScheduleLandscape
+          ? null
+          : AppFooter(
+              currentIndex: _currentIndex,
+              items: _config.footerItems,
+              onTap: _onTabTap,
+            ),
     );
   }
 }

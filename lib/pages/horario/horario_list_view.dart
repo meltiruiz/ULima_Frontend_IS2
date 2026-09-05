@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'horario_controller.dart';
 import '../chat/chat_page.dart';
@@ -13,12 +14,22 @@ class HorarioListView extends StatelessWidget {
 
   HorarioListView({super.key});
 
+  static const List<DeviceOrientation> _scheduleOrientations = [
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ];
+  static const List<DeviceOrientation> _portraitOnly = [
+    DeviceOrientation.portraitUp,
+  ];
+
   /// Color del curso: resuelve el hex del backend (#RRGGBB / RRGGBB / AARRGGBB)
   /// o, como fallback, un nombre de color. Es el acento por-curso de cada card.
   Color _resolveScheduleColor(String colorStr, ColorScheme colors) {
     final cleanColor = colorStr.trim();
-    final hexColor =
-        cleanColor.startsWith('#') ? cleanColor.substring(1) : cleanColor;
+    final hexColor = cleanColor.startsWith('#')
+        ? cleanColor.substring(1)
+        : cleanColor;
 
     if (RegExp(r'^[0-9a-fA-F]{6}$').hasMatch(hexColor)) {
       return Color(int.parse('FF$hexColor', radix: 16));
@@ -96,8 +107,8 @@ class HorarioListView extends StatelessWidget {
                         course['color']?.toString() ?? 'blue',
                         colors,
                       );
-                      final nombre =
-                          (course['curso'] as String? ?? 'CURSO').toUpperCase();
+                      final nombre = (course['curso'] as String? ?? 'CURSO')
+                          .toUpperCase();
                       final seccion =
                           course['codigoSeccion']?.toString() ?? 'Sin sección';
                       final idSeccion = course['idSeccion']?.toString() ?? '';
@@ -111,12 +122,20 @@ class HorarioListView extends StatelessWidget {
                           seccion: seccion,
                           onOpenChat: idSeccion.isEmpty
                               ? null
-                              : () => Get.to(
+                              : () async {
+                                  await SystemChrome.setPreferredOrientations(
+                                    _portraitOnly,
+                                  );
+                                  await Get.to(
                                     () => ChatPage(
                                       sectionId: idSeccion,
                                       courseName: nombre,
                                     ),
-                                  ),
+                                  );
+                                  await SystemChrome.setPreferredOrientations(
+                                    _scheduleOrientations,
+                                  );
+                                },
                         ),
                       );
                     },
@@ -167,7 +186,11 @@ class _ChatCourseCard extends StatelessWidget {
                 color: courseColor.withValues(alpha: 0.16),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.menu_book_rounded, color: courseColor, size: 21),
+              child: Icon(
+                Icons.menu_book_rounded,
+                color: courseColor,
+                size: 21,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(

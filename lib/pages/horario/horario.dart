@@ -1,4 +1,7 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 
 import '../descripcion_cursos/descrip_cursos.dart';
@@ -18,6 +21,14 @@ class HorarioPage extends StatelessWidget {
   static const double startHour = 7.0;
   static const double endHour = 22.0;
   static const double hourHeight = 85.0;
+  static const List<DeviceOrientation> _scheduleOrientations = [
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ];
+  static const List<DeviceOrientation> _portraitOnly = [
+    DeviceOrientation.portraitUp,
+  ];
 
   double _timeToHours(String timeStr) {
     try {
@@ -107,6 +118,646 @@ class HorarioPage extends StatelessWidget {
     );
   }
 
+  String _hourLabel(double hourVal) {
+    final isPm = hourVal >= 12;
+    final displayHour = hourVal > 12 ? (hourVal - 12).toInt() : hourVal.toInt();
+    return '$displayHour ${isPm ? 'pm' : 'am'}';
+  }
+
+  List<DaySchedule> _weekDays(HorarioController controller) {
+    const expected = [
+      'lunes',
+      'martes',
+      'miércoles',
+      'jueves',
+      'viernes',
+      'sábado',
+    ];
+    final days = <DaySchedule>[];
+    for (final expectedDay in expected) {
+      for (final day in controller.daysList) {
+        final normalized = day.dayName.trim().toLowerCase();
+        if (normalized == expectedDay ||
+            (expectedDay == 'miércoles' && normalized == 'miercoles') ||
+            (expectedDay == 'sábado' && normalized == 'sabado')) {
+          days.add(day);
+          break;
+        }
+      }
+    }
+    if (days.isNotEmpty) return days;
+    return controller.daysList.take(6).toList();
+  }
+
+  double _dynamicHourHeight({
+    required double availableHeight,
+    required double topPadding,
+    required double bottomPadding,
+    required double minHeight,
+  }) {
+    final totalHours = (endHour - startHour).toInt() + 1;
+    final gridHeight = availableHeight - topPadding - bottomPadding;
+    if (!gridHeight.isFinite || gridHeight <= 0) return minHeight;
+    return (gridHeight / totalHours).clamp(minHeight, hourHeight).toDouble();
+  }
+
+  Widget _hourLines({
+    required double hourHeight,
+    required double timeColumnWidth,
+    required double labelLeftPadding,
+    required double fontSize,
+    required bool isDark,
+  }) {
+    final totalHours = (endHour - startHour).toInt() + 1;
+    return Column(
+      children: List.generate(totalHours, (index) {
+        final hourVal = startHour + index;
+        return SizedBox(
+          height: hourHeight,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: timeColumnWidth,
+                child: Padding(
+                  padding: EdgeInsets.only(left: labelLeftPadding, top: 2),
+                  child: Text(
+                    _hourLabel(hourVal),
+                    style: TextStyle(
+                      color: isDark
+                          ? const Color(0xFF9090A0)
+                          : const Color(0xFF9E9E9E),
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.only(top: 9),
+                  height: 1,
+                  color: isDark
+                      ? const Color(0xFF2C2C38)
+                      : const Color(0xFFECECEC),
+                ),
+              ),
+            ],
+          ),
+        );
+      }),
+    );
+  }
+
+  Widget _courseBlock({
+    required BuildContext context,
+    required HorarioController controller,
+    required Map<String, dynamic> course,
+    required double hourHeight,
+    required double left,
+    required double right,
+    required bool compact,
+  }) {
+    final colors = Theme.of(context).colorScheme;
+    final bool isEvaluation = course['isEvaluation'] == true;
+
+    String nombreStr = (course['curso'] as String? ?? 'CURSO').toUpperCase();
+    if (nombreStr.contains(' / ')) {
+      nombreStr = nombreStr.split(' / ').first.trim();
+    } else if (nombreStr.contains('/')) {
+      nombreStr = nombreStr.split('/').first.trim();
+    }
+    final aulaStr = course['salon'] as String? ?? 'Sin salón';
+    final colorStr = course['color'] as String? ?? 'blue';
+    final startStr = course['hora_inicio'] as String? ?? '07:00 am';
+    final endStr = course['hora_fin'] as String? ?? '09:00 am';
+
+    final startVal = _timeToHours(startStr);
+    final endVal = _timeToHours(endStr);
+
+    const blockTopInset = 10.0;
+    const blockVerticalGap = 14.0;
+    final double topPosition =
+        (startVal - startHour) * hourHeight + blockTopInset;
+    final durationHeight = (endVal - startVal) * hourHeight;
+    final double heightVal = durationHeight <= blockVerticalGap + 8
+        ? (durationHeight - 2).clamp(8.0, durationHeight).toDouble()
+        : (durationHeight - blockVerticalGap)
+              .clamp(18.0, double.infinity)
+              .toDouble();
+
+    final courseColor =
+        controller.colorPorCurso[course['idSeccion']?.toString()] ??
+        _resolveScheduleColor(colorStr, colors);
+    final badgeText = course['isAdvising'] == true
+        ? 'ASESORIA'
+        : isEvaluation
+        ? 'EVAL ${course['evalSigla']}'
+        : null;
+    final titleFontSize = compact ? 9.5 : 13.5;
+    final metaFontSize = compact ? 8.0 : 11.0;
+    final horizontalPadding = compact ? 5.0 : 10.0;
+
+    return Positioned(
+      top: topPosition,
+      left: left,
+      right: right,
+      height: heightVal,
+      child: InkWell(
+        onTap: () async {
+          final String idSeccion = course['idSeccion']?.toString() ?? '';
+          final isTeacher = AuthService.to.currentUser?.isTeacher ?? false;
+
+          if (isTeacher) {
+            if (course['isAdvising'] == true) {
+              showDialog(
+                context: context,
+                builder: (context) {
+                  return AlertDialog(
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    title: Text(
+                      course['codigoSeccion'] ?? 'Asesoría',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          course['curso'] ?? '',
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.schedule,
+                              size: 18,
+                              color: colors.primary,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                "Horario: $startStr - $endStr",
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Icon(Icons.place, size: 18, color: colors.primary),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                "Aula/Canal: $aulaStr",
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (course['fecha'] != null) ...[
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.calendar_month,
+                                size: 18,
+                                color: colors.primary,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  "Fecha: ${course['fecha']}",
+                                  style: const TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ],
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Get.back(),
+                        child: const Text(
+                          "Cerrar",
+                          style: TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            } else {
+              showModalBottomSheet(
+                context: context,
+                isScrollControlled: true,
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
+                builder: (context) => _TeacherCourseDetailSheet(
+                  idSeccion: idSeccion,
+                  courseName: course['curso'] ?? '',
+                  sectionCode: course['codigoSeccion'] ?? '',
+                ),
+              );
+            }
+          } else if (idSeccion.isNotEmpty) {
+            await SystemChrome.setPreferredOrientations(_portraitOnly);
+            await Get.to(() => DescripCursosPage(idSeccion: idSeccion));
+            await SystemChrome.setPreferredOrientations(_scheduleOrientations);
+          }
+        },
+        borderRadius: BorderRadius.circular(compact ? 8 : 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: courseColor,
+            borderRadius: BorderRadius.circular(compact ? 8 : 14),
+            boxShadow: compact
+                ? null
+                : [
+                    BoxShadow(
+                      color: courseColor.withValues(alpha: 0.30),
+                      blurRadius: 7,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+          ),
+          child: Stack(
+            children: [
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  horizontalPadding,
+                  badgeText == null ? 4 : (compact ? 14 : 22),
+                  horizontalPadding,
+                  3,
+                ),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        nombreStr,
+                        textAlign: TextAlign.center,
+                        maxLines: compact ? 2 : 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.w800,
+                          height: 1.05,
+                        ),
+                      ),
+                      if (!compact || heightVal >= 34) ...[
+                        const SizedBox(height: 2),
+                        Text(
+                          course['isAdvising'] == true
+                              ? (course['codigoSeccion'] ?? 'Asesoría')
+                              : "Sección: ${course['codigoSeccion'] ?? 'Sin sección'}",
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: Colors.white.withValues(alpha: 0.9),
+                            fontSize: metaFontSize,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        if (!compact) ...[
+                          const SizedBox(height: 1),
+                          Text(
+                            aulaStr,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.9),
+                              fontSize: metaFontSize,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+              if (badgeText != null)
+                Positioned(
+                  top: 4,
+                  right: 4,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: compact ? 4 : 6,
+                      vertical: compact ? 1 : 3,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      badgeText,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: compact ? 6 : 8,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _portraitGrid({
+    required BuildContext context,
+    required HorarioController controller,
+    required DaySchedule activeDay,
+    required bool isDark,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        const topPadding = 6.0;
+        const bottomPadding = 6.0;
+        final dynamicHourHeight = _dynamicHourHeight(
+          availableHeight: constraints.maxHeight,
+          topPadding: topPadding,
+          bottomPadding: bottomPadding,
+          minHeight: 22,
+        );
+        final courses = controller.currentDayCourses;
+        final currentHour = controller.currentLimaHourDecimal;
+        final showCurrentTimeLine =
+            controller.isCurrentLimaDay(activeDay) &&
+            currentHour >= startHour &&
+            currentHour <= endHour;
+        final currentLineTop =
+            topPadding + (currentHour - startHour) * dynamicHourHeight + 4.0;
+
+        return SizedBox.expand(
+          child: Padding(
+            padding: const EdgeInsets.only(
+              top: topPadding,
+              bottom: bottomPadding,
+            ),
+            child: Stack(
+              children: [
+                _hourLines(
+                  hourHeight: dynamicHourHeight,
+                  timeColumnWidth: 58,
+                  labelLeftPadding: 14,
+                  fontSize: 10,
+                  isDark: isDark,
+                ),
+                ...courses.map(
+                  (course) => _courseBlock(
+                    context: context,
+                    controller: controller,
+                    course: course,
+                    hourHeight: dynamicHourHeight,
+                    left: 66,
+                    right: 14,
+                    compact: dynamicHourHeight < 35,
+                  ),
+                ),
+                if (showCurrentTimeLine)
+                  Positioned(
+                    top: currentLineTop,
+                    left: 66,
+                    right: 0,
+                    child: _currentTimeLine(),
+                  ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _landscapeWeekGrid({
+    required BuildContext context,
+    required HorarioController controller,
+    required bool isDark,
+  }) {
+    final weekDays = _weekDays(controller);
+    if (weekDays.isEmpty) return const SizedBox.shrink();
+
+    const stripOrange = Color(0xFFF26522);
+    const stripDark = Color(0xFF2E2E2E);
+    final bg = isDark ? const Color(0xFF1E1E26) : Colors.white;
+    final lineColor = isDark
+        ? const Color(0xFF2C2C38)
+        : const Color(0xFFE6E6E6);
+    final user = AuthService.to.currentUser;
+    final studentCode = user?.code ?? '';
+    final studentName = user == null
+        ? ''
+        : '${user.lastName} ${user.firstName}'.toUpperCase();
+    final cycle = user?.currentCycle ?? '';
+
+    return Container(
+      color: bg,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const headerThickness = 32.0;
+          const identityThickness = 26.0;
+          const gutter = 34.0;
+          final totalHours = (endHour - startHour).toInt();
+          final gridHeight = math.max(
+            0.0,
+            constraints.maxHeight - headerThickness - identityThickness,
+          );
+          final hourH = gridHeight / totalHours;
+
+          return Column(
+            children: [
+              SizedBox(
+                height: headerThickness,
+                child: Row(
+                  children: [
+                    const SizedBox(width: gutter),
+                    for (final day in weekDays)
+                      Expanded(
+                        child: Container(
+                          alignment: Alignment.center,
+                          color: stripOrange,
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Text(
+                                day.dayName,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              if (day.dateText.isNotEmpty) ...[
+                                const SizedBox(height: 1),
+                                Text(
+                                  day.dateText.toUpperCase(),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.75),
+                                    fontSize: 7.5,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: gridHeight,
+                child: Row(
+                  children: [
+                    SizedBox(
+                      width: gutter,
+                      child: Stack(
+                        children: [
+                          for (int i = 0; i <= totalHours; i++)
+                            Positioned(
+                              top: i * hourH - 6,
+                              left: 0,
+                              right: 2,
+                              child: Text(
+                                _hourLabel(startHour + i).toUpperCase(),
+                                textAlign: TextAlign.right,
+                                style: TextStyle(
+                                  fontSize: 8,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark
+                                      ? const Color(0xFF9090A0)
+                                      : const Color(0xFF9E9E9E),
+                                ),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    for (final day in weekDays)
+                      Expanded(
+                        child: Container(
+                          decoration: BoxDecoration(
+                            border: Border(
+                              left: BorderSide(color: lineColor, width: 1),
+                            ),
+                          ),
+                          child: Stack(
+                            children: [
+                              for (int i = 0; i <= totalHours; i++)
+                                Positioned(
+                                  top: i * hourH,
+                                  left: 0,
+                                  right: 0,
+                                  child: Container(height: 1, color: lineColor),
+                                ),
+                              ...controller
+                                  .coursesForDay(day)
+                                  .map(
+                                    (course) => _courseBlock(
+                                      context: context,
+                                      controller: controller,
+                                      course: course,
+                                      hourHeight: hourH,
+                                      left: 2,
+                                      right: 2,
+                                      compact: true,
+                                    ),
+                                  ),
+                              if (controller.isCurrentLimaDay(day) &&
+                                  controller.currentLimaHourDecimal >=
+                                      startHour &&
+                                  controller.currentLimaHourDecimal <= endHour)
+                                Positioned(
+                                  top:
+                                      (controller.currentLimaHourDecimal -
+                                              startHour) *
+                                          hourH +
+                                      4.0,
+                                  left: 2,
+                                  right: 0,
+                                  child: _currentTimeLine(),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: identityThickness,
+                child: Container(
+                  color: stripDark,
+                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        studentCode,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Expanded(
+                        child: Text(
+                          studentName,
+                          textAlign: TextAlign.center,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      Text(
+                        cycle,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(HorarioController());
@@ -157,14 +808,15 @@ class HorarioPage extends StatelessWidget {
           );
         }
 
-        final courses = controller.currentDayCourses;
-        final totalHours = (endHour - startHour).toInt() + 1;
-        final currentHour = controller.currentLimaHourDecimal;
-        final showCurrentTimeLine =
-            controller.isCurrentLimaDay(activeDay) &&
-            currentHour >= startHour &&
-            currentHour <= endHour;
-        final currentLineTop = (currentHour - startHour) * hourHeight + 6.0;
+        final isLandscape =
+            MediaQuery.of(context).orientation == Orientation.landscape;
+        if (isLandscape) {
+          return _landscapeWeekGrid(
+            context: context,
+            controller: controller,
+            isDark: isDark,
+          );
+        }
 
         return GestureDetector(
           onHorizontalDragEnd: (details) {
@@ -237,398 +889,11 @@ class HorarioPage extends StatelessWidget {
               const Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),
 
               Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Stack(
-                      children: [
-                        Column(
-                          children: List.generate(totalHours, (index) {
-                            final hourVal = startHour + index;
-                            final isPm = hourVal >= 12;
-                            final displayHour = hourVal > 12
-                                ? (hourVal - 12).toInt()
-                                : hourVal.toInt();
-                            final amPm = isPm ? 'pm' : 'am';
-
-                            return SizedBox(
-                              height: hourHeight,
-                              child: Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  SizedBox(
-                                    width: 65,
-                                    child: Padding(
-                                      padding: const EdgeInsets.only(
-                                        left: 16,
-                                        top: 4,
-                                      ),
-                                      child: Text(
-                                        '$displayHour $amPm',
-                                        style: TextStyle(
-                                          color: isDark
-                                              ? const Color(0xFF9090A0)
-                                              : const Color(0xFF9E9E9E),
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Expanded(
-                                    child: Container(
-                                      margin: const EdgeInsets.only(top: 12),
-                                      height: 1.2,
-                                      color: isDark
-                                          ? const Color(0xFF2C2C38)
-                                          : const Color(0xFFECECEC),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          }),
-                        ),
-                        ...courses.map((course) {
-                          final bool isEvaluation =
-                              course['isEvaluation'] == true;
-
-                          String nombreStr =
-                              (course['curso'] as String? ?? 'CURSO')
-                                  .toUpperCase();
-                          if (nombreStr.contains(' / ')) {
-                            nombreStr = nombreStr.split(' / ').first.trim();
-                          } else if (nombreStr.contains('/')) {
-                            nombreStr = nombreStr.split('/').first.trim();
-                          }
-                          final aulaStr =
-                              course['salon'] as String? ?? 'Sin salón';
-                          final colorStr = course['color'] as String? ?? 'blue';
-                          final startStr =
-                              course['hora_inicio'] as String? ?? '07:00 am';
-                          final endStr =
-                              course['hora_fin'] as String? ?? '09:00 am';
-
-                          final startVal = _timeToHours(startStr);
-                          final endVal = _timeToHours(endStr);
-
-                          final double topPosition =
-                              (startVal - startHour) * hourHeight + 12.0;
-                          final double heightVal =
-                              (endVal - startVal) * hourHeight - 8.0;
-
-                          // El color sale del reparto sin repetidos que hace el
-                          // controlador sobre TODO el horario; el hex crudo del
-                          // backend solo se usa como respaldo, porque dos cursos
-                          // del alumno pueden traer el mismo.
-                          final courseColor =
-                              controller.colorPorCurso[course['idSeccion']
-                                  ?.toString()] ??
-                              _resolveScheduleColor(colorStr, colors);
-
-                          return Positioned(
-                            top: topPosition,
-                            left: 75,
-                            right: 20,
-                            height: heightVal,
-                            child: InkWell(
-                              onTap: () {
-                                final String idSeccion =
-                                    course['idSeccion']?.toString() ?? '';
-                                final isTeacher =
-                                    AuthService.to.currentUser?.isTeacher ??
-                                    false;
-
-                                if (isTeacher) {
-                                  if (course['isAdvising'] == true) {
-                                    showDialog(
-                                      context: context,
-                                      builder: (context) {
-                                        return AlertDialog(
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
-                                          ),
-                                          title: Text(
-                                            course['codigoSeccion'] ??
-                                                'Asesoría',
-                                            style: const TextStyle(
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                          content: Column(
-                                            mainAxisSize: MainAxisSize.min,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                course['curso'] ?? '',
-                                                style: const TextStyle(
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 15,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 12),
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.schedule,
-                                                    size: 18,
-                                                    color: colors.primary,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      "Horario: $startStr - $endStr",
-                                                      style: const TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              const SizedBox(height: 8),
-                                              Row(
-                                                children: [
-                                                  Icon(
-                                                    Icons.place,
-                                                    size: 18,
-                                                    color: colors.primary,
-                                                  ),
-                                                  const SizedBox(width: 8),
-                                                  Expanded(
-                                                    child: Text(
-                                                      "Aula/Canal: $aulaStr",
-                                                      style: const TextStyle(
-                                                        fontSize: 13,
-                                                        fontWeight:
-                                                            FontWeight.w600,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                              if (course['fecha'] != null) ...[
-                                                const SizedBox(height: 8),
-                                                Row(
-                                                  children: [
-                                                    Icon(
-                                                      Icons.calendar_month,
-                                                      size: 18,
-                                                      color: colors.primary,
-                                                    ),
-                                                    const SizedBox(width: 8),
-                                                    Expanded(
-                                                      child: Text(
-                                                        "Fecha: ${course['fecha']}",
-                                                        style: const TextStyle(
-                                                          fontSize: 13,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                        ),
-                                                      ),
-                                                    ),
-                                                  ],
-                                                ),
-                                              ],
-                                            ],
-                                          ),
-                                          actions: [
-                                            TextButton(
-                                              onPressed: () => Get.back(),
-                                              child: const Text(
-                                                "Cerrar",
-                                                style: TextStyle(
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        );
-                                      },
-                                    );
-                                  } else {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      isScrollControlled: true,
-                                      shape: const RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.vertical(
-                                          top: Radius.circular(24),
-                                        ),
-                                      ),
-                                      builder: (context) =>
-                                          _TeacherCourseDetailSheet(
-                                            idSeccion: idSeccion,
-                                            courseName: course['curso'] ?? '',
-                                            sectionCode:
-                                                course['codigoSeccion'] ?? '',
-                                          ),
-                                    );
-                                  }
-                                } else {
-                                  if (idSeccion.isNotEmpty) {
-                                    Get.to(
-                                      () => DescripCursosPage(
-                                        idSeccion: idSeccion,
-                                      ),
-                                    );
-                                  }
-                                }
-                              },
-                              borderRadius: BorderRadius.circular(16),
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  color: courseColor,
-                                  borderRadius: BorderRadius.circular(16),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: courseColor.withValues(
-                                        alpha: 0.35,
-                                      ),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 4),
-                                    ),
-                                  ],
-                                ),
-                                child: Stack(
-                                  children: [
-                                    Center(
-                                      child: Padding(
-                                        padding: EdgeInsets.symmetric(
-                                          horizontal:
-                                              (isEvaluation ||
-                                                  course['isAdvising'] == true)
-                                              ? 24.0
-                                              : 12.0,
-                                          vertical: heightVal < 80 ? 4.0 : 12.0,
-                                        ),
-                                        child: SingleChildScrollView(
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.center,
-                                            children: [
-                                              Text(
-                                                nombreStr,
-                                                textAlign: TextAlign.center,
-                                                maxLines: heightVal < 80
-                                                    ? 1
-                                                    : 2,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: const TextStyle(
-                                                  color: Colors.white,
-                                                  fontSize: 13,
-                                                  fontWeight: FontWeight.w800,
-                                                  letterSpacing: 0.3,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                course['isAdvising'] == true
-                                                    ? (course['codigoSeccion'] ??
-                                                          'Asesoría')
-                                                    : "Sección: ${course['codigoSeccion'] ?? 'Sin sección'}",
-                                                style: TextStyle(
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.9),
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 2),
-                                              Text(
-                                                aulaStr,
-                                                style: TextStyle(
-                                                  color: Colors.white
-                                                      .withValues(alpha: 0.9),
-                                                  fontSize: 11,
-                                                  fontWeight: FontWeight.w600,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                    if (isEvaluation)
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 3,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.25,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            "📝 EVAL: ${course['evalSigla']}",
-                                            style: const TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 8,
-                                              fontWeight: FontWeight.w900,
-                                              letterSpacing: 0.3,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    if (course['isAdvising'] == true)
-                                      Positioned(
-                                        top: 8,
-                                        right: 8,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 3,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.25,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              6,
-                                            ),
-                                          ),
-                                          child: const Text(
-                                            "🤝 ASESORÍA",
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontSize: 8,
-                                              fontWeight: FontWeight.w900,
-                                              letterSpacing: 0.3,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                            ),
-                          );
-                        }),
-                        if (showCurrentTimeLine)
-                          Positioned(
-                            top: currentLineTop,
-                            left: 75,
-                            right: 0,
-                            child: _currentTimeLine(),
-                          ),
-                      ],
-                    ),
-                  ),
+                child: _portraitGrid(
+                  context: context,
+                  controller: controller,
+                  activeDay: activeDay,
+                  isDark: isDark,
                 ),
               ),
             ],
@@ -762,24 +1027,24 @@ class _TeacherCourseDetailSheetState extends State<_TeacherCourseDetailSheet> {
       final contactsFuture = ContactoService()
           .fetchContactos(widget.idSeccion)
           .catchError((e) {
-        debugPrint('detalle: contactos falló: $e');
-        return <String, dynamic>{};
-      });
+            debugPrint('detalle: contactos falló: $e');
+            return <String, dynamic>{};
+          });
       // Endpoints exclusivos para docentes: no se llaman si el usuario es alumno.
       final assessmentsFuture = isTeacher
           ? ApiClient()
-              .getJson(
-                '/schedule/teacher/sections/${widget.idSeccion}/assessments-status',
-              )
-              .catchError((e) {
-              debugPrint('detalle: assessments-status falló: $e');
-              return <String, dynamic>{};
-            })
+                .getJson(
+                  '/schedule/teacher/sections/${widget.idSeccion}/assessments-status',
+                )
+                .catchError((e) {
+                  debugPrint('detalle: assessments-status falló: $e');
+                  return <String, dynamic>{};
+                })
           : Future.value(<String, dynamic>{});
       final atRiskFuture = isTeacher
-          ? AttendanceRiskService()
-              .fetchSummary(widget.idSeccion)
-              .catchError((e) {
+          ? AttendanceRiskService().fetchSummary(widget.idSeccion).catchError((
+              e,
+            ) {
               debugPrint('detalle: attendance-risk falló: $e');
               return <String, dynamic>{};
             })
@@ -846,8 +1111,9 @@ class _TeacherCourseDetailSheetState extends State<_TeacherCourseDetailSheet> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     // Solo el Profesor titular de ESTA sección puede "alertar" (notificar notas
     // y notificar alumnos en riesgo). El JP la ve pero no ejecuta esas acciones.
-    final isProfesor = AuthService.to
-        .isProfesorOfSection(int.tryParse(widget.idSeccion) ?? -1);
+    final isProfesor = AuthService.to.isProfesorOfSection(
+      int.tryParse(widget.idSeccion) ?? -1,
+    );
 
     return Container(
       padding: const EdgeInsets.all(24),
@@ -908,14 +1174,20 @@ class _TeacherCourseDetailSheetState extends State<_TeacherCourseDetailSheet> {
                             size: 24,
                           ),
                           tooltip: 'Alumnos impedidos y en riesgo',
-                          onPressed: () {
-                            Get.to(
+                          onPressed: () async {
+                            await SystemChrome.setPreferredOrientations(
+                              HorarioPage._portraitOnly,
+                            );
+                            await Get.to(
                               () => AtRiskStudentsPage(
                                 sectionId: widget.idSeccion,
                                 courseName: widget.courseName,
                                 sectionCode: widget.sectionCode,
                                 isProfesor: isProfesor,
                               ),
+                            );
+                            await SystemChrome.setPreferredOrientations(
+                              HorarioPage._scheduleOrientations,
                             );
                           },
                         ),
@@ -998,8 +1270,6 @@ class _TeacherCourseDetailSheetState extends State<_TeacherCourseDetailSheet> {
                       final code = ass['code'] ?? '';
                       final name = ass['name'] ?? '';
 
-
-
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         child: Row(
@@ -1036,21 +1306,33 @@ class _TeacherCourseDetailSheetState extends State<_TeacherCourseDetailSheet> {
                                 onChanged: !isProfesor
                                     ? null
                                     : (val) {
-                                  final assId = ass['id']?.toString() ?? '';
-                                  if (val) {
-                                    // Activar: marcar optimistamente y pedir confirmaci\u00f3n
-                                    setState(() => _notifiedAssessments.add(assId));
-                                    _confirmAndNotify(
-                                      assId,
-                                      ass['name'] ?? '',
-                                      (ass['loadedCount'] as num?)?.toInt() ?? 0,
-                                      (ass['totalCount'] as num?)?.toInt() ?? 0,
-                                    );
-                                  } else {
-                                    // Desactivar: solo visual, sin llamada al backend
-                                    setState(() => _notifiedAssessments.remove(assId));
-                                  }
-                                },
+                                        final assId =
+                                            ass['id']?.toString() ?? '';
+                                        if (val) {
+                                          // Activar: marcar optimistamente y pedir confirmaci\u00f3n
+                                          setState(
+                                            () =>
+                                                _notifiedAssessments.add(assId),
+                                          );
+                                          _confirmAndNotify(
+                                            assId,
+                                            ass['name'] ?? '',
+                                            (ass['loadedCount'] as num?)
+                                                    ?.toInt() ??
+                                                0,
+                                            (ass['totalCount'] as num?)
+                                                    ?.toInt() ??
+                                                0,
+                                          );
+                                        } else {
+                                          // Desactivar: solo visual, sin llamada al backend
+                                          setState(
+                                            () => _notifiedAssessments.remove(
+                                              assId,
+                                            ),
+                                          );
+                                        }
+                                      },
                               ),
                             ),
                           ],

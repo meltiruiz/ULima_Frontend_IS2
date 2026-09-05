@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:get/get.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:flutter/services.dart';
 
 import '/configs/themes.dart';
 import '/firebase_options.dart';
@@ -46,6 +47,9 @@ import 'pages/networking/networking_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  await SystemChrome.setPreferredOrientations(const [
+    DeviceOrientation.portraitUp,
+  ]);
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   LucideIcons.info.codePoint;
 
@@ -57,7 +61,6 @@ void main() async {
   Get.put<AuthService>(AuthService(), permanent: true);
   Get.put<AlertService>(AlertService(), permanent: true);
   Get.put<MallaService>(MallaService(), permanent: true);
-
 
   // Intentar restaurar sesión guardada.
   final restored = await AuthService.to.tryRestoreSession();
@@ -199,10 +202,7 @@ class MyApp extends StatelessWidget {
           page: () => const PortalSyncPage(),
           binding: PortalSyncBinding(),
         ),
-        GetPage(
-          name: '/chatbot',
-          page: () => const ChatbotPage(),
-        ),
+        GetPage(name: '/chatbot', page: () => const ChatbotPage()),
         GetPage(
           name: '/networking',
           page: () => const NetworkingPage(),

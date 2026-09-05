@@ -21,7 +21,7 @@ class HorarioController extends GetxController {
   final assessmentsList = <Map<String, dynamic>>[].obs;
   final weeklyLoad = <Map<String, dynamic>>[].obs;
   final currentLimaTime = _nowInLima().obs;
-  
+
   // Nuevos estados para el rediseño de Horario (Lista / Calendario)
   final isListView = false.obs;
 
@@ -77,11 +77,7 @@ class HorarioController extends GetxController {
         _loadTeacherAssessments(),
       ]);
     } else {
-      await Future.wait([
-        _loadDays(),
-        _loadSecciones(),
-        _loadAssessments(),
-      ]);
+      await Future.wait([_loadDays(), _loadSecciones(), _loadAssessments()]);
     }
   }
 
@@ -244,7 +240,10 @@ class HorarioController extends GetxController {
   List<Map<String, dynamic>> get currentDayCourses {
     final activeDay = currentDay;
     if (activeDay == null) return const [];
+    return coursesForDay(activeDay);
+  }
 
+  List<Map<String, dynamic>> coursesForDay(DaySchedule activeDay) {
     final currentDayName = activeDay.dayName.toLowerCase();
     final courses = <Map<String, dynamic>>[];
 
@@ -267,7 +266,8 @@ class HorarioController extends GetxController {
               final monthIdx = parsedDate.month - 1;
               if (monthIdx >= 0 && monthIdx < 12) {
                 final formattedDate = "$dayNum de ${_months[monthIdx]}";
-                if (formattedDate.toLowerCase().trim() != activeDay.dateText.toLowerCase().trim()) {
+                if (formattedDate.toLowerCase().trim() !=
+                    activeDay.dateText.toLowerCase().trim()) {
                   continue;
                 }
               }
@@ -278,7 +278,7 @@ class HorarioController extends GetxController {
             ...section,
             ...horario,
             'isEvaluation': false,
-            'isAdvising': section['isAdvising'] == true
+            'isAdvising': section['isAdvising'] == true,
           });
         }
         continue;
@@ -289,7 +289,7 @@ class HorarioController extends GetxController {
         courses.add({
           ...section,
           'isEvaluation': false,
-          'isAdvising': section['isAdvising'] == true
+          'isAdvising': section['isAdvising'] == true,
         });
       }
     }
@@ -308,19 +308,27 @@ class HorarioController extends GetxController {
           final monthIdx = parsedDate.month - 1;
           if (monthIdx >= 0 && monthIdx < 12) {
             final formattedDate = "$dayNum de ${_months[monthIdx]}";
-            final dateMatches = formattedDate.toLowerCase().trim() == activeDay.dateText.toLowerCase().trim();
-            
-            final evalSectionCode = assessment['sectionCode']?.toString().trim() ?? '';
-            final evalCourseName = assessment['courseName']?.toString().toLowerCase().trim() ?? '';
-            
-            final matchesCourse = (evalSectionCode.isNotEmpty && evalSectionCode == sectionCode) ||
-                                  (evalCourseName.isNotEmpty && evalCourseName == courseName);
+            final dateMatches =
+                formattedDate.toLowerCase().trim() ==
+                activeDay.dateText.toLowerCase().trim();
+
+            final evalSectionCode =
+                assessment['sectionCode']?.toString().trim() ?? '';
+            final evalCourseName =
+                assessment['courseName']?.toString().toLowerCase().trim() ?? '';
+
+            final matchesCourse =
+                (evalSectionCode.isNotEmpty &&
+                    evalSectionCode == sectionCode) ||
+                (evalCourseName.isNotEmpty && evalCourseName == courseName);
 
             if (dateMatches && matchesCourse) {
               course['isEvaluation'] = true;
               course['evalSigla'] = assessment['code'] ?? '';
               course['evalNombre'] = assessment['name'] ?? '';
-              debugPrint("--> MERGED! Set isEvaluation = true for course: ${course['curso']} (${assessment['code']})");
+              debugPrint(
+                "--> MERGED! Set isEvaluation = true for course: ${course['curso']} (${assessment['code']})",
+              );
               break; // Encontrado para esta clase
             }
           }

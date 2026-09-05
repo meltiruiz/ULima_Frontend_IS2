@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ulima_plus/configs/themes.dart';
 import 'package:ulima_plus/pages/alertas/alertas_page.dart';
@@ -18,6 +19,15 @@ class AppHeader extends StatelessWidget {
     this.showScheduleToggle = false,
     this.linkLauncher,
   });
+
+  static const List<DeviceOrientation> _scheduleOrientations = [
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ];
+  static const List<DeviceOrientation> _portraitOnly = [
+    DeviceOrientation.portraitUp,
+  ];
 
   // La URI se conserva completa y en un único lugar para evitar que al editar
   // el header se pierdan parámetros de seguimiento solicitados por el usuario.
@@ -110,8 +120,16 @@ class AppHeader extends StatelessWidget {
                           : 0;
 
                       return InkWell(
-                        onTap: () {
-                          Get.to(() => const AlertasPage());
+                        onTap: () async {
+                          await SystemChrome.setPreferredOrientations(
+                            _portraitOnly,
+                          );
+                          await Get.to(() => const AlertasPage());
+                          if (showScheduleToggle) {
+                            await SystemChrome.setPreferredOrientations(
+                              _scheduleOrientations,
+                            );
+                          }
                         },
                         child: Stack(
                           clipBehavior: Clip.none,

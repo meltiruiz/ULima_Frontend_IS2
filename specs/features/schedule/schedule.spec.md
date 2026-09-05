@@ -3,6 +3,7 @@ name: Schedule
 description: Academic schedule, evaluation calendar, and weekly load visualization.
 targets:
   - ../../../lib/pages/horario/**
+  - ../../../lib/pages/home/home_page.dart
   - ../../../lib/services/evaluations_service.dart
   - ../../../lib/services/seccion_service.dart
 ---
@@ -27,6 +28,9 @@ targets:
 - **Current-time line**: The grid shows a red current-time line only when the selected day is the current date in Lima, calculated as UTC-5, and the current time is between 7:00 and 22:00.
 - **Course block tap**: Al tocar un bloque de curso, se navega a `DescripCursosPage` con el `idSeccion` correspondiente (no existe un details dialog separado para evaluaciones).
 - **High-load alert**: If the active academic week has 3 or more assessments, `isActiveWeekHighLoad` is true and the UI shows the existing warning banner under the day selector.
+- **Portrait calendar fit**: In vertical orientation, the calendar grid renders the complete 7:00-22:00 day without vertical scrolling by compressing hour rows and course block content to the available viewport.
+- **Landscape weekly calendar**: In horizontal orientation, `HorarioPage` remains the same page and renders a weekly grid from Monday to Friday with the existing time blocks, course colors, evaluation markers, advising markers, tap behavior, and current-time indicator when applicable.
+- **Schedule-only rotation**: `HorarioPage` is the only authenticated footer page that may rotate horizontally for students, delegates, subdelegates, teachers, and teaching assistants; every other footer page remains portrait-only.
 
 ## API Dependencies
 

@@ -1,6 +1,7 @@
 // lib/pages/home/home_page.dart
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ulima_plus/components/footer/app_footer.dart';
 import 'package:ulima_plus/components/header/app_header.dart';
@@ -20,6 +21,15 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+  static const List<DeviceOrientation> _portraitOnly = [
+    DeviceOrientation.portraitUp,
+  ];
+  static const List<DeviceOrientation> _scheduleOrientations = [
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ];
+
   final HomeController control = Get.put(HomeController());
   final user = AuthService.to.currentUser;
 
@@ -32,8 +42,22 @@ class _HomePageState extends State<HomePage> {
   int get _horarioTabIndex =>
       _config.footerItems.indexWhere((i) => i.label == 'Horario');
 
+  bool get _isHorarioTabActive => _currentIndex == _horarioTabIndex;
+
   Widget _buildBody() {
     return _config.pages[_currentIndex];
+  }
+
+  Future<void> _applyPreferredOrientations() {
+    return SystemChrome.setPreferredOrientations(
+      _isHorarioTabActive ? _scheduleOrientations : _portraitOnly,
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _applyPreferredOrientations();
   }
 
   void _onTabTap(int index) {
@@ -41,13 +65,15 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       _currentIndex = index;
     });
+    _applyPreferredOrientations();
     // Si el usuario cambia al tab de Horario, recargamos los datos
     // para reflejar asesorías creadas o modificadas recientemente.
     // Para docentes: también recargamos si venían del tab de Asesorías (su
     // índice se deriva de las pestañas reales, que varían para un JP).
     final isTeacher = user?.isTeacher ?? false;
-    final asesoriasIndex =
-        _config.footerItems.indexWhere((i) => i.label == 'Asesorias');
+    final asesoriasIndex = _config.footerItems.indexWhere(
+      (i) => i.label == 'Asesorias',
+    );
     final comingFromAsesorias =
         isTeacher && asesoriasIndex != -1 && previous == asesoriasIndex;
     if (index == _horarioTabIndex || comingFromAsesorias) {
@@ -60,6 +86,12 @@ class _HomePageState extends State<HomePage> {
   }
 
   @override
+  void dispose() {
+    SystemChrome.setPreferredOrientations(_portraitOnly);
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
 
@@ -69,22 +101,21 @@ class _HomePageState extends State<HomePage> {
       backgroundColor: colors.surface,
       body: Column(
         children: [
-          AppHeader(showScheduleToggle: _currentIndex == _horarioTabIndex),
+          AppHeader(showScheduleToggle: _isHorarioTabActive),
           // Aviso de carga de ciclo. Sin esto, un alumno sin matrícula ve un
           // esqueleto permanente en Horario y una calculadora vacía, sin nada
           // que le diga qué hacer.
-          Obx(() => control.mostrarBannerCarga
-              ? _PortalSyncBanner(controller: control)
-              : const SizedBox.shrink()),
+          Obx(
+            () => control.mostrarBannerCarga
+                ? _PortalSyncBanner(controller: control)
+                : const SizedBox.shrink(),
+          ),
           Expanded(
             // La burbuja del chatbot va en un Stack sobre el body (no en el slot
             // fijo del FAB) para poder arrastrarla; las zonas vacías del Stack
             // dejan pasar los toques al contenido de abajo.
             child: Stack(
-              children: [
-                _buildBody(),
-                if (showBubble) const ChatbotBubble(),
-              ],
+              children: [_buildBody(), if (showBubble) const ChatbotBubble()],
             ),
           ),
         ],
@@ -97,8 +128,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 }
-
-
 
 /// Aviso de "te faltan tus cursos", con la acción para traerlos.
 ///

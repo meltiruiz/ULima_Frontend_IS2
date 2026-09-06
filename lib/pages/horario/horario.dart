@@ -21,6 +21,31 @@ class HorarioPage extends StatelessWidget {
   static const double startHour = 7.0;
   static const double endHour = 22.0;
   static const double hourHeight = 85.0;
+
+  /// Desplazamiento de la línea de hora dentro de su fila en la vista vertical
+  /// (`_hourLines` la dibuja con `margin: top 9`). Los bloques tienen que usar
+  /// el MISMO valor o no coinciden con la hora que dicen ocupar.
+  static const double vertLineOffset = 9.0;
+
+  /// Separación entre dos bloques consecutivos. Se resta al alto, no a la
+  /// duración: un bloque tiene que llegar hasta la línea de su hora de fin.
+  static const double blockHairline = 2.0;
+
+  /// Dónde va y cuánto mide el bloque de un curso.
+  ///
+  /// Pura y expuesta para poder probarla: el bloque MIDE su duración. La versión
+  /// anterior lo bajaba 10 px y le restaba 14 de alto, así que un curso de 7 a 9
+  /// no llegaba a la línea de las 9 y aparentaba durar menos de lo que dura.
+  static ({double top, double height}) blockGeometry({
+    required double startVal,
+    required double endVal,
+    required double hourHeight,
+    required double lineOffset,
+  }) {
+    final top = (startVal - startHour) * hourHeight + lineOffset;
+    final duration = (endVal - startVal) * hourHeight;
+    return (top: top, height: (duration - blockHairline).clamp(8.0, double.infinity).toDouble());
+  }
   static const List<DeviceOrientation> _scheduleOrientations = [
     DeviceOrientation.portraitUp,
     DeviceOrientation.landscapeLeft,
@@ -217,6 +242,9 @@ class HorarioPage extends StatelessWidget {
     required double left,
     required double right,
     required bool compact,
+    /// Dónde cae la línea de la hora dentro de su fila: 9 en la vista vertical,
+    /// 0 en la horizontal, que dibuja las líneas justo en `i * alto`.
+    double lineOffset = 0.0,
   }) {
     final colors = Theme.of(context).colorScheme;
     final bool isEvaluation = course['isEvaluation'] == true;
@@ -235,16 +263,11 @@ class HorarioPage extends StatelessWidget {
     final startVal = _timeToHours(startStr);
     final endVal = _timeToHours(endStr);
 
-    const blockTopInset = 10.0;
-    const blockVerticalGap = 14.0;
-    final double topPosition =
-        (startVal - startHour) * hourHeight + blockTopInset;
-    final durationHeight = (endVal - startVal) * hourHeight;
-    final double heightVal = durationHeight <= blockVerticalGap + 8
-        ? (durationHeight - 2).clamp(8.0, durationHeight).toDouble()
-        : (durationHeight - blockVerticalGap)
-              .clamp(18.0, double.infinity)
-              .toDouble();
+    final geom = blockGeometry(
+      startVal: startVal, endVal: endVal, hourHeight: hourHeight, lineOffset: lineOffset,
+    );
+    final double topPosition = geom.top;
+    final double heightVal = geom.height;
 
     final courseColor =
         controller.colorPorCurso[course['idSeccion']?.toString()] ??
@@ -509,7 +532,7 @@ class HorarioPage extends StatelessWidget {
             currentHour >= startHour &&
             currentHour <= endHour;
         final currentLineTop =
-            topPadding + (currentHour - startHour) * dynamicHourHeight + 4.0;
+            (currentHour - startHour) * dynamicHourHeight + vertLineOffset;
 
         return SizedBox.expand(
           child: Padding(
@@ -535,6 +558,7 @@ class HorarioPage extends StatelessWidget {
                     left: 66,
                     right: 14,
                     compact: dynamicHourHeight < 35,
+                    lineOffset: vertLineOffset,
                   ),
                 ),
                 if (showCurrentTimeLine)
@@ -580,12 +604,16 @@ class HorarioPage extends StatelessWidget {
           const headerThickness = 32.0;
           const identityThickness = 26.0;
           const gutter = 34.0;
+          // Media etiqueta arriba y abajo. Las horas se dibujan CENTRADAS sobre
+          // su línea, así que sin este hueco la de las 7 am se sale por arriba
+          // y la de las 10 pm por abajo, que es justo lo que se veía cortado.
+          const labelPad = 8.0;
           final totalHours = (endHour - startHour).toInt();
           final gridHeight = math.max(
             0.0,
             constraints.maxHeight - headerThickness - identityThickness,
           );
-          final hourH = gridHeight / totalHours;
+          final hourH = math.max(0.0, gridHeight - labelPad * 2) / totalHours;
 
           return Column(
             children: [
@@ -599,33 +627,18 @@ class HorarioPage extends StatelessWidget {
                         child: Container(
                           alignment: Alignment.center,
                           color: stripOrange,
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                day.dayName,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                              if (day.dateText.isNotEmpty) ...[
-                                const SizedBox(height: 1),
-                                Text(
-                                  day.dateText.toUpperCase(),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white.withValues(alpha: 0.75),
-                                    fontSize: 7.5,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ],
+                          // Sin fecha: el horario es SEMANAL y se repite todas
+                          // las semanas, así que poner "24 de agosto" lo hacía
+                          // parecer el horario de una semana concreta.
+                          child: Text(
+                            day.dayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w800,
+                            ),
                           ),
                         ),
                       ),
@@ -642,7 +655,7 @@ class HorarioPage extends StatelessWidget {
                         children: [
                           for (int i = 0; i <= totalHours; i++)
                             Positioned(
-                              top: i * hourH - 6,
+                              top: labelPad + i * hourH - 6,
                               left: 0,
                               right: 2,
                               child: Text(
@@ -672,7 +685,7 @@ class HorarioPage extends StatelessWidget {
                             children: [
                               for (int i = 0; i <= totalHours; i++)
                                 Positioned(
-                                  top: i * hourH,
+                                  top: labelPad + i * hourH,
                                   left: 0,
                                   right: 0,
                                   child: Container(height: 1, color: lineColor),
@@ -688,6 +701,7 @@ class HorarioPage extends StatelessWidget {
                                       left: 2,
                                       right: 2,
                                       compact: true,
+                                      lineOffset: labelPad,
                                     ),
                                   ),
                               if (controller.isCurrentLimaDay(day) &&
@@ -696,10 +710,10 @@ class HorarioPage extends StatelessWidget {
                                   controller.currentLimaHourDecimal <= endHour)
                                 Positioned(
                                   top:
+                                      labelPad +
                                       (controller.currentLimaHourDecimal -
                                               startHour) *
-                                          hourH +
-                                      4.0,
+                                          hourH,
                                   left: 2,
                                   right: 0,
                                   child: _currentTimeLine(),

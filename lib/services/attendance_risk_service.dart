@@ -44,7 +44,7 @@ class AttendanceRiskService {
     buffer.writeln('Codigo,Apellidos,Nombres,Ciclo,Horas Ausentes,Total Horas,% Ausencia,Estado');
     for (final s in students) {
       buffer.writeln(
-        '${s.code},${s.lastName},${s.firstName},${s.currentLevel ?? ""},${s.absentHours},${s.totalHours},${s.absencePercentage.toStringAsFixed(1)},${s.statusLabel}',
+        '${s.code},${s.lastName},${s.firstName},${s.currentLevel ?? ""},${s.absentHours},${s.totalHours},${s.absencePercentage?.toStringAsFixed(1) ?? ""},${s.statusLabel}',
       );
     }
 

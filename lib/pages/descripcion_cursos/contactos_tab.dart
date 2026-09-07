@@ -54,6 +54,7 @@ class ContactosTab extends StatelessWidget {
               nombres: control.docenteContacto.value!.firstName,
               apellidos: control.docenteContacto.value!.lastName,
               rol: 'docente',
+              avatarUrl: control.docenteContacto.value!.avatarUrl,
               networkingVisible:
                   control.docenteContacto.value!.networking?.optIn ?? false,
               onNetworkingTap: () => _showNetworkingCard(
@@ -81,6 +82,7 @@ class ContactosTab extends StatelessWidget {
               nombres: control.jpContacto.value!.firstName,
               apellidos: control.jpContacto.value!.lastName,
               rol: 'jp',
+              avatarUrl: control.jpContacto.value!.avatarUrl,
               networkingVisible:
                   control.jpContacto.value!.networking?.optIn ?? false,
               onNetworkingTap: () => _showNetworkingCard(
@@ -129,6 +131,7 @@ class ContactosTab extends StatelessWidget {
                 nombres: user.firstName,
                 apellidos: user.lastName,
                 rol: role,
+                avatarUrl: contacto.avatarUrl,
                 networkingVisible: contacto.networking?.optIn ?? false,
                 onNetworkingTap: () => _showNetworkingCard(
                   context,

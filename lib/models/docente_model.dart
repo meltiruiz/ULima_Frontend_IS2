@@ -4,12 +4,17 @@ class Docente {
   final String code;
   final String firstName;
   final String lastName;
+
+  /// Foto del docente, si tiene cuenta en ULima++. Los docentes sin cuenta no
+  /// tienen dónde guardar una foto.
+  final String? avatarUrl;
   final NetworkingCardDto? networking;
 
   Docente({
     required this.code,
     required this.firstName,
     required this.lastName,
+    this.avatarUrl,
     this.networking,
   });
 
@@ -21,6 +26,7 @@ class Docente {
       code: json['code']?.toString() ?? 'Sin código',
       firstName: json['firstName']?.toString() ?? 'No',
       lastName: json['lastName']?.toString() ?? 'Asignado',
+      avatarUrl: json['avatarUrl']?.toString(),
       networking: _parseNetworking(json['networking']),
     );
   }

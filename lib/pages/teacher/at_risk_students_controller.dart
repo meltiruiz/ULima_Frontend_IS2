@@ -25,6 +25,8 @@ class AtRiskStudentsController extends GetxController {
   int get impedidoCount => allStudents.where((s) => s.isImpedido).length;
   int get enRiesgoCount => allStudents.where((s) => s.isEnRiesgo).length;
   int get normalCount => allStudents.where((s) => s.isNormal).length;
+  /// Matrículas sin asistencia cargada. NO se suman a `normalCount`.
+  int get sinDatosCount => allStudents.where((s) => s.isSinDatos).length;
 
   @override
   void onInit() {
@@ -130,13 +132,25 @@ class AtRiskStudentsController extends GetxController {
 
     switch (sortMode.value) {
       case SortMode.absenceDesc:
-        result.sort((a, b) => b.absencePercentage.compareTo(a.absencePercentage));
+        result.sort((a, b) => _byAbsence(b, a));
       case SortMode.absenceAsc:
-        result.sort((a, b) => a.absencePercentage.compareTo(b.absencePercentage));
+        result.sort((a, b) => _byAbsence(a, b));
       case SortMode.lastNameAsc:
         result.sort((a, b) => a.lastName.compareTo(b.lastName));
     }
 
     filteredStudents.value = result;
+  }
+
+  /// Ordena por % de ausencia dejando SIEMPRE al final a quien no tiene dato.
+  /// Un null no es un 0: sin esta guarda, las matrículas sin medir aparecían
+  /// primeras en el orden ascendente como si fueran las de mejor asistencia.
+  static int _byAbsence(AtRiskStudent x, AtRiskStudent y) {
+    final a = x.absencePercentage;
+    final b = y.absencePercentage;
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    return a.compareTo(b);
   }
 }

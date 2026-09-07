@@ -105,11 +105,15 @@ class _CodeStep extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 28),
-        PasswordResetPrimaryButton(
-          palette: palette,
-          label: 'Continuar',
-          loading: false,
-          onPressed: controller.continueToPassword,
+        // Obx: `submitting` cambia mientras se verifica el código contra el
+        // backend, y sin envolverlo el spinner no se repintaría nunca.
+        Obx(
+          () => PasswordResetPrimaryButton(
+            palette: palette,
+            label: 'Continuar',
+            loading: controller.submitting.value,
+            onPressed: controller.continueToPassword,
+          ),
         ),
         const SizedBox(height: 10),
         _ResendLink(controller: controller, palette: palette),

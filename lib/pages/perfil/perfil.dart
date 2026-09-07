@@ -1,3 +1,4 @@
+import 'package:ulima_plus/components/avatar/avatar_perfil.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -154,22 +155,14 @@ class _ProfileHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: MaterialTheme.primaryColor.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            alignment: Alignment.center,
-            child: Text(
-              initials,
-              style: const TextStyle(
-                color: MaterialTheme.primaryDark,
-                fontSize: 20,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
+          // Mismo tamaño, color y redondeo que antes: para quien no sube foto
+          // la pantalla se ve igual. Lo que se agrega es poder tocarlo.
+          AvatarPerfil(
+            iniciales: initials,
+            size: 48,
+            borderRadius: BorderRadius.circular(14),
+            background: MaterialTheme.primaryColor.withValues(alpha: 0.14),
+            foreground: MaterialTheme.primaryDark,
           ),
           const SizedBox(width: 14),
           Expanded(

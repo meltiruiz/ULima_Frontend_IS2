@@ -5,10 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
-    show
-        FilteringTextInputFormatter,
-        LengthLimitingTextInputFormatter,
-        TextInputFormatter;
+    show FilteringTextInputFormatter, TextInputFormatter;
 
 import '../../configs/themes.dart';
 import 'password_reset_validators.dart';
@@ -285,9 +282,14 @@ class PasswordResetOtpField extends StatefulWidget {
 class _PasswordResetOtpFieldState extends State<PasswordResetOtpField> {
   final FocusNode _focusNode = FocusNode();
 
+  /// Último texto pintado. Sirve para ignorar las notificaciones de sólo
+  /// selección y no reconstruir las seis casillas por cada evento del canal.
+  String _paintedText = '';
+
   @override
   void initState() {
     super.initState();
+    _paintedText = widget.controller.text;
     widget.controller.addListener(_handleValueChanged);
     _focusNode.addListener(_handleFocusChanged);
   }
@@ -300,6 +302,7 @@ class _PasswordResetOtpFieldState extends State<PasswordResetOtpField> {
     if (oldWidget.controller != widget.controller) {
       oldWidget.controller.removeListener(_handleValueChanged);
       widget.controller.addListener(_handleValueChanged);
+      _paintedText = widget.controller.text;
     }
   }
 
@@ -310,15 +313,23 @@ class _PasswordResetOtpFieldState extends State<PasswordResetOtpField> {
     super.dispose();
   }
 
-  /// Mantiene el cursor al final para que escribir siempre agregue el
-  /// siguiente dígito (auto-avance) y retroceso borre el último.
+  /// NUNCA escribe en el controller.
+  ///
+  /// La versión anterior forzaba aquí `controller.selection`. Toda escritura
+  /// desde un listener del propio controller es una notificación re-entrante
+  /// que acaba en `EditableText._updateRemoteEditingValueIfNeeded()` →
+  /// `TextInput.setEditingState`: el framework contradiciendo al IME de iOS de
+  /// forma asíncrona. Eso deja dos escritores del mismo texto sin número de
+  /// secuencia, y es lo que hacía que el retroceso no borrara nada con el
+  /// campo lleno (2026-09-07, iPhone SE).
+  ///
+  /// Además era innecesario: con `fontSize: 1` el texto mide unos 3 px pegados
+  /// al borde de un campo de ~300, así que cualquier toque cae más allá del
+  /// final y iOS ya pone el caret en `text.length` por su cuenta.
   void _handleValueChanged() {
-    final endSelection = TextSelection.collapsed(
-      offset: widget.controller.text.length,
-    );
-    if (widget.controller.selection != endSelection) {
-      widget.controller.selection = endSelection;
-    }
+    final text = widget.controller.text;
+    if (text == _paintedText) return; // sólo cambió la selección
+    _paintedText = text;
     if (mounted) setState(() {});
   }
 
@@ -328,10 +339,13 @@ class _PasswordResetOtpFieldState extends State<PasswordResetOtpField> {
 
   @override
   Widget build(BuildContext context) {
-    final text = widget.controller.text;
-    final activeIndex = text.length < widget.length
-        ? text.length
-        : widget.length - 1;
+    final raw = widget.controller.text;
+    final text = raw.length > widget.length ? raw.substring(0, widget.length) : raw;
+    // -1 cuando está lleno: ninguna casilla queda resaltada, en vez de dejar el
+    // borde clavado en la sexta como si nada hubiera cambiado desde el quinto
+    // dígito. Esa señal congelada es la mitad de «parece que cada uno de los
+    // cuadros fuera uno solo».
+    final activeIndex = text.length < widget.length ? text.length : -1;
 
     return Stack(
       children: [
@@ -360,12 +374,16 @@ class _PasswordResetOtpFieldState extends State<PasswordResetOtpField> {
             autocorrect: false,
             enableSuggestions: false,
             autofillHints: const [AutofillHints.oneTimeCode],
-            inputFormatters: [
-              FilteringTextInputFormatter.digitsOnly,
-              LengthLimitingTextInputFormatter(widget.length),
-            ],
-            showCursor: false,
-            cursorWidth: 0,
+            // SIN LengthLimitingTextInputFormatter: en iOS su modo por
+            // defecto (`truncateAfterCompositionEnds`) devuelve el valor VIEJO
+            // cuando el campo ya está lleno, y esa divergencia entre lo que
+            // sabe Dart y lo que sabe el IME es la causa del bug de borrado.
+            // `digitsOnly` sí es seguro: con dígitos puros es la identidad.
+            // El recorte a `length` se hace al pintar y al leer.
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+            // Invisible, pero con geometría real: `cursorWidth: 0` le reporta a
+            // UIKit un caret degenerado vía `setCaretRect`.
+            cursorColor: Colors.transparent,
             style: const TextStyle(color: Colors.transparent, fontSize: 1),
             decoration: const InputDecoration(
               border: InputBorder.none,

@@ -6,7 +6,9 @@ class AtRiskStudent {
   final int? cycle;
   final int absentHours;
   final int totalHours;
-  final double absencePercentage;
+  /// `null` cuando no hay asistencia cargada. Un 0 acá se leía como
+  /// "cero faltas" y pintaba la fila de verde. Ver RS-BE-10.
+  final double? absencePercentage;
   final String status;
   final int? missingFaltas;
 
@@ -29,11 +31,15 @@ class AtRiskStudent {
 
   bool get isNormal => status == 'normal';
 
+  /// No es un grado de riesgo: es ausencia de medición.
+  bool get isSinDatos => status == 'sin_datos';
+
   String get statusLabel {
     if (isImpedido) return 'Impedido';
     if (isEnRiesgo && missingFaltas != null) {
       return 'En Riesgo: a $missingFaltas faltas';
     }
+    if (isSinDatos) return 'Sin datos';
     if (isNormal) return 'Normal';
     return status;
   }
@@ -49,7 +55,7 @@ class AtRiskStudent {
       cycle: (json['cycle'] as num?)?.toInt(),
       absentHours: (json['absentHours'] as num?)?.toInt() ?? 0,
       totalHours: (json['totalHours'] as num?)?.toInt() ?? 0,
-      absencePercentage: (json['absencePercentage'] as num?)?.toDouble() ?? 0,
+      absencePercentage: (json['absencePercentage'] as num?)?.toDouble(),
       status: json['status']?.toString() ?? '',
       missingFaltas: (json['missingFaltas'] as num?)?.toInt(),
     );

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import '../../configs/themes.dart';
@@ -96,7 +98,17 @@ class DescripCursosPage extends StatelessWidget {
 
     int total = seccion.total;
 
-    double porcentaje = asistido / total;
+    // "Sin datos" es SOLO cuando el portal no reportó horas para esta matrícula.
+    // Un ciclo recién empezado (64 programadas, 0 dictadas) SÍ es un dato: el
+    // anillo se muestra vacío, que es exactamente lo que pasó. Antes se exigía
+    // además un porcentaje no nulo y ese caso caía por error en "sin datos".
+    //
+    // El anillo ya no usa un porcentaje único: pinta dos arcos sobre el total
+    // (ver `_AnilloAsistencia`). El `NaN` que clampeaba al máximo y pintaba la
+    // dona llena y verde murió con eso. Ver RS-BE-10 y RS-BE-16.
+    if (!seccion.asistenciaDisponible) {
+      return _asistenciaSinDatos(context, colors);
+    }
 
     return Container(
       width: double.infinity,
@@ -174,6 +186,20 @@ class DescripCursosPage extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                     ),
+
+                    // RS-BE-16: el anillo mide sobre lo DICTADO, no sobre el
+                    // ciclo entero. Sin esta línea, un anillo lleno en la
+                    // semana 2 se leería como "ya terminaste el curso".
+                    Padding(
+                      padding: const EdgeInsets.only(left: 38, top: 4),
+                      child: Text(
+                        '${seccion.horasTranscurridas} dictadas hasta hoy',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: colors.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -190,15 +216,11 @@ class DescripCursosPage extends StatelessWidget {
                       width: 90,
                       height: 90,
 
-                      child: CircularProgressIndicator(
-                        value: porcentaje,
-
-                        strokeWidth: 16,
-
-                        backgroundColor: Colors.red,
-
-                        valueColor: const AlwaysStoppedAnimation<Color>(
-                          Colors.green,
+                      child: CustomPaint(
+                        painter: _AnilloAsistencia(
+                          fraccionAsistida: seccion.fraccionAsistida,
+                          fraccionFaltas: seccion.fraccionFaltas,
+                          vacio: _attendanceDivider(colors),
                         ),
                       ),
                     ),
@@ -216,6 +238,59 @@ class DescripCursosPage extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Estado honesto cuando no hay horas de asistencia cargadas.
+  ///
+  /// Deliberadamente NEUTRO, no verde: el verde es el color de "todo bien" en
+  /// esta app, y "no sabemos" no es "todo bien". Tampoco muestra los tres ceros,
+  /// que se leían como asistencia perfecta.
+  Widget _asistenciaSinDatos(BuildContext context, ColorScheme colors) {
+    return Container(
+      width: double.infinity,
+      color: _attendanceBackground(colors),
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Asistencia',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Icon(
+                Icons.help_outline,
+                color: colors.onSurfaceVariant,
+                size: 22,
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Text(
+                  'Sin datos de asistencia para este curso.',
+                  style: TextStyle(color: colors.onSurfaceVariant),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Todavía no se importaron tus horas de clase desde miUlima.',
+            style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
+          ),
+          const SizedBox(height: 12),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => Get.toNamed<dynamic>('/portal-sync'),
+              icon: const Icon(Icons.sync, size: 18),
+              label: const Text('Actualizar desde miUlima'),
+            ),
           ),
         ],
       ),
@@ -430,4 +505,60 @@ class DescripCursosPage extends StatelessWidget {
       );
     });
   }
+}
+
+
+/// Anillo de asistencia: NACE VACÍO y se llena como las manecillas de un reloj.
+///
+/// Desde las 12 en punto y en sentido horario: primero el verde de las horas
+/// asistidas, después el rojo de las faltas, y el resto SIN PINTAR porque son
+/// clases que todavía no se dictaron.
+///
+/// Reemplaza a un `CircularProgressIndicator` con `backgroundColor: Colors.red`,
+/// que pintaba de rojo todo lo no asistido: en la semana 2 mostraba 87.5% del
+/// anillo en rojo, o sea afirmaba que el alumno había faltado a clases que
+/// nunca ocurrieron.
+class _AnilloAsistencia extends CustomPainter {
+  const _AnilloAsistencia({
+    required this.fraccionAsistida,
+    required this.fraccionFaltas,
+    required this.vacio,
+  });
+
+  final double fraccionAsistida;
+  final double fraccionFaltas;
+
+  /// Color de lo que todavía no se dictó. Neutro a propósito.
+  final Color vacio;
+
+  static const double _grosor = 16;
+  static const double _arriba = -math.pi / 2;   // las 12 en punto
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Rect.fromLTWH(0, 0, size.width, size.height)
+        .deflate(_grosor / 2);
+    final trazo = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _grosor;
+
+    // Pista completa: el anillo vacío que se va a ir llenando.
+    canvas.drawCircle(rect.center, rect.width / 2, trazo..color = vacio);
+
+    final verde = fraccionAsistida.clamp(0.0, 1.0) * 2 * math.pi;
+    final rojo = fraccionFaltas.clamp(0.0, 1.0) * 2 * math.pi;
+
+    if (verde > 0) {
+      canvas.drawArc(rect, _arriba, verde, false, trazo..color = Colors.green);
+    }
+    if (rojo > 0) {
+      canvas.drawArc(rect, _arriba + verde, rojo, false, trazo..color = Colors.red);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_AnilloAsistencia old) =>
+      old.fraccionAsistida != fraccionAsistida ||
+      old.fraccionFaltas != fraccionFaltas ||
+      old.vacio != vacio;
 }

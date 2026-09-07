@@ -7,10 +7,15 @@ class ContactoCurso {
   final String roleInSection;
   final NetworkingCardDto? networking;
 
+  /// Foto del compañero. Va acá y no dentro de `user` porque el endpoint de
+  /// contactos la manda al nivel del contacto.
+  final String? avatarUrl;
+
   ContactoCurso({
     required this.user,
     required this.roleInSection,
     this.networking,
+    this.avatarUrl,
   });
 
   void operator [](String other) {}

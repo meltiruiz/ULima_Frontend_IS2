@@ -77,7 +77,10 @@ void main() {
       expect(s.cycle, isNull);
       expect(s.absentHours, 0);
       expect(s.totalHours, 0);
-      expect(s.absencePercentage, 0);
+      // RS-BE-10: un porcentaje ausente ya NO se normaliza a 0. Ese `?? 0`
+      // volvía indistinguible "sin medir" de "cero faltas", y la pantalla
+      // pintaba de verde el resultado.
+      expect(s.absencePercentage, isNull);
       expect(s.missingFaltas, isNull);
       expect(s.isImpedido, isFalse);
       expect(s.isEnRiesgo, isFalse);

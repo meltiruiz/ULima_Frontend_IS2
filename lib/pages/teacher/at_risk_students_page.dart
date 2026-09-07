@@ -315,12 +315,24 @@ class _SummaryBar extends StatelessWidget {
             isDark: isDark,
           ),
           const SizedBox(width: 8),
+          // El conteo sale del estado real, no de `total - impedido - enRiesgo`:
+          // esa resta absorbía cualquier categoría nueva dentro de "Normal", y
+          // así las matrículas sin medir se contaban como alumnos sanos.
           _SummaryChip(
-            label: '${total - impedido - enRiesgo} Normal',
+            label: '${controller.normalCount} Normal',
             color: Colors.green,
-            fraction: total > 0 ? (total - impedido - enRiesgo) / total : 0.0,
+            fraction: total > 0 ? controller.normalCount / total : 0.0,
             isDark: isDark,
           ),
+          if (controller.sinDatosCount > 0) ...[
+            const SizedBox(width: 8),
+            _SummaryChip(
+              label: '${controller.sinDatosCount} Sin datos',
+              color: Colors.blueGrey,
+              fraction: total > 0 ? controller.sinDatosCount / total : 0.0,
+              isDark: isDark,
+            ),
+          ],
         ],
       ),
     );
@@ -494,6 +506,10 @@ class _StudentCard extends StatelessWidget {
       statusColor = _AtRiskStudentsPageState.impedidoRed;
     } else if (student.isEnRiesgo) {
       statusColor = _AtRiskStudentsPageState.riesgoOrange;
+    } else if (student.isSinDatos) {
+      // Neutro a propósito: el verde es "todo bien" en esta pantalla, y
+      // "no sabemos" no es "todo bien".
+      statusColor = Colors.blueGrey;
     } else {
       statusColor = Colors.green;
     }
@@ -537,7 +553,7 @@ class _StudentCard extends StatelessWidget {
             const SizedBox(height: 6),
             _detailRow('Total horas seccion', '${student.totalHours}h', brightness),
             const SizedBox(height: 6),
-            _detailRow('% ausencia', '${student.absencePercentage.toStringAsFixed(1)}%', brightness),
+            _detailRow('% ausencia', student.absencePercentage == null ? 'Sin datos' : '${student.absencePercentage!.toStringAsFixed(1)}%', brightness),
             const SizedBox(height: 6),
             _detailRow('Limite aplicado', limitLabel, brightness),
             const SizedBox(height: 6),
@@ -675,7 +691,9 @@ class _StudentCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '${student.absencePercentage.toStringAsFixed(1)}%',
+                        student.absencePercentage == null
+                            ? '—'
+                            : '${student.absencePercentage!.toStringAsFixed(1)}%',
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
@@ -721,12 +739,17 @@ class _ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final limitPct = (student.cycle != null && student.cycle! >= 6) ? 35.0 : 25.0;
-    final fraction = (student.absencePercentage / limitPct).clamp(0.0, 1.0);
+    // Sin dato no se dibuja avance: una barra en 0 se lee como 0% de faltas.
+    final fraction = student.absencePercentage == null
+        ? 0.0
+        : (student.absencePercentage! / limitPct).clamp(0.0, 1.0);
     final barColor = student.isImpedido
         ? _AtRiskStudentsPageState.impedidoRed
         : student.isEnRiesgo
             ? _AtRiskStudentsPageState.riesgoOrange
-            : Colors.green;
+            : student.isSinDatos
+                ? Colors.blueGrey
+                : Colors.green;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -742,7 +765,9 @@ class _ProgressBar extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          '${student.absencePercentage.toStringAsFixed(1)}% de ${limitPct.toStringAsFixed(0)}% limite',
+          student.absencePercentage == null
+              ? 'Sin datos de asistencia'
+              : '${student.absencePercentage!.toStringAsFixed(1)}% de ${limitPct.toStringAsFixed(0)}% limite',
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,

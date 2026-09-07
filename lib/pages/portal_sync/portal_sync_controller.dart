@@ -61,6 +61,12 @@ class PortalSyncController extends GetxController {
   Future<void> submit() async {
     if (cargando) return;
     final password = passwordCtrl.text;
+    // SIN recortar, a propósito: `validarPasscode` acepta de 6 a 8 dígitos
+    // (`^\d{6,8}$`) y el campo comparte widget con el código de recuperación,
+    // que ahora recorta sólo al PINTAR. Recortar aquí a 6 haría imposible un
+    // passcode de 7 u 8 — que es justo lo que hacía el
+    // LengthLimitingTextInputFormatter que se quitó para arreglar el borrado
+    // en iOS. Ver PasswordResetOtpField.
     final passcode = passcodeCtrl.text.trim();
 
     final error = validarFormulario(password: password, passcode: passcode);

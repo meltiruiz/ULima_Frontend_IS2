@@ -61,6 +61,7 @@ class ContactoService {
       return ContactoCurso(
         user: user,
         roleInSection: role,
+        avatarUrl: json['avatarUrl']?.toString(),
         networking: _parseNetworking(json['networking']),
       );
     }).toList();

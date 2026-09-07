@@ -1,3 +1,4 @@
+import 'package:ulima_plus/components/avatar/avatar_usuario.dart';
 import 'package:flutter/material.dart';
 
 class ContactoCard extends StatelessWidget {
@@ -13,6 +14,9 @@ class ContactoCard extends StatelessWidget {
   /// de alguien que ni siquiera está en la app.
   final bool enUlimaPlus;
 
+  /// Foto de perfil, o null para pintar las iniciales como siempre.
+  final String? avatarUrl;
+
   const ContactoCard({
     super.key,
     required this.nombres,
@@ -21,6 +25,7 @@ class ContactoCard extends StatelessWidget {
     this.networkingVisible = false,
     this.onNetworkingTap,
     this.enUlimaPlus = true,
+    this.avatarUrl,
   });
 
   @override
@@ -45,29 +50,11 @@ class ContactoCard extends StatelessWidget {
 
       child: Row(
         children: [
-          Container(
-            width: 50,
-            height: 50,
-
-            decoration: BoxDecoration(
-              color: colors.surfaceContainerHighest,
-
-              shape: BoxShape.circle,
-            ),
-
-            child: Center(
-              child: Text(
-                initials,
-
-                style: TextStyle(
-                  color: colors.onSurfaceVariant,
-
-                  fontSize: 20,
-
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
+          AvatarUsuario(
+            iniciales: initials,
+            avatarUrl: avatarUrl,
+            size: 50,
+            fontSize: 20,
           ),
 
           const SizedBox(width: 5),

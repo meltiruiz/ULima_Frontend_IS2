@@ -22,6 +22,23 @@ class PasswordResetService {
         : message;
   }
 
+  /// Comprueba el código ANTES de pedir la contraseña nueva (RS-AUTH-17).
+  ///
+  /// Existe porque la app avanzaba con cualquier código de seis dígitos: solo
+  /// se validaba el formato en local y el rechazo llegaba al final, con la
+  /// contraseña ya escrita y un intento del token gastado.
+  ///
+  /// No gasta el token —`confirm` lo sigue necesitando— pero sí consume un
+  /// intento, por eso el backend permite 6 y no 5.
+  ///
+  /// Lanza [ApiException] (400 `INVALID_RESET_CODE`) si el código no sirve.
+  Future<void> verify({required String identifier, required String code}) async {
+    await _api.postJson(
+      '/auth/password-reset/verify',
+      body: {'identifier': identifier.trim(), 'code': code.trim()},
+    );
+  }
+
   /// Confirma el reset con el código recibido y la nueva contraseña.
   /// Lanza [ApiException] (400) con el mensaje del backend si el código es
   /// inválido/expirado o la contraseña no cumple el mínimo.

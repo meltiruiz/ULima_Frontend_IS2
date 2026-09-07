@@ -30,6 +30,8 @@ class UserModel {
     required this.code,
     required this.firstName,
     required this.lastName,
+    this.avatarUrl,
+    String? fullName,
     required this.email,
     required this.role,
     this.teacherLabel,
@@ -39,9 +41,29 @@ class UserModel {
     required this.currentCycle,
     required this.setupComplete,
     this.courseProgress,
-  }) : especialidadesInteres = especialidadesInteres ?? <int>[];
+  })  : _fullName = fullName,
+        especialidadesInteres = especialidadesInteres ?? <int>[];
 
-  String get fullName => '$firstName $lastName';
+  /// Foto de perfil ya transformada que manda el backend, o null si no subió
+  /// ninguna. Nunca se construye en el cliente: la arma el servidor desde el
+  /// identificador de Cloudinary, para poder cambiar el recorte sin tocar la app.
+  final String? avatarUrl;
+
+  final String? _fullName;
+
+  /// Nombre tal como lo guarda la base: APELLIDOS y después NOMBRES, que es
+  /// como lo entrega miUlima y como debe mostrarse.
+  ///
+  /// Prefiere el que manda el backend antes que rehacerlo con `firstName` +
+  /// `lastName`: esas dos partes salen de un `splitName` que toma el último
+  /// token como apellido, así que de "SANCHEZ PALACIOS JEFFERSON ANGELO" saca
+  /// firstName="SANCHEZ PALACIOS JEFFERSON" y lastName="ANGELO". Reconstruir
+  /// desde ahí funciona por casualidad y se rompería al arreglar el split.
+  String get fullName {
+    final propio = _fullName?.trim();
+    if (propio != null && propio.isNotEmpty) return propio;
+    return '$firstName $lastName'.trim();
+  }
 
   String get roleLabel {
     final normalized = role.trim().toLowerCase();
@@ -120,6 +142,10 @@ class UserModel {
       firstName:
           json['firstName']?.toString() ?? firstNameFromFullName ?? 'Alumno',
       lastName: json['lastName']?.toString() ?? lastNameFromFullName,
+      // Si un backend viejo no lo manda, el getter cae a las partes, que es el
+      // comportamiento anterior.
+      fullName: fullName,
+      avatarUrl: json['avatarUrl']?.toString(),
       email:
           json['email']?.toString() ??
           json['institutionalEmail']?.toString() ??

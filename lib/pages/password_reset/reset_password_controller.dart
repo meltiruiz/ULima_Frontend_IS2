@@ -16,6 +16,10 @@ import '../../services/storage_service.dart';
 import 'password_reset_validators.dart';
 
 class ResetPasswordController extends GetxController {
+  /// Inyectable solo para las pruebas: en la app se construye el real.
+  ResetPasswordController({PasswordResetService? service})
+      : _service = service ?? PasswordResetService();
+
   static const int resendCooldownSeconds = 60;
 
   final codeController = TextEditingController();
@@ -41,7 +45,7 @@ class ResetPasswordController extends GetxController {
   /// Correo enmascarado (solo en el flujo autenticado desde Perfil).
   String? maskedEmail;
 
-  final PasswordResetService _service = PasswordResetService();
+  final PasswordResetService _service;
 
   @override
   void onInit() {
@@ -61,15 +65,55 @@ class ResetPasswordController extends GetxController {
     }
   }
 
-  /// Paso 1 -> 2: valida el formato del código localmente y avanza.
-  void continueToPassword() {
-    final codeError = validateResetCode(codeController.text.trim());
+  /// El código tal como lo entiende el flujo: recortado a su largo.
+  ///
+  /// El campo ya no lleva `LengthLimitingTextInputFormatter` —era la causa del
+  /// bug de borrado en iOS— así que el controller sí puede traer un dígito de
+  /// más. Sin este recorte, `validateResetCode` rechazaría con «debe tener 6
+  /// dígitos» un código que en pantalla se ve perfecto.
+  String get _codigo {
+    final crudo = codeController.text.trim();
+    return crudo.length > passwordResetCodeLength
+        ? crudo.substring(0, passwordResetCodeLength)
+        : crudo;
+  }
+
+  /// Paso 1 -> 2: comprueba el código CONTRA EL BACKEND y solo entonces avanza.
+  ///
+  /// Antes solo miraba el formato en local, así que cualquier número de seis
+  /// dígitos llegaba a la pantalla de contraseña y el rechazo aparecía al
+  /// final, con la contraseña ya escrita dos veces y un intento gastado.
+  ///
+  /// El formato se sigue validando primero para no gastar una petición —ni un
+  /// intento del token— con algo que ni siquiera tiene seis dígitos.
+  Future<void> continueToPassword() async {
+    if (submitting.value) return; // dos toques no gastan dos intentos
+
+    final codeError = validateResetCode(_codigo);
     if (codeError != null) {
       errorMessage.value = codeError;
       return;
     }
+    if (identifier.isEmpty) {
+      errorMessage.value =
+          'No se pudo verificar el código. Vuelve a solicitarlo.';
+      return;
+    }
+
     errorMessage.value = null;
-    step.value = 1;
+    submitting.value = true;
+    try {
+      await _service.verify(identifier: identifier, code: _codigo);
+      step.value = 1;
+    } on ApiException catch (e) {
+      errorMessage.value = e.message.isEmpty
+          ? 'Código inválido o expirado.'
+          : e.message;
+    } catch (_) {
+      errorMessage.value = 'No se pudo verificar el código. Revisa tu conexión.';
+    } finally {
+      submitting.value = false;
+    }
   }
 
   /// Paso 2 -> 1 (flecha atrás o código rechazado por el backend).
@@ -79,7 +123,7 @@ class ResetPasswordController extends GetxController {
   }
 
   Future<void> submit() async {
-    final code = codeController.text.trim();
+    final code = _codigo;
     final newPassword = passwordController.text;
     final confirmation = confirmController.text;
 

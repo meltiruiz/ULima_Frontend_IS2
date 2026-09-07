@@ -31,6 +31,40 @@ class HorarioPage extends StatelessWidget {
   /// duración: un bloque tiene que llegar hasta la línea de su hora de fin.
   static const double blockHairline = 2.0;
 
+  /// Alto mínimo para que un bloque de la vista semanal muestre su sección
+  /// debajo del nombre. Por debajo de esto el texto no entra y se omite.
+  static const double compactMetaMinHeight = 34.0;
+
+  /// Qué va debajo del nombre del curso dentro de un bloque.
+  ///
+  /// Pura y expuesta para poder probarla, igual que [blockGeometry].
+  ///
+  /// Lo decide la VISTA, no el tamaño del bloque:
+  /// - Vista de día a día ([_portraitGrid], `vistaDia: true`): el salón. Nombre
+  ///   del curso y dónde se dicta, nada más. La sección sobra — el alumno está
+  ///   matriculado en una sola y la tiene en el detalle del curso — mientras que
+  ///   el salón es el dato que va a buscar en el bloque.
+  /// - Vista semanal horizontal ([_landscapeWeekGrid], `vistaDia: false`): la
+  ///   sección. Cada día es una columna angosta donde el salón no entra.
+  ///
+  /// ⚠️ `compact` NO distingue las vistas, aunque lo parezca: significa que el
+  /// bloque quedó chico. La semanal lo pasa fijo en `true`, pero la de día lo
+  /// CALCULA (`dynamicHourHeight < 35`) y en una pantalla pequeña también da
+  /// `true` — en un iPhone SE las 15 horas del día caben a ~25 px por hora. La
+  /// primera versión de esto decidía por `compact` y el teléfono siguió
+  /// mostrando la sección. Aquí `compact` solo gobierna el umbral de alto.
+  static List<String> blockMetaLines({
+    required bool vistaDia,
+    required bool compact,
+    required double height,
+    required String seccionLabel,
+    required String aula,
+  }) {
+    final linea = vistaDia ? aula : seccionLabel;
+    if (!compact) return <String>[linea];
+    return height >= compactMetaMinHeight ? <String>[linea] : const <String>[];
+  }
+
   /// Dónde va y cuánto mide el bloque de un curso.
   ///
   /// Pura y expuesta para poder probarla: el bloque MIDE su duración. La versión
@@ -242,6 +276,9 @@ class HorarioPage extends StatelessWidget {
     required double left,
     required double right,
     required bool compact,
+    /// true en la vista de día a día, false en la semanal horizontal. Separado
+    /// de [compact] a propósito: ese dice si el bloque es chico, no qué vista es.
+    required bool vistaDia,
     /// Dónde cae la línea de la hora dentro de su fila: 9 en la vista vertical,
     /// 0 en la horizontal, que dibuja las líneas justo en `i * alto`.
     double lineOffset = 0.0,
@@ -447,12 +484,18 @@ class HorarioPage extends StatelessWidget {
                           height: 1.05,
                         ),
                       ),
-                      if (!compact || heightVal >= 34) ...[
+                      for (final linea in blockMetaLines(
+                        vistaDia: vistaDia,
+                        compact: compact,
+                        height: heightVal,
+                        seccionLabel: course['isAdvising'] == true
+                            ? (course['codigoSeccion']?.toString() ?? 'Asesoría')
+                            : "Sección: ${course['codigoSeccion'] ?? 'Sin sección'}",
+                        aula: aulaStr,
+                      )) ...[
                         const SizedBox(height: 2),
                         Text(
-                          course['isAdvising'] == true
-                              ? (course['codigoSeccion'] ?? 'Asesoría')
-                              : "Sección: ${course['codigoSeccion'] ?? 'Sin sección'}",
+                          linea,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
@@ -461,19 +504,6 @@ class HorarioPage extends StatelessWidget {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        if (!compact) ...[
-                          const SizedBox(height: 1),
-                          Text(
-                            aulaStr,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: metaFontSize,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
                       ],
                     ],
                   ),
@@ -558,6 +588,7 @@ class HorarioPage extends StatelessWidget {
                     left: 66,
                     right: 14,
                     compact: dynamicHourHeight < 35,
+                    vistaDia: true,
                     lineOffset: vertLineOffset,
                   ),
                 ),
@@ -592,9 +623,11 @@ class HorarioPage extends StatelessWidget {
         : const Color(0xFFE6E6E6);
     final user = AuthService.to.currentUser;
     final studentCode = user?.code ?? '';
-    final studentName = user == null
-        ? ''
-        : '${user.lastName} ${user.firstName}'.toUpperCase();
+    // El nombre va tal como está guardado: APELLIDOS y después NOMBRES. Antes se
+    // imprimía `lastName + firstName` sobre una partición equivocada —el backend
+    // toma el último token como apellido— y salía "ANGELO SANCHEZ PALACIOS
+    // JEFFERSON" en vez de "SANCHEZ PALACIOS JEFFERSON ANGELO".
+    final studentName = user == null ? '' : user.fullName.toUpperCase();
     final cycle = user?.currentCycle ?? '';
 
     return Container(
@@ -701,6 +734,7 @@ class HorarioPage extends StatelessWidget {
                                       left: 2,
                                       right: 2,
                                       compact: true,
+                                      vistaDia: false,
                                       lineOffset: labelPad,
                                     ),
                                   ),

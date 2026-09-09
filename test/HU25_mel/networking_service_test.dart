@@ -18,6 +18,7 @@ class _RecordingApiClient extends ApiClient {
     String path, {
     String? token,
     Map<String, String?> query = const {},
+    bool suppressSessionExpiry = false,
   }) async {
     getPath = path;
     return getResponse;

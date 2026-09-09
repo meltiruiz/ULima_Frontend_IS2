@@ -24,6 +24,20 @@ class ApiException implements Exception {
   String toString() => 'ApiException($statusCode, $code, $message)';
 }
 
+/// Rutas cuyo 401 **no** significa que la sesión caducó.
+///
+/// `/auth/login` porque un login rechazado es un 401 normal. `/auth/register`
+/// porque su fallo más común —miUlima rechaza la contraseña o el passcode—
+/// también responde 401, y quien se está registrando no tiene ninguna sesión
+/// que caducar: sin la exención se le borraría la sesión inexistente, se le
+/// sacaría de la pantalla de registro con `offAllToLogin()` y leería
+/// "Sesión expirada". Ver BR-REG-F-04 de `specs/features/registro`.
+///
+/// `/auth/logout` NO va acá: su 401 sí limpia la sesión (es lo que se pidió),
+/// solo se salta la navegación. Esa excepción vive dentro del `if`.
+bool esRuta401Exenta(String path) =>
+    path.contains('/auth/login') || path.contains('/auth/register');
+
 class ApiClient {
   ApiClient({String? configuredBaseUrl})
     : _configuredBaseUrl = configuredBaseUrl ?? _defaultConfiguredBaseUrl;
@@ -49,12 +63,21 @@ class ApiClient {
     return 'http://localhost:3000';
   }
 
+  /// [suppressSessionExpiry] apaga, **solo para esta llamada**, el tratamiento
+  /// del 401 como sesión caducada. Ver la nota del parámetro en [_send].
   Future<Map<String, dynamic>> getJson(
     String path, {
     String? token,
     Map<String, String?> query = const {},
+    bool suppressSessionExpiry = false,
   }) {
-    return _send('GET', path, token: token, query: query);
+    return _send(
+      'GET',
+      path,
+      token: token,
+      query: query,
+      suppressSessionExpiry: suppressSessionExpiry,
+    );
   }
 
   Future<Map<String, dynamic>> postJson(
@@ -80,12 +103,22 @@ class ApiClient {
     return _send('DELETE', path, token: token);
   }
 
+  /// [suppressSessionExpiry] apaga el tratamiento del 401 como caducidad para
+  /// **esta llamada concreta**, sin tocar la sesión ni navegar.
+  ///
+  /// No se puede resolver con [esRuta401Exenta] porque la exención ahí es por
+  /// ruta y estos mismos endpoints, llamados desde un login normal, SÍ deben
+  /// tratar su 401 como una sesión que murió. Lo que cambia no es la ruta sino
+  /// el momento: quien la llama justo después de que el backend confirmó que
+  /// la cuenta existe no puede permitirse que un hipo de red eche a la persona
+  /// de la pantalla. Ver `AuthService.adoptarSesion` y BR-REG-F-10.
   Future<Map<String, dynamic>> _send(
     String method,
     String path, {
     String? token,
     Map<String, String?> query = const {},
     Map<String, dynamic>? body,
+    bool suppressSessionExpiry = false,
   }) async {
     final resolvedToken = token ?? await StorageService.to.savedToken;
     final request = http.Request(method, _uri(path, query));
@@ -95,7 +128,9 @@ class ApiClient {
     final streamed = await request.send();
     final resolved = await http.Response.fromStream(streamed);
 
-    if (resolved.statusCode == 401 && !path.contains('/auth/login')) {
+    if (resolved.statusCode == 401 &&
+        !esRuta401Exenta(path) &&
+        !suppressSessionExpiry) {
       await StorageService.to.clearSession();
       // Un 401 del propio /auth/logout no es una "sesión expirada" que deba
       // navegar desde aquí: el cierre de sesión es voluntario y quien lo

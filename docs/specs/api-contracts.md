@@ -12,7 +12,7 @@ Contrato REST local del frontend ULima++. Mantener alineado manualmente con `ULi
 
 ## Principios Globales
 
-- Todas las rutas, salvo `GET /`, `GET /health`, `POST /auth/login`, `POST /auth/google`, `POST /auth/password-reset/request` y `POST /auth/password-reset/confirm`, usan `Authorization: Bearer <token>`.
+- Todas las rutas, salvo `GET /`, `GET /health`, `POST /auth/login`, `POST /auth/register`, `POST /auth/google`, `POST /auth/password-reset/request` y `POST /auth/password-reset/confirm`, usan `Authorization: Bearer <token>`.
 - El usuario autenticado es estudiante **o docente** (HU18).
 - Roles permitidos: `student`, `delegate`, `subdelegate`, `teacher`.
 - `teacher` es el rol técnico compartido por profesor y jefe de práctica (JP); su etiqueta se deriva de `section.teacher_id` vs `section.jp_id`. El JWT docente lleva `teacherId` en vez de `studentId`.
@@ -47,6 +47,15 @@ Contrato REST local del frontend ULima++. Mantener alineado manualmente con `ULi
   - Request: `{ "code": "string", "password": "string" }`
   - Response: `{ "token": "string", "tokenType": "Bearer", "expiresIn": 86400, "user": User }`
   - HU18: si el `code` no es de un `student` pero sí de un `teacher` (vía `teacher.user_id`), inicia sesión como docente. El `user` docente es `{ id, teacherId, code, fullName, institutionalEmail, role: "teacher", teacherLabel: "Profesor"|"Jefe de Práctica", setupComplete: true }` (sin `studentId`). No exige matrícula activa.
+- `POST /auth/register`
+  - Público, sin token. Responde `201`.
+  - Request: `{ "code": "string", "portalPassword": "string", "passcode": "string", "password": "string" }`
+  - `code` es `^\d{6,10}$`. `portalPassword` y `passcode` son de **miUlima**: se usan para entrar al portal y se descartan; no se persisten ni se registran en logs. `password` es la que la persona quiere para ULima++.
+  - Response `201`: `{ "token": "string", "tokenType": "Bearer", "expiresIn": 86400, "user": User, "summary": ImportSummary, "warnings": SyncWarning[] }`
+  - `summary` y `warnings` tienen la misma forma que en `POST /portal-sync/import`, pero **planos**, sin `period` ni `identity`. Un `201` con `warnings` no vacío es un éxito.
+  - La identidad la pone el portal: el `code` enviado sirve solo para el login, y `user.code` puede diferir de él.
+  - Errores: `409 USER_ALREADY_EXISTS`, `401 PORTAL_AUTH_FAILED`, `409 PORTAL_SESSION_INVALID`, `403 NOT_ENROLLED`, `422 PORTAL_IDENTITY_UNVERIFIABLE`, `504 PORTAL_TIMEOUT`, `502 PORTAL_UNAVAILABLE`, `429 RATE_LIMITED` (5 intentos por código por hora, y 4 registros simultáneos), `503 REGISTRATION_UNAVAILABLE`, `400 INVALID_REQUEST_BODY`, `400 INVALID_JSON_BODY`, `500 INTERNAL_ERROR`, `500 INTERNAL_SERVER_ERROR`.
+  - Igual que en `POST /auth/login`, su `401` **no** significa sesión caducada: `ApiClient` exime a ambas rutas del cierre de sesión automático.
 - `POST /auth/google`
   - Request: `{ "idToken": "string" }`
   - Acepta `@aloe.ulima.edu.pe` para cuentas vinculadas a `student.user_id` y `@ulima.edu.pe` para cuentas vinculadas a `teacher.user_id`. No crea cuentas ni perfiles.
@@ -453,9 +462,13 @@ fuente de verdad y no se modifica el esquema para este escenario.
 
 La consulta pública y el uso en contactos/chat quedan fuera del Escenario 1.
 
-## Portal Sync (carga de ciclo desde miUlima) — PROPUESTO, pendiente de implementar
+## Portal Sync (carga de ciclo desde miUlima) — implementado el 2026-09-02
 
-Importa los datos oficiales del alumno desde el portal miUlima usando la **sesión del portal que el alumno abrió en un WebView de la app**. El backend nunca recibe contraseña ni código TOTP. Ver `specs/features/portal-sync/portal-sync.spec.md`.
+Importa los datos oficiales del alumno desde el portal miUlima. Ver `specs/features/portal-sync/portal-sync.spec.md`.
+
+El diseño original abría un WebView en la app y mandaba solo las cookies de la sesión, para que el backend nunca viera la contraseña. Ese camino **no fue el que se implementó**: hoy la app manda `credentials` —contraseña de miUlima y passcode del authenticator— y es el backend quien entra al portal. El body sigue aceptando `cookies` porque el otro camino nunca se retiró, pero ninguna pantalla lo usa.
+
+Las credenciales se usan para el login y se descartan: no se persisten ni se registran en logs. Es una promesa del backend (RS-BE-7 de su spec), no una propiedad del protocolo como lo era con las cookies.
 
 Alumno (`requireRole(student|delegate|subdelegate)`, `studentId` y `code` del JWT):
 
@@ -463,21 +476,24 @@ Alumno (`requireRole(student|delegate|subdelegate)`, `studentId` y `code` del JW
   - Response: `{ "activePeriod": { "id": number, "code": "2026-2" } | null, "enrollmentsInActivePeriod": number, "needsImport": boolean }`
   - `needsImport` = no hay período activo o el alumno no tiene `enrollment` activa en él.
 - `POST /portal-sync/import`
-  - Body: `{ "cookies": { "JSESSIONID": string, "LtpaToken2": string, "LtpaToken": string|null } }` (cookies de `webaloe.ulima.edu.pe`; nunca se persisten ni se registran en logs)
+  - Body: `cookies` **o** `credentials`, exactamente uno de los dos.
+    - `{ "credentials": { "password": string, "passcode": string } }` — el camino que usa la app. `passcode` es `^\d{6,8}$`.
+    - `{ "cookies": { "JSESSIONID": string, "LtpaToken2": string, "LtpaToken": string|null } }` — cookies de `webaloe.ulima.edu.pe`, del diseño de WebView que no se implementó.
+    - Ninguno de los dos se persiste ni se registra en logs.
   - Response `200`:
     ```json
     {
       "period": { "id": 12, "code": "2026-2", "created": false },
-      "identity": { "portalCode": "20235218", "fullName": "string", "career": "INGENIERÍA DE SISTEMAS" },
+      "identity": { "portalCode": "20230001", "fullName": "string", "career": "INGENIERÍA DE SISTEMAS" },
       "summary": {
         "coursesCreated": 0, "teachersCreated": 0, "sectionsCreated": 0, "sectionsUpdated": 5,
         "sessionsUpserted": 12, "enrollmentsUpserted": 5, "enrollmentsWithdrawn": 0,
         "progressUpserted": 53, "progressSkipped": 4, "alertsCreated": 1
       },
-      "warnings": [ { "code": "PERIOD_DATES_DEFAULTED" | "TEACHER_MISSING" | "PARSER_FAILED" | "CAREER_MISMATCH" | "PROGRESS_SKIPPED" | "WITHDRAW_SKIPPED_WOULD_LOCK_OUT" | "LEVEL_OUT_OF_RANGE" | "GRADE_NOT_NUMERIC", "block": "string", "message": "string" } ]
+      "warnings": [ { "code": "PERIOD_DATES_DEFAULTED" | "PERIOD_NOT_ACTIVATED_YET" | "TEACHER_MISSING" | "PARSER_FAILED" | "CAREER_MISMATCH" | "PROGRESS_SKIPPED" | "WITHDRAW_SKIPPED_WOULD_LOCK_OUT" | "LEVEL_OUT_OF_RANGE" | "LEVEL_REGRESSION_BLOCKED" | "SYLLABUS_UNAVAILABLE" | "DELEGADOS_UNAVAILABLE" | "ASISTENCIA_UNAVAILABLE", "block": "string", "message": "string" } ]
     }
     ```
-  - Errores: **`409 PORTAL_SESSION_INVALID`** (el portal devolvió `inicio.jsp` o pidió passcode — es 409 y no 401 a propósito: `ApiClient` del frontend trata todo 401 como expiración del JWT y cerraría la sesión del usuario), `403 PORTAL_IDENTITY_MISMATCH` (código del portal ≠ `app_user.code`), `422 PORTAL_IDENTITY_UNVERIFIABLE` (no se pudo leer el código del portal), `502 PORTAL_UNAVAILABLE`, `504 PORTAL_TIMEOUT`, `429 TOO_MANY_REQUESTS` (máx. 5 importaciones por alumno por hora).
+  - Errores: **`409 PORTAL_LOGIN_REJECTED`** (miUlima rechazó la contraseña o el passcode) y **`409 PORTAL_SESSION_INVALID`** (el portal devolvió `inicio.jsp` o pidió passcode). Los dos son 409 y no 401 a propósito: `ApiClient` del frontend trata todo 401 como expiración del JWT y cerraría la sesión del usuario. `403 PORTAL_IDENTITY_MISMATCH` (código del portal ≠ `app_user.code`), `422 PORTAL_IDENTITY_UNVERIFIABLE` (no se pudo leer el código del portal), `502 PORTAL_UNAVAILABLE`, `504 PORTAL_TIMEOUT`, `429 RATE_LIMITED` (máx. 5 importaciones por alumno por hora, con `details.retryAfterMinutes`).
   - La verificación de identidad ocurre ANTES de cualquier escritura y no se degrada a `warnings`.
   - Idempotente: repetir la importación deja el mismo estado (todos los upsert usan `ON CONFLICT` sobre constraints existentes). No toca `simulated_grades`, simulación de malla, especialidades, anuncios, asesorías, representantes, chat, networking, `schedule_session.color_hex` ni las horas de asistencia.
   - **La primera importación de un ciclo nuevo activa ese `academic_period` para TODOS los alumnos** (`is_active` es único global). Solo avanza el ciclo, nunca lo retrocede.

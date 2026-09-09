@@ -28,6 +28,8 @@ import 'pages/teacher/teacher_grade_section_page.dart';
 import 'pages/mis_notas/mis_notas_binding.dart';
 import 'pages/portal_sync/portal_sync_binding.dart';
 import 'pages/portal_sync/portal_sync_page.dart';
+import 'pages/registro/registro_binding.dart';
+import 'pages/registro/registro_page.dart';
 import 'pages/mis_notas/mis_notas_page.dart';
 import 'pages/login/login_page.dart';
 import 'pages/malla/malla_controller.dart';
@@ -129,6 +131,14 @@ class MyApp extends StatelessWidget {
           binding: BindingsBuilder(() {
             Get.lazyPut(() => ResetPasswordController());
           }),
+        ),
+        // Alta de cuenta contra miUlima (HU33). Binding por ruta, como el
+        // resto: `lazyPut` sin `fenix` garantiza que GetX elimine el controller
+        // al salir y que `onClose` borre las credenciales del portal.
+        GetPage(
+          name: '/registro',
+          page: () => const RegistroPage(),
+          binding: RegistroBinding(),
         ),
         GetPage(name: '/setup-carrera', page: () => const SetupCarreraPage()),
         GetPage(

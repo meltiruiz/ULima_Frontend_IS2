@@ -134,6 +134,7 @@ class _LoginCard extends StatelessWidget {
               _EntrarButton(controller: controller, palette: palette),
               const SizedBox(height: 10),
               _ForgotPasswordLink(palette: palette),
+              _CrearCuentaLink(palette: palette),
               const SizedBox(height: 14),
               Row(
                 children: [
@@ -342,6 +343,36 @@ class _ForgotPasswordLink extends StatelessWidget {
         ),
         child: const Text(
           '¿Olvidaste tu contraseña?',
+          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
+        ),
+      ),
+    );
+  }
+}
+
+/// Acceso al registro.
+///
+/// Es un enlace FIJO y no una oferta reactiva tras un login fallido: mostrar
+/// "¿creamos tu cuenta?" solo cuando el código no existe delataría quién tiene
+/// cuenta, que es justo lo que `AuthService.loginErrorMessage` evita al
+/// aplastar USER_NOT_FOUND e INVALID_PASSWORD en un mismo mensaje.
+class _CrearCuentaLink extends StatelessWidget {
+  const _CrearCuentaLink({required this.palette});
+  final _LoginPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: TextButton(
+        onPressed: () => Get.toNamed('/registro'),
+        style: TextButton.styleFrom(
+          foregroundColor: palette.fieldHint,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          minimumSize: Size.zero,
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        ),
+        child: const Text(
+          '¿No tienes cuenta? Créala',
           style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600),
         ),
       ),

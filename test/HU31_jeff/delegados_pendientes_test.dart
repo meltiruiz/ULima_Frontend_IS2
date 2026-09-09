@@ -22,6 +22,7 @@ class _FakeApiClient extends ApiClient {
     String path, {
     String? token,
     Map<String, String?> query = const {},
+    bool suppressSessionExpiry = false,
   }) async => respuesta;
 }
 

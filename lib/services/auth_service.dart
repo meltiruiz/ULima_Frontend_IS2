@@ -115,6 +115,67 @@ class AuthService extends GetxService {
     await _storage.saveToken(token);
   }
 
+  /// Establece la sesión con lo que devolvió `POST /auth/register`.
+  ///
+  /// Guarda token y código y carga los catálogos, como hace `login()` después
+  /// de recibir la respuesta, pero **no** consulta `_loadProfesorSections`: una
+  /// cuenta recién registrada es siempre de alumno. Existe aparte porque el
+  /// registro ya trae token y usuario: repetir el login significaría una
+  /// segunda vuelta contra el portal.
+  ///
+  /// **Puede lanzar**: guardar el token va contra el llavero del sistema y ahí
+  /// no hay `catch`. Quien la llama tiene que tratarlo —`RegistroController`
+  /// lo hace a propósito— porque la cuenta ya existe y el fallo solo significa
+  /// que la sesión no quedó puesta.
+  ///
+  /// El código que se guarda es el del `user`, o sea el que certificó el
+  /// portal, que puede no ser el que la persona tecleó (BR-REG-F-06).
+  ///
+  /// Los catálogos se reintentan UNA vez y, si vuelven a fallar, se sigue
+  /// igual: recibido el 201 la cuenta existe y nada de acá puede convertirse
+  /// en un error. El precio está anotado en BR-REG-F-10 de la spec — la
+  /// persona aterriza en `/setup-carrera` sin carrera ni especialidades hasta
+  /// el próximo arranque, porque `_loadCatalogs` solo corre al iniciar sesión.
+  Future<void> adoptarSesion({
+    required String token,
+    required UserModel user,
+  }) async {
+    await _storage.saveToken(token);
+    await _storage.saveCode(user.code);
+    // Una cuenta recién registrada es siempre de alumno, pero se consulta el
+    // rol igual: los catálogos son endpoints exclusivos de alumno y un docente
+    // recibiría 403, como ya contempla `login()`.
+    if (!user.isTeacher) {
+      // `suppressSessionExpiry: true` es obligatorio acá, no una comodidad.
+      // Los catálogos no están exentos del tratamiento genérico del 401, así
+      // que sin esto un 401 suyo borraría la sesión que se acaba de guardar,
+      // arrancaría `/registro` de la pila con `offAllToLogin()` y anunciaría
+      // "Sesión expirada" a alguien cuya cuenta nació hace un segundo. El
+      // efecto ocurre DENTRO de `ApiClient`, antes de que el `catch` de abajo
+      // vea nada: atraparlo acá no lo desharía. Recibido el 201 la cuenta
+      // existe, y un tropiezo leyendo un catálogo no puede echar a la persona
+      // ni mentirle sobre su sesión (BR-REG-F-10 y RS-FE-4).
+      try {
+        await _loadCatalogs(
+          token: token,
+          careerId: user.careerId,
+          suppressSessionExpiry: true,
+        );
+      } catch (_) {
+        try {
+          await _loadCatalogs(
+            token: token,
+            careerId: user.careerId,
+            suppressSessionExpiry: true,
+          );
+        } catch (_) {
+          // Se sigue sin catálogos. Ver BR-REG-F-10.
+        }
+      }
+    }
+    _currentUser.value = user;
+  }
+
   Future<void> refreshCurrentUser() async {
     final token = await _storage.savedToken;
     if (token == null || token.isEmpty) return;
@@ -354,10 +415,18 @@ class AuthService extends GetxService {
     }
   }
 
-  Future<void> _loadCatalogs({required String token, int? careerId}) async {
+  /// [suppressSessionExpiry] solo lo activa `adoptarSesion`. Los dos llamadores
+  /// que vienen de un login —`login()` y `finishGoogleLogin()`— lo dejan en
+  /// false: ahí un 401 sí significa que la sesión murió y cerrarla es correcto.
+  Future<void> _loadCatalogs({
+    required String token,
+    int? careerId,
+    bool suppressSessionExpiry = false,
+  }) async {
     final careersResponse = await _api.getJson(
       '/academic-profile/careers',
       token: token,
+      suppressSessionExpiry: suppressSessionExpiry,
     );
     _carreras.assignAll(_listFrom(careersResponse, 'careers'));
 
@@ -365,6 +434,7 @@ class AuthService extends GetxService {
       '/academic-profile/specialties',
       token: token,
       query: {'careerId': careerId?.toString()},
+      suppressSessionExpiry: suppressSessionExpiry,
     );
     _especialidades.assignAll(_listFrom(specialtiesResponse, 'specialties'));
   }

@@ -251,14 +251,37 @@ class MallaListController extends GetxController {
   List<CourseNode> get electives =>
       cards.where((c) => c.isElective).toList();
 
-  /// Electivos agrupados por su primera especialidad (cada curso aparece una
-  /// sola vez; sin especialidad → grupo "Otros electivos" al final).
-  Map<String, List<CourseNode>> get electiveGroups {
+  Map<String, List<CourseNode>> get electiveGroups =>
+      agruparElectivosPorEspecialidad(electives);
+
+  /// Electivos agrupados por especialidad. Un curso aparece bajo CADA
+  /// especialidad a la que pertenece; sin especialidad va a «Otros electivos»,
+  /// que queda al final.
+  ///
+  /// Pura y expuesta para poder probarla.
+  ///
+  /// Antes tomaba solo `specialties.first` («cada curso aparece una sola vez»),
+  /// y eso escondía electivos compartidos. Según el plan oficial de diplomas de
+  /// especialidad, PROGRAMACIÓN MÓVIL, PROYECTO DE DESARROLLO DE SOFTWARE e
+  /// INTERACCIÓN HUMANO COMPUTADORA son de Ingeniería de Software Y de
+  /// Desarrollo de Videojuegos, y ARQUITECTURA DE TI es de Tecnologías de la
+  /// Información Y de Sistemas de Información: un alumno no veía en su propio
+  /// diploma cursos que le corresponden (2026-09-18).
+  ///
+  /// Repetir la tarjeta es seguro: no hay claves por curso en la lista, y el
+  /// conteo «aprobados/total» del stepper se calcula sobre `electives`, no sobre
+  /// los grupos, así que un curso compartido no se cuenta dos veces.
+  static Map<String, List<CourseNode>> agruparElectivosPorEspecialidad(
+    List<CourseNode> electivos,
+  ) {
     final groups = <String, List<CourseNode>>{};
-    for (final c in electives) {
-      final key =
-          c.specialties.isEmpty ? otherElectivesGroup : c.specialties.first;
-      groups.putIfAbsent(key, () => <CourseNode>[]).add(c);
+    for (final c in electivos) {
+      final keys = c.specialties.isEmpty
+          ? const [otherElectivesGroup]
+          : c.specialties.toSet(); // una especialidad repetida no duplica el curso
+      for (final key in keys) {
+        groups.putIfAbsent(key, () => <CourseNode>[]).add(c);
+      }
     }
     final keys = groups.keys.toList()
       ..sort((a, b) {

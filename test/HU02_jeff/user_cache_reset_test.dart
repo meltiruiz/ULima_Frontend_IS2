@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:ulima_plus/models/user_model.dart';
+import 'package:ulima_plus/services/academic_record_service.dart';
 import 'package:ulima_plus/services/auth_service.dart';
 import 'package:ulima_plus/services/courses_service.dart';
 import 'package:ulima_plus/services/evaluations_service.dart';
@@ -55,6 +56,22 @@ class _FakeApiClient extends ApiClient {
         },
       ],
     };
+  }
+}
+
+/// Siempre falla el `GET`, para dejar `AcademicRecordService` en `hasError`
+/// sin tener que inventar un récord entero.
+class _FailingRecordApi extends ApiClient {
+  _FailingRecordApi() : super(configuredBaseUrl: 'http://test');
+
+  @override
+  Future<Map<String, dynamic>> getJson(
+    String path, {
+    String? token,
+    Map<String, String?> query = const {},
+    bool suppressSessionExpiry = false,
+  }) async {
+    throw Exception('socket');
   }
 }
 
@@ -157,5 +174,38 @@ void main() {
 
     await CoursesService.instance.loadCoursesData();
     expect(CoursesService.instance.allCourses.single['id'], 'curso-a');
+  });
+
+  test(
+      'logout() limpia el récord académico del alumno anterior (TT06, '
+      'RF-REC-5)', () async {
+    auth.user = _user('111');
+    final record =
+        Get.put<AcademicRecordService>(AcademicRecordService(apiClient: _FailingRecordApi()));
+
+    // El GET falla: hasError queda en true, sin tocar `record` (que ya está
+    // protegido por la guarda de dueño de AcademicRecordService.record).
+    await record.load();
+    expect(record.hasError, isTrue);
+
+    await AuthService.to.logout();
+
+    // Sin este assert, una cuenta nueva en el mismo dispositivo vería un
+    // frame del ErrorRetry del alumno anterior antes de su primer load().
+    expect(record.hasError, isFalse);
+    expect(record.isLoading, isFalse);
+    expect(record.record, isNull);
+  });
+
+  test('logout() no revienta si AcademicRecordService no está registrado',
+      () async {
+    // Ninguno de los otros tests de este archivo registra
+    // AcademicRecordService: si la guarda `Get.isRegistered` de
+    // AuthService.logout() faltara, TODOS fallarían con un Get.find() sin
+    // resolver. Este test lo deja explícito.
+    auth.user = _user('111');
+    expect(Get.isRegistered<AcademicRecordService>(), isFalse);
+
+    await expectLater(AuthService.to.logout(), completes);
   });
 }

@@ -29,11 +29,16 @@ class RegistroService {
 
   /// Registra y devuelve la sesión, o lanza [RegistroFailure] con un mensaje
   /// listo para mostrar. Nunca lanza `ApiException` cruda.
+  ///
+  /// [consent] es la aceptación explícita de la pantalla de consentimiento
+  /// (RF-REC-6). Sin ella el backend crea la cuenta e importa el ciclo igual,
+  /// pero no guarda el récord académico (RS-BE-29).
   Future<RegistroResult> registrar({
     required String code,
     required String portalPassword,
     required String passcode,
     required String password,
+    required bool consent,
   }) async {
     Map<String, dynamic> res;
     try {
@@ -44,6 +49,8 @@ class RegistroService {
           'portalPassword': portalPassword,
           'passcode': passcode,
           'password': password,
+          // RS-BE-29: solo `true` o ausente; nunca se manda `false`.
+          if (consent) 'consent': true,
         },
       ).timeout(registroTimeout);
     } on ApiException catch (e) {

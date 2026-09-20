@@ -22,6 +22,7 @@ This index connects real user stories, product requirements, Flutter files, mock
 | 14 | Carnet de networking | `specs/features/networking/networking.spec.md` | HU25 (issues históricos HU27) | Opt-in y una red social propia | `lib/pages/networking/**`, `lib/services/networking_service.dart` | Escenario 1 implementado |
 | 15 | Portal Sync (carga de ciclo desde miUlima) | `specs/features/portal-sync/portal-sync.spec.md` | HU-SYNC-01, HU-SYNC-02 | Login en WebView de miUlima + importación al backend; banner en Home y opción en Perfil | `lib/pages/portal_sync/**`, `lib/services/portal_sync_service.dart` | **Diseñada — pendiente de aprobación e implementación** |
 | 16 | Registro de alumno | `specs/features/registro/registro.spec.md` | HU-REG-01, HU-REG-02 | Alta de cuenta contra miUlima en dos pasos; el portal certifica la matrícula y entrega los datos | `lib/pages/registro/**`, `lib/services/registro_service.dart` | Implementada — **pendiente de verificar contra el portal real** |
+| 17 | Récord académico | `specs/features/academic-record/academic-record.spec.md` | HU34 | RF-REC-1 a RF-REC-6: tarjeta en Perfil, pantalla /mi-record, borrado a pedido y consentimiento antes del portal | `lib/pages/academic_record/**`, `lib/services/academic_record_service.dart`, `lib/models/academic_record_model.dart`, `lib/components/portal_consent/**` | Implementado — pendiente de verificación end-to-end |
 
 ## Workflow
 

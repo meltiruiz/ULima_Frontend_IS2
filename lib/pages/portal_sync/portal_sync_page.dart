@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../components/portal_consent/portal_consent_view.dart';
 import '../../models/portal_sync_models.dart';
 import '../password_reset/password_reset_ui.dart';
 import 'portal_sync_controller.dart';
 
 /// Carga de ciclo desde miUlima.
 ///
-/// Una sola pantalla con tres estados (formulario, cargando, resumen) en vez de
-/// tres rutas: el flujo es lineal y el alumno no gana nada pudiendo volver al
-/// paso anterior con el botón del sistema mientras la carga corre.
+/// Una sola pantalla con cuatro estados (consentimiento, formulario, cargando,
+/// resumen) en vez de cuatro rutas: el flujo es lineal y el alumno no gana nada
+/// pudiendo volver al paso anterior con el botón del sistema mientras la carga
+/// corre.
 ///
 /// Reutiliza los widgets públicos de `password_reset_ui.dart` porque son el
 /// mismo lenguaje visual del login, ya extraído (los del login son privados).
@@ -23,6 +25,15 @@ class PortalSyncPage extends GetView<PortalSyncController> {
       palette: palette,
       child: Obx(() {
         switch (controller.step.value) {
+          case PortalSyncStep.consent:
+            // Salir desde aquí devuelve null a home_page.dart:171, que no
+            // refresca el banner: no hubo importación, y eso es lo correcto.
+            return PortalConsentView(
+              palette: palette,
+              exitLabel: 'Ahora no',
+              onAccept: controller.aceptarConsentimiento,
+              onExit: () => Get.back<void>(),
+            );
           case PortalSyncStep.loading:
             return _Cargando(palette: palette);
           case PortalSyncStep.done:

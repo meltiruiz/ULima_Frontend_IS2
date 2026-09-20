@@ -58,6 +58,8 @@ El alta se reparte en dos pantallas: primero los datos de ULima++ (código, cont
 
 El orden no es estético. El código del authenticator **cambia cada 30 segundos**, y tipear una contraseña dos veces toma más que eso. Con el orden inverso —miUlima primero— el código estaría vencido al llegar el POST, el backend respondería `401 PORTAL_AUTH_FAILED`, que es deliberadamente indistinguible de "contraseña mala", y la persona se iría convencida de que se equivocó de contraseña universitaria. Poniendo el authenticator inmediatamente antes del botón que envía —igual que hace `PortalSyncPage`— el problema desaparece.
 
+Entre los dos pasos va el de consentimiento (`consentimiento`, RF-REC-6 de `specs/features/academic-record/academic-record.spec.md`): la pantalla `PortalConsentView`, que dice qué datos se importan y para qué. Va antes del formulario del portal y nunca entre el código del authenticator y el botón que envía. Sin aceptación el registro no se envía; aceptada una vez, dura lo que dura la visita a `/registro`.
+
 ### BR-REG-F-02: El paso 1 no habla con el backend
 
 Sería cómodo adelantar el `409 USER_ALREADY_EXISTS` preguntando "¿existe este código?" al terminar el paso 1. **Está prohibido.** Ese endpoint sería un oráculo de enumeración de cuentas: cualquiera podría averiguar quién usa ULima++ tecleando códigos. Es exactamente lo que `AuthService.loginErrorMessage` evita hoy al aplastar `USER_NOT_FOUND` e `INVALID_PASSWORD` en un mismo mensaje.
@@ -143,9 +145,10 @@ Retener la contraseña de ULima++ en memoria mientras dura este estado es delibe
 
 ## UI Behavior
 
-Una sola ruta, `/registro`, con **cinco estados** en la misma pantalla — el patrón de `PortalSyncPage`, que resuelve tres estados sin tres rutas. Toda la pantalla se compone con el kit público de `password_reset_ui.dart`.
+Una sola ruta, `/registro`, con **seis estados** en la misma pantalla — el patrón de `PortalSyncPage`, que resuelve cuatro estados sin cuatro rutas. Toda la pantalla se compone con el kit público de `password_reset_ui.dart`.
 
 - **`datos`** — «Crea tu cuenta de ULima++». Código, contraseña, repetir contraseña. Nota bajo los campos: con esta contraseña entrarás al app. Botón `Continuar`. Enlace secundario para volver al login.
+- **`consentimiento`** — `PortalConsentView` (RF-REC-6). Botón `Acepto`, que lleva a `verificar`; enlace `Volver`, que regresa a `datos` sin borrar lo tipeado.
 - **`verificar`** — «Verificamos que eres alumno». Texto que explica que entramos a miUlima una vez y no guardamos los datos. Contraseña de miUlima (con mostrar/ocultar) y `PasswordResetOtpField` de 6 dígitos. Botón `Crear mi cuenta`. Enlace para volver al paso anterior.
 - **`enviando`** — spinner a pantalla completa, «Creando tu cuenta…», con la advertencia de que puede tomar un par de minutos y no cerrar la app. Sin salida. El título habla de lo que la persona pidió, no del paso interno que estemos dando: entrar a miUlima es un medio, y nombrarlo invita a creer que se está iniciando sesión en el portal.
 - **`listo`** — ícono de éxito, «Listo, *nombre*», el conteo de cursos cargados del `summary`, los `warnings` si los hay, y un botón que entra a la app.
@@ -159,13 +162,13 @@ Los errores se muestran con `PasswordResetErrorMessage` bajo el formulario del p
 /login  ──「Crea tu cuenta」──▶  /registro
    │
    ├─ datos      validación local (código, contraseña, confirmación) · sin red
-   │     └─ Continuar ──▶ verificar
+   │     └─ Continuar ──▶ consentimiento ──Acepto──▶ verificar
    │
    ├─ verificar  validación local (contraseña del portal, 6 dígitos)
    │     └─ Crear mi cuenta ──▶ enviando
    │
    └─ enviando   RegistroService.registrar()
-                   POST /auth/register {code, portalPassword, passcode, password}
+                   POST /auth/register {code, portalPassword, passcode, password, consent: true}
                    .timeout(120 s)
          │
          ├─ 201 ──▶ AuthService.adoptarSesion(token, user)
@@ -188,7 +191,7 @@ Una cuenta recién creada llega con `setupComplete: false`, así que `postLoginR
 
 `POST /auth/register` — pública, sin token, responde **201**.
 
-Request: `{ "code": "20230001", "portalPassword": "…", "passcode": "123456", "password": "…" }`
+Request: `{ "code": "20230001", "portalPassword": "…", "passcode": "123456", "password": "…", "consent": true }`
 
 Response `201`: `{ token, tokenType, expiresIn, user, summary, warnings }` — plano. **No** tiene los `period` ni `identity` anidados de `POST /portal-sync/import`, así que `PortalSyncResult` no sirve; `PortalSyncSummary` y `PortalSyncWarning` sí se reutilizan tal cual.
 
@@ -231,7 +234,7 @@ Detrás de `RATE_LIMITED` hay **dos** limitadores montados en la misma ruta, y p
 
 - `flutter analyze` sin nuevos warnings.
 - `flutter test` en verde.
-- Tests nuevos en `test/HU33_jeff/`, siguiendo la convención del repo —dobles escritos a mano con `extends` + `@override`, sin mockito—: el mapeo de errores código por código, las transiciones entre los cinco estados, los validadores locales, el parseo de la respuesta y el borrado de credenciales al cerrar la pantalla.
+- Tests nuevos en `test/HU33_jeff/`, siguiendo la convención del repo —dobles escritos a mano con `extends` + `@override`, sin mockito—: el mapeo de errores código por código, las transiciones entre los seis estados, los validadores locales, el parseo de la respuesta y el borrado de credenciales al cerrar la pantalla.
 - Los enlaces `[@test]` se agregan cuando los archivos existan; el repo prohíbe enlazar tests que todavía no se escribieron.
 - Verificación manual pendiente de que `POST /auth/register` esté desplegado: un registro real con una cuenta que no esté en la base.
 
@@ -241,7 +244,7 @@ Detrás de `RATE_LIMITED` hay **dos** limitadores montados en la misma ruta, y p
 2. `lib/models/registro_models.dart` — `RegistroResult` (token, `UserModel`, `PortalSyncSummary`, `List<PortalSyncWarning>`) y `RegistroFailure` (mensaje ya redactado + `code` opcional).
 3. `lib/services/registro_service.dart` — `ApiClient` inyectable por constructor, como `PortalSyncService`, porque `AuthService` crea el suyo inline y no se puede sustituir en tests. El mapeo de errores va **público y estático**, al estilo de `AuthService.loginErrorMessage`, para poder probarlo directo; el de portal-sync es privado y sus tests tienen que llegar a él dando un rodeo.
 4. `lib/services/auth_service.dart` — `adoptarSesion(token, userJson)`: lo mismo que hace `login()` después de recibir la respuesta, con la carga de catálogos tolerante a fallo (BR-REG-F-10).
-5. `lib/pages/registro/` — controller con los cinco estados, binding por ruta con `lazyPut` (para que `onClose` borre las credenciales) y página compuesta con el kit de `password_reset_ui.dart`, envuelta en `PopScope`.
+5. `lib/pages/registro/` — controller con los seis estados, binding por ruta con `lazyPut` (para que `onClose` borre las credenciales) y página compuesta con el kit de `password_reset_ui.dart`, envuelta en `PopScope`.
 6. `lib/main.dart` — `GetPage('/registro')` con su binding.
 7. `lib/pages/login/login_page.dart` — enlace fijo «Crea tu cuenta», junto al de contraseña olvidada.
 8. Tests en `test/HU33_jeff/`.

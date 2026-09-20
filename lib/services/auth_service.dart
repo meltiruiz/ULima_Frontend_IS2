@@ -7,6 +7,7 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 import '../configs/google_auth_config.dart';
 import '../models/user_model.dart';
+import 'academic_record_service.dart';
 import 'api_client.dart';
 import 'courses_service.dart';
 import 'evaluations_service.dart';
@@ -391,6 +392,9 @@ class AuthService extends GetxService {
     MallaService.to.clear();
     CoursesService().clear();
     EvaluationSyllabusService().clear();
+    // Con guarda porque, a diferencia de los tres de arriba, hay pruebas que
+    // llaman a logout() sin registrar AcademicRecordService (test/HU02_jeff/).
+    if (Get.isRegistered<AcademicRecordService>()) AcademicRecordService.to.clear();
     _profesorSectionIds.clear();
     _currentUser.value = null;
     await _storage.clearSession();

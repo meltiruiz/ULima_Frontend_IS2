@@ -8,7 +8,7 @@ import '../../services/registro_service.dart';
 import '../password_reset/password_reset_validators.dart';
 
 /// En qué punto del alta está la pantalla.
-enum RegistroPaso { datos, verificar, enviando, listo, incierto }
+enum RegistroPaso { datos, consentimiento, verificar, enviando, listo, incierto }
 
 /// Validación pura: `null` = válido. Separada del widget para poder probarla
 /// sin montar nada, como `password_reset_validators.dart`.
@@ -107,6 +107,15 @@ class RegistroController extends GetxController {
   final passcodeCtrl = TextEditingController();
 
   final paso = RegistroPaso.datos.obs;
+
+  /// True cuando el alumno ya tocó «Acepto» en ESTA visita a `/registro`.
+  ///
+  /// No se guarda en ningún lado (RF-REC-6, «Qué NO entra»): `RegistroBinding`
+  /// usa `lazyPut` sin `fenix`, así que salir de la ruta destruye el controller
+  /// y volver a entrar pide la aceptación de nuevo. Un fallo que devuelve a
+  /// `datos` sí la conserva: el alumno no se movió de la pantalla.
+  final consentimientoAceptado = false.obs;
+
   final errorMessage = RxnString();
 
   /// True mientras el login de rescate de `incierto` está en vuelo.
@@ -166,6 +175,18 @@ class RegistroController extends GetxController {
       return;
     }
     errorMessage.value = null;
+    // RF-REC-6: el consentimiento va ANTES del formulario del portal, nunca
+    // entre el código del authenticator y el botón que envía (BR-REG-F-01).
+    // Aceptado una vez, dura lo que dura la visita a /registro.
+    paso.value = consentimientoAceptado.value
+        ? RegistroPaso.verificar
+        : RegistroPaso.consentimiento;
+  }
+
+  /// El alumno tocó «Acepto» en `PortalConsentView`.
+  void aceptarConsentimiento() {
+    consentimientoAceptado.value = true;
+    errorMessage.value = null;
     paso.value = RegistroPaso.verificar;
   }
 
@@ -176,6 +197,16 @@ class RegistroController extends GetxController {
 
   Future<void> enviar() async {
     if (enviando) return;
+
+    // Sin aceptación el registro no se envía (RF-REC-6). Va ANTES de validar
+    // los campos: si se llegó acá sin pasar por el consentimiento, lo que
+    // falta no es un dato sino el permiso, y el mensaje rojo sobraría.
+    if (!consentimientoAceptado.value) {
+      errorMessage.value = null;
+      paso.value = RegistroPaso.consentimiento;
+      return;
+    }
+
     final error = validarPasoVerificar(
       portalPassword: portalPasswordCtrl.text,
       passcode: passcodeCtrl.text,
@@ -195,6 +226,7 @@ class RegistroController extends GetxController {
         portalPassword: portalPasswordCtrl.text,
         passcode: passcodeCtrl.text.trim(),
         password: passwordCtrl.text,
+        consent: consentimientoAceptado.value,
       );
     } on RegistroFailure catch (e) {
       _manejarFallo(e);

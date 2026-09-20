@@ -49,8 +49,9 @@ Contrato REST local del frontend ULima++. Mantener alineado manualmente con `ULi
   - HU18: si el `code` no es de un `student` pero sí de un `teacher` (vía `teacher.user_id`), inicia sesión como docente. El `user` docente es `{ id, teacherId, code, fullName, institutionalEmail, role: "teacher", teacherLabel: "Profesor"|"Jefe de Práctica", setupComplete: true }` (sin `studentId`). No exige matrícula activa.
 - `POST /auth/register`
   - Público, sin token. Responde `201`.
-  - Request: `{ "code": "string", "portalPassword": "string", "passcode": "string", "password": "string" }`
+  - Request: `{ "code": "string", "portalPassword": "string", "passcode": "string", "password": "string", "consent"?: true }`
   - `code` es `^\d{6,10}$`. `portalPassword` y `passcode` son de **miUlima**: se usan para entrar al portal y se descartan; no se persisten ni se registran en logs. `password` es la que la persona quiere para ULima++.
+  - `consent` (RS-BE-29) es opcional y la app lo manda solo tras «Acepto» en la pantalla de consentimiento (RF-REC-6). Sin él la cuenta se crea igual, pero no se guarda el récord. Nunca `false`.
   - Response `201`: `{ "token": "string", "tokenType": "Bearer", "expiresIn": 86400, "user": User, "summary": ImportSummary, "warnings": SyncWarning[] }`
   - `summary` y `warnings` tienen la misma forma que en `POST /portal-sync/import`, pero **planos**, sin `period` ni `identity`. Un `201` con `warnings` no vacío es un éxito.
   - La identidad la pone el portal: el `code` enviado sirve solo para el login, y `user.code` puede diferir de él.
@@ -480,6 +481,7 @@ Alumno (`requireRole(student|delegate|subdelegate)`, `studentId` y `code` del JW
     - `{ "credentials": { "password": string, "passcode": string } }` — el camino que usa la app. `passcode` es `^\d{6,8}$`.
     - `{ "cookies": { "JSESSIONID": string, "LtpaToken2": string, "LtpaToken": string|null } }` — cookies de `webaloe.ulima.edu.pe`, del diseño de WebView que no se implementó.
     - Ninguno de los dos se persiste ni se registra en logs.
+  - `"consent": true` es opcional y va en el nivel superior del body (RS-BE-29). La app lo manda solo después de que el alumno toca «Acepto» en la pantalla de consentimiento (RF-REC-6). Sin él la importación corre igual, pero el backend no guarda récord, foto ni resumen ni desmarca electivos. La app nunca manda `false`.
   - Response `200`:
     ```json
     {
@@ -497,3 +499,43 @@ Alumno (`requireRole(student|delegate|subdelegate)`, `studentId` y `code` del JW
   - La verificación de identidad ocurre ANTES de cualquier escritura y no se degrada a `warnings`.
   - Idempotente: repetir la importación deja el mismo estado (todos los upsert usan `ON CONFLICT` sobre constraints existentes). No toca `simulated_grades`, simulación de malla, especialidades, anuncios, asesorías, representantes, chat, networking, `schedule_session.color_hex` ni las horas de asistencia.
   - **La primera importación de un ciclo nuevo activa ese `academic_period` para TODOS los alumnos** (`is_active` es único global). Solo avanza el ciclo, nunca lo retrocede.
+
+## Academic Record (récord académico) — RF-REC-1 a RF-REC-5
+
+Copia del récord académico del portal que el backend guarda cuando el alumno sincroniza y acepta el consentimiento. Ver `specs/features/academic-record/academic-record.spec.md` y, en el backend, RS-BE-26 y RS-BE-27 de `ULima_Backend_IS2/specs/features/academic-record/academic-record.spec.md`.
+
+Alumno (`requireRole(student|delegate|subdelegate)`); el alumno sale del token. Un docente recibe 403: la app nunca la pide para él.
+
+- `GET /academic-record/me`
+  - Response `200`, con `Cache-Control: no-store`:
+    ```json
+    {
+      "syncedAt": "2026-09-18T15:00:00Z" | null,
+      "snapshot": {
+        "ppa": 14.62, "relativePosition": "TERCIO SUPERIOR",
+        "creditsAccumulated": 120, "creditsRequired": 200,
+        "approved": { "courses": 40, "credits": 118 },
+        "convalidated": { "courses": 1, "credits": 2 }
+      } | null,
+      "periods": [ {
+        "periodCode": "2026-0", "average": 15.5, "relativePosition": "MEDIO SUPERIOR",
+        "level": 6,
+        "convalidated": { "courses": 0, "credits": 0 },
+        "enrolled":     { "courses": 3, "credits": 10 },
+        "approved":     { "courses": 2, "credits": 7 },
+        "failed":       { "courses": 1, "credits": 3 }
+      } ],
+      "record": [ { "periodCode": "2026-1", "courses": [
+          { "code": "100001", "name": "CURSO DE PRUEBA A", "attempt": 1,
+            "credits": 1.5, "grade": 17, "gradeRaw": "17", "section": "917",
+            "observation": null } ] } ]
+    }
+    ```
+  - Nunca sincronizó: `syncedAt` null, `snapshot` null, `periods` [] y `record` [], también con 200. La app muestra el estado vacío (RF-REC-4).
+  - Los numéricos siempre son `number`, nunca string: `credits`, `ppa`, `average` y los `credits*` pueden traer decimal; `attempt`, `grade`, `level` y `courses` son enteros. Sin dato es `null`, nunca 0, cada número por separado.
+  - `record` llega del ciclo más reciente al más viejo. La sección de cada curso viaja como `section`.
+- `DELETE /academic-record/me`
+  - Response `200`: `{ "ok": true }`.
+  - Borra la copia, la foto y el resumen del alumno. No toca `student_course_progress`, así que la malla no cambia. Si vuelve a sincronizar y acepta, la copia se guarda otra vez.
+
+En la app, `AcademicRecordService` es el único que llama a estas dos rutas. Un fallo del `GET` deja la tarjeta y la pantalla en su estado de error. Un fallo del `DELETE` se muestra como "No se pudo borrar tu récord. Inténtalo de nuevo.".

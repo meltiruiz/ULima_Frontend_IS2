@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../../components/portal_consent/portal_consent_view.dart';
 import '../../models/portal_sync_models.dart';
 import '../../services/auth_service.dart';
 import '../../services/post_login_route.dart';
@@ -9,8 +10,8 @@ import 'registro_controller.dart';
 
 /// Alta de cuenta contra miUlima.
 ///
-/// Una sola ruta con cinco estados en vez de cinco pantallas, como hace
-/// `PortalSyncPage` con tres: el flujo es lineal y volver atrás a mitad del
+/// Una sola ruta con seis estados en vez de seis pantallas, como hace
+/// `PortalSyncPage` con cuatro: el flujo es lineal y volver atrás a mitad del
 /// envío solo produce cuentas creadas que su dueño no sabe que tiene.
 ///
 /// Reutiliza los widgets públicos de `password_reset_ui.dart` porque son el
@@ -45,6 +46,13 @@ class RegistroPage extends GetView<RegistroController> {
           palette: palette,
           child: switch (controller.paso.value) {
             RegistroPaso.datos => _PasoDatos(palette: palette, controller: controller),
+            // 'Volver' regresa a `datos` sin borrar lo tipeado (BR-REG-F-05).
+            RegistroPaso.consentimiento => PortalConsentView(
+                palette: palette,
+                exitLabel: 'Volver',
+                onAccept: controller.aceptarConsentimiento,
+                onExit: controller.volverADatos,
+              ),
             RegistroPaso.verificar => _PasoVerificar(palette: palette, controller: controller),
             RegistroPaso.enviando => _Enviando(palette: palette),
             RegistroPaso.listo => _Listo(palette: palette, controller: controller),

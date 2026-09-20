@@ -67,19 +67,19 @@ void main() {
     test('manda credentials y NO manda el usuario: el backend lo saca del JWT', () async {
       final api = _FakeApiClient(respuesta: {
         'period': {'id': 2, 'code': '2026-2'},
-        'identity': {'portalCode': '20235218', 'fullName': 'X', 'career': 'Y'},
+        'identity': {'portalCode': '20230001', 'fullName': 'X', 'career': 'Y'},
         'summary': {'enrollmentsUpserted': 5},
         'warnings': <dynamic>[],
       });
       await PortalSyncService(apiClient: api)
-          .import(password: 'clave', passcode: '123456');
+          .import(password: 'clave', passcode: '123456', consent: false);
 
       final creds = api.ultimoBody!['credentials'] as Map<String, dynamic>;
       expect(creds.keys.toSet(), equals({'password', 'passcode'}));
       expect(api.ultimoBody!.containsKey('cookies'), isFalse);
       // Ni código de alumno ni usuario: mandarlos abriría una vía para
       // importar en nombre de otro alumno.
-      expect(api.ultimoBody.toString(), isNot(contains('20235218')));
+      expect(api.ultimoBody.toString(), isNot(contains('20230001')));
     });
 
     test('un login rechazado da un mensaje claro y conserva su código', () async {
@@ -87,7 +87,7 @@ void main() {
         error: ApiException(statusCode: 409, code: 'PORTAL_LOGIN_REJECTED', message: 'x'),
       );
       final e = await PortalSyncService(apiClient: api)
-          .import(password: 'clave', passcode: '000000')
+          .import(password: 'clave', passcode: '000000', consent: false)
           .then<Object?>((_) => null)
           .catchError((Object err) => err);
       expect(e, isA<PortalSyncFailure>());
@@ -107,7 +107,7 @@ void main() {
           error: ApiException(statusCode: 502, code: code, message: ''),
         );
         final e = await PortalSyncService(apiClient: api)
-            .import(password: 'c', passcode: '123456')
+            .import(password: 'c', passcode: '123456', consent: false)
             .then<Object?>((_) => null)
             .catchError((Object err) => err);
         mensajes.add((e as PortalSyncFailure).message);
@@ -120,7 +120,7 @@ void main() {
       // ApiClient propaga los fallos de red SIN envolver en ApiException.
       final api = _FakeApiClient(error: Exception('socket'));
       final e = await PortalSyncService(apiClient: api)
-          .import(password: 'c', passcode: '123456')
+          .import(password: 'c', passcode: '123456', consent: false)
           .then<Object?>((_) => null)
           .catchError((Object err) => err);
       expect(e, isA<PortalSyncFailure>());

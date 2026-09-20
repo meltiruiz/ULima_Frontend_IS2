@@ -27,6 +27,7 @@ class _ServicioFalso implements RegistroService {
     required String portalPassword,
     required String passcode,
     required String password,
+    required bool consent,
   }) async {
     llamadas++;
     codigoRecibido = code;
@@ -133,6 +134,9 @@ void main() {
       expect(c.paso.value, equals(RegistroPaso.datos));
 
       c.continuar();
+      expect(c.paso.value, equals(RegistroPaso.consentimiento),
+          reason: 'RF-REC-6: el consentimiento va entre datos y verificar');
+      c.aceptarConsentimiento();
       expect(c.paso.value, equals(RegistroPaso.verificar));
       expect(servicio.llamadas, equals(0),
           reason: 'el paso 1 no consulta al backend: sería un oráculo de enumeración');
@@ -153,6 +157,7 @@ void main() {
         expect(user.code, equals('20230001'));
       });
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
 
       expect(c.paso.value, equals(RegistroPaso.listo));
@@ -164,6 +169,7 @@ void main() {
       final servicio = _ServicioFalso(resultado: _resultado());
       final c = _controller(servicio: servicio)..codigoCtrl.text = '  20230001 ';
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
       expect(servicio.codigoRecibido, equals('20230001'));
     });
@@ -171,6 +177,7 @@ void main() {
     test('caso 5: tras el éxito las credenciales del portal quedan vacías', () async {
       final c = _controller();
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
       expect(c.portalPasswordCtrl.text, isEmpty);
       expect(c.passcodeCtrl.text, isEmpty);
@@ -183,6 +190,7 @@ void main() {
         ),
       );
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
 
       expect(c.paso.value, equals(RegistroPaso.verificar));
@@ -199,6 +207,7 @@ void main() {
         ),
       );
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
       expect(c.paso.value, equals(RegistroPaso.datos));
     });
@@ -210,6 +219,7 @@ void main() {
         ),
       );
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
       expect(c.paso.value, equals(RegistroPaso.incierto));
       expect(c.cuentaConfirmada.value, isFalse,
@@ -221,6 +231,7 @@ void main() {
         adoptar: ({required token, required user}) async => throw Exception('keychain'),
       );
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
       expect(c.paso.value, equals(RegistroPaso.incierto));
       // El 201 llegó: la pantalla no puede titular "no pudimos confirmar".
@@ -240,6 +251,7 @@ void main() {
         ),
       );
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
       expect(c.paso.value, equals(RegistroPaso.incierto));
       expect(c.resultado.value, isNull);
@@ -249,6 +261,7 @@ void main() {
     test('caso 10: una excepción inesperada no deja la pantalla colgada en enviando', () async {
       final c = _controller(servicio: _ServicioFalso(resultado: null));
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
       expect(c.paso.value, isNot(equals(RegistroPaso.enviando)),
           reason: 'portal-sync tiene ese agujero; acá no se repite');
@@ -268,6 +281,7 @@ void main() {
         ),
       );
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
 
       // El único Rx que un fallo escribe es `errorMessage`.
@@ -289,6 +303,7 @@ void main() {
         login: login,
       );
       c.continuar();
+      c.aceptarConsentimiento();
       await c.enviar();
       expect(c.paso.value, equals(RegistroPaso.incierto));
       return c;

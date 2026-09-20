@@ -5,6 +5,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import '../../components/networking/networking_profile_entry_card.dart';
 import '../../configs/themes.dart';
+import '../academic_record/record_profile_card.dart';
 import '../../models/malla_models.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
@@ -41,6 +42,8 @@ class ProfilePage extends StatelessWidget {
                           ),
                           const SizedBox(height: 16),
                           if (!user.isTeacher) ...[
+                            const RecordProfileCard(),
+                            const SizedBox(height: 16),
                             const _CarreraCard(),
                             const SizedBox(height: 16),
                             const _ConfigAcademicaSection(),

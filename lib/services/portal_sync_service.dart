@@ -1,6 +1,9 @@
 import 'dart:async';
 
+import 'package:get/get.dart';
+
 import '../models/portal_sync_models.dart';
+import 'academic_record_service.dart';
 import 'api_client.dart';
 import 'auth_service.dart';
 import 'courses_service.dart';
@@ -48,9 +51,15 @@ class PortalSyncService {
   /// Devuelve el resultado, o lanza [PortalSyncFailure] con un mensaje ya listo
   /// para mostrar. Nunca lanza `ApiException` cruda: la pantalla no debería
   /// tener que conocer los códigos del backend.
+  ///
+  /// [consent] es la aceptación de la pantalla de consentimiento (RF-REC-6).
+  /// Con `true` el body lleva `'consent': true` y el backend guarda el récord
+  /// académico (RS-BE-29); con `false` la clave no viaja. Es `required` para
+  /// que ninguna pantalla nueva se olvide de decidirlo.
   Future<PortalSyncResult> import({
     required String password,
     required String passcode,
+    required bool consent,
   }) async {
     try {
       final res = await _api
@@ -58,6 +67,11 @@ class PortalSyncService {
             '/portal-sync/import',
             body: {
               'credentials': {'password': password, 'passcode': passcode},
+              // Nivel SUPERIOR del body, nunca dentro de 'credentials'.
+              // RS-BE-29: solo `true` o ausente; nunca se manda `false`. El
+              // backend viejo lo descarta sin error porque `importSchema` es
+              // un `z.object` no estricto (backend portal-sync.schemas.ts:36).
+              if (consent) 'consent': true,
             },
           )
           .timeout(importTimeout);
@@ -107,7 +121,7 @@ class PortalSyncService {
 
   /// Invalida todo lo que quedó viejo después de importar.
   ///
-  /// Son CINCO capas, no las tres que suponía el diseño original. Cada una
+  /// Son SEIS capas, no las tres que suponía el diseño original. Cada una
   /// cortocircuita por su cuenta, así que saltarse una deja la pantalla
   /// mostrando datos del ciclo anterior sin ningún síntoma visible:
   ///
@@ -120,6 +134,10 @@ class PortalSyncService {
   ///     NO vuelve a pedir `/curriculum/me`.
   ///  4. Los controllers vivos.
   ///  5. Las alertas, porque la importación crea algunas.
+  ///  6. El récord académico (RF-REC-5): `AcademicRecordService` se vacía y se
+  ///     vuelve a pedir, así la tarjeta del Perfil nunca muestra el PPA ni los
+  ///     créditos anteriores. Una importación sin consentimiento no guarda
+  ///     récord, y la recarga trae lo que haya.
   ///
   /// Nada acá puede lanzar: el import ya salió bien y un fallo del refresco no
   /// debe convertirse en un error para el alumno.
@@ -139,6 +157,14 @@ class PortalSyncService {
       EvaluationSyllabusService().clear();
       MallaService.to.clear();
     } catch (_) { /* servicios no registrados en algún test */ }
+    // RF-REC-5: la importación pudo guardar un récord nuevo (o ninguno, sin
+    // consentimiento). Try propio: si falta un servicio del bloque de arriba,
+    // esta invalidación no se salta.
+    if (Get.isRegistered<AcademicRecordService>()) {
+      try {
+        await AcademicRecordService.to.reload();
+      } catch (_) { /* load() no lanza; el import ya salió bien */ }
+    }
   }
 }
 

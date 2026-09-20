@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:ulima_plus/components/portal_consent/portal_consent_view.dart';
 import 'package:ulima_plus/main.dart';
 import 'package:ulima_plus/models/registro_models.dart';
 import 'package:ulima_plus/pages/registro/registro_controller.dart';
@@ -19,6 +20,7 @@ class _ServicioColgado implements RegistroService {
     required String portalPassword,
     required String passcode,
     required String password,
+    required bool consent,
   }) =>
       Completer<RegistroResult>().future;
 }
@@ -35,6 +37,7 @@ class _ServicioQueFalla implements RegistroService {
     required String portalPassword,
     required String passcode,
     required String password,
+    required bool consent,
   }) async =>
       throw fallo;
 }
@@ -60,6 +63,7 @@ Future<RegistroController> _hastaIncierto(
   c.passwordCtrl.text = 'micontrasena';
   c.confirmacionCtrl.text = 'micontrasena';
   c.continuar();
+  c.aceptarConsentimiento();
   c.portalPasswordCtrl.text = 'clave';
   c.passcodeCtrl.text = '123456';
   await c.enviar();
@@ -111,6 +115,12 @@ void main() {
     await tester.tap(find.text('Continuar'));
     await tester.pump();
 
+    // RF-REC-6: entre los datos y el portal va el consentimiento.
+    expect(find.text(PortalConsentView.titulo), findsOneWidget);
+    await tester.ensureVisible(find.text(PortalConsentView.botonAceptar));
+    await tester.tap(find.text(PortalConsentView.botonAceptar));
+    await tester.pump();
+
     expect(find.text('Verificamos que eres alumno'), findsOneWidget);
     expect(find.text('Código del authenticator'), findsOneWidget);
   });
@@ -129,6 +139,7 @@ void main() {
     c.passwordCtrl.text = 'micontrasena';
     c.confirmacionCtrl.text = 'micontrasena';
     c.continuar();
+    c.aceptarConsentimiento();
     c.portalPasswordCtrl.text = 'clave';
     c.passcodeCtrl.text = '123456';
     unawaited(c.enviar());

@@ -58,9 +58,12 @@ void main() {
         portalPassword: 'clave-portal',
         passcode: '123456',
         password: 'micontrasena',
+        consent: false,
       );
 
       expect(api.ultimaRuta, equals('/auth/register'));
+      // Sin consentimiento el campo `consent` NO viaja: nunca se manda `false`
+      // (RS-BE-29). Por eso las claves siguen siendo exactamente cuatro.
       expect(
         api.ultimoBody!.keys.toSet(),
         equals({'code', 'portalPassword', 'passcode', 'password'}),
@@ -70,7 +73,8 @@ void main() {
     test('caso 2: un 201 con warnings es éxito, no fallo', () async {
       final api = _FakeApiClient(respuesta: _respuestaValida());
       final r = await RegistroService(apiClient: api).registrar(
-        code: '20230001', portalPassword: 'x', passcode: '123456', password: 'micontrasena',
+        code: '20230001', portalPassword: 'x', passcode: '123456',
+        password: 'micontrasena', consent: false,
       );
 
       expect(r.token, equals('jwt-de-prueba'));
@@ -86,7 +90,10 @@ void main() {
         demora: RegistroService.registroTimeout + const Duration(seconds: 1),
       );
       final e = await RegistroService(apiClient: api)
-          .registrar(code: '20230001', portalPassword: 'x', passcode: '123456', password: 'micontrasena')
+          .registrar(
+            code: '20230001', portalPassword: 'x', passcode: '123456',
+            password: 'micontrasena', consent: false,
+          )
           .then<Object?>((_) => null)
           .catchError((Object err) => err);
 
@@ -99,7 +106,10 @@ void main() {
       final sinToken = _respuestaValida()..remove('token');
       final api = _FakeApiClient(respuesta: sinToken);
       final e = await RegistroService(apiClient: api)
-          .registrar(code: '20230001', portalPassword: 'x', passcode: '123456', password: 'micontrasena')
+          .registrar(
+            code: '20230001', portalPassword: 'x', passcode: '123456',
+            password: 'micontrasena', consent: false,
+          )
           .then<Object?>((_) => null)
           .catchError((Object err) => err);
 
@@ -110,7 +120,10 @@ void main() {
     test('caso 5: un fallo de red crudo no se disfraza de error del backend', () async {
       final api = _FakeApiClient(error: const _SocketExceptionFalsa());
       final e = await RegistroService(apiClient: api)
-          .registrar(code: '20230001', portalPassword: 'x', passcode: '123456', password: 'micontrasena')
+          .registrar(
+            code: '20230001', portalPassword: 'x', passcode: '123456',
+            password: 'micontrasena', consent: false,
+          )
           .then<Object?>((_) => null)
           .catchError((Object err) => err);
 
@@ -122,7 +135,10 @@ void main() {
         error: ApiException(statusCode: 409, code: 'USER_ALREADY_EXISTS', message: 'x'),
       );
       final e = await RegistroService(apiClient: api)
-          .registrar(code: '20230001', portalPassword: 'x', passcode: '123456', password: 'micontrasena')
+          .registrar(
+            code: '20230001', portalPassword: 'x', passcode: '123456',
+            password: 'micontrasena', consent: false,
+          )
           .then<Object?>((_) => null)
           .catchError((Object err) => err);
 

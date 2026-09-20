@@ -9,7 +9,10 @@ import '../horario/horario_controller.dart';
 import '../malla/malla_list_controller.dart';
 
 /// En qué punto del flujo está la pantalla.
-enum PortalSyncStep { form, loading, done }
+///
+/// `consent` va PRIMERO y es el estado inicial (RF-REC-6): el formulario de
+/// credenciales no se dibuja hasta que el alumno acepta.
+enum PortalSyncStep { consent, form, loading, done }
 
 /// Validación pura: `null` = válido. Separada del widget para poder probarla
 /// sin montar nada, como `password_reset_validators.dart`.
@@ -40,12 +43,26 @@ class PortalSyncController extends GetxController {
   final passwordCtrl = TextEditingController();
   final passcodeCtrl = TextEditingController();
 
-  final step = PortalSyncStep.form.obs;
+  final step = PortalSyncStep.consent.obs;
   final errorMessage = RxnString();
   final passwordVisible = false.obs;
   final Rx<PortalSyncResult?> result = Rx<PortalSyncResult?>(null);
 
+  /// Si el alumno ya aceptó el consentimiento EN ESTA VISITA. No se guarda en
+  /// `StorageService` ni en `shared_preferences` a propósito (RF-REC-6, "Qué
+  /// NO entra"): se pregunta antes de cada importación.
+  final consentimientoAceptado = false.obs;
+
   bool get cargando => step.value == PortalSyncStep.loading;
+
+  /// RF-REC-6: el alumno aceptó la pantalla de consentimiento. Dura lo que dura
+  /// este controller, es decir, una visita a /portal-sync: PortalSyncBinding usa
+  /// lazyPut sin fenix, así que salir y volver a entrar la pide de nuevo.
+  void aceptarConsentimiento() {
+    consentimientoAceptado.value = true;
+    errorMessage.value = null;
+    step.value = PortalSyncStep.form;
+  }
 
   @override
   void onClose() {
@@ -60,6 +77,11 @@ class PortalSyncController extends GetxController {
 
   Future<void> submit() async {
     if (cargando) return;
+    // Sin aceptación no se envía nada (RF-REC-6).
+    if (!consentimientoAceptado.value) {
+      step.value = PortalSyncStep.consent;
+      return;
+    }
     final password = passwordCtrl.text;
     // SIN recortar, a propósito: `validarPasscode` acepta de 6 a 8 dígitos
     // (`^\d{6,8}$`) y el campo comparte widget con el código de recuperación,
@@ -78,7 +100,11 @@ class PortalSyncController extends GetxController {
     errorMessage.value = null;
     step.value = PortalSyncStep.loading;
     try {
-      final r = await _service.import(password: password, passcode: passcode);
+      final r = await _service.import(
+        password: password,
+        passcode: passcode,
+        consent: consentimientoAceptado.value,
+      );
       // Apenas se usó, se borra: si el alumno vuelve atrás no queda escrita.
       passwordCtrl.clear();
       passcodeCtrl.clear();
@@ -125,10 +151,5 @@ class PortalSyncController extends GetxController {
       // El import ya salió bien: un fallo del refresco no es un error para el
       // alumno, solo significa que verá los datos nuevos al cambiar de pestaña.
     }
-  }
-
-  void volverAlFormulario() {
-    errorMessage.value = null;
-    step.value = PortalSyncStep.form;
   }
 }

@@ -76,11 +76,11 @@ WebView.
 - Docentes nunca ven el banner ni la opción. Un fallo de `GET /portal-sync/status` no bloquea el Home: se omite el banner en silencio.
 
 ### BR-SYNC-F-02: Consentimiento previo
-- Antes de abrir el portal se muestra una pantalla con qué datos se importarán (nombre, código, carrera, cursos, secciones, docentes, horario, matrícula, notas históricas, impedimentos), con qué finalidad y que la contraseña nunca sale del portal. Requiere aceptación explícita. Sin aceptación no se abre el WebView.
+- Ver RF-REC-6 de `specs/features/academic-record/academic-record.spec.md`. Antes del formulario de credenciales se muestra `PortalConsentView`: qué datos se importan, para qué (mostrárselos al propio alumno y las funciones de ULima++ que ya usa: horario, malla y la lista de su sección que ve su docente) y que la contraseña se usa una sola vez y no se guarda. Requiere aceptación explícita; sin ella no aparece el formulario y no se envía nada. Tras aceptar, el body de `POST /portal-sync/import` lleva `consent: true`.
 
 ### BR-SYNC-F-03: Pantalla de credenciales
 - Ruta `/portal-sync` con binding por ruta (`PortalSyncBinding`), nunca `Get.put` dentro de `build()`: eso ataría el controller al overlay del snackbar y GetX destruiría sus `TextEditingController`.
-- Una sola pantalla con tres estados (`PortalSyncStep`): formulario, cargando y resumen. No son tres rutas: el flujo es lineal y volver atrás a mitad de la carga no le sirve al alumno.
+- Una sola pantalla con cuatro estados (`PortalSyncStep`): consentimiento (`consent`, el inicial), formulario, cargando y resumen. No son cuatro rutas: el flujo es lineal y volver atrás a mitad de la carga no le sirve al alumno. Si la importación falla se vuelve al formulario sin volver a pedir la aceptación; salir y volver a entrar la pide de nuevo.
 - Reutiliza los widgets públicos de `password_reset_ui.dart` (`PasswordResetScaffold`, `PasswordResetField`, `PasswordResetOtpField`, `PasswordResetPrimaryButton`, `PasswordResetErrorMessage`). Los del login son privados y no se pueden importar.
 - El código del authenticator usa `PasswordResetOtpField`, que ya trae seis casillas, teclado numérico, `digitsOnly` y `autofillHints: oneTimeCode`.
 - El estado de carga dice qué está pasando y cuánto puede tardar: la importación real toma entre 30 y 50 segundos y sin eso el alumno cree que la app se colgó.
@@ -109,20 +109,25 @@ Recargar la pantalla no basta; hay tres capas que hay que invalidar en este orde
 ## UI Behavior
 
 - **Banner en Home**: solo alumnos, solo si `needsImport`. Estados: oculto / visible / "Después" pulsado.
-- **PortalSyncConsentPage**: qué se importa, finalidad, aceptar o cancelar.
-- **PortalSyncWebViewPage**: loading, página del portal, cierre manual, timeout de 5 min.
-- **PortalSyncProgressPage**: progreso, resumen con conteos, lista de advertencias, botón "Listo".
-- **Errores**: diálogo con el mensaje de BR-SYNC-F-04 y botón reintentar cuando aplica.
+- **PortalSyncPage** (`/portal-sync`, una sola pantalla con los cuatro estados de `PortalSyncStep`, ver BR-SYNC-F-03):
+  - `consent` → **PortalConsentView** (`lib/components/portal_consent/`, compartida con el registro): qué se importa, finalidad, aceptar o cancelar.
+  - `form` → formulario nativo con la contraseña de miUlima y el código del authenticator.
+  - `loading` → espera: "Entrando a miUlima…".
+  - `done` → resumen "Listo, ya tienes tus datos" con conteos, lista de advertencias y botón "Ver mis cursos".
+- **Errores**: mensaje inline en el formulario con el texto de BR-SYNC-F-04; el `step` vuelve a `form` para reintentar.
 
 ## Data Flow
 
 ```
-Home → HomeController.checkPortalSync() → PortalSyncService.status() → GET /portal-sync/status
-  → needsImport → banner → "Cargar ahora" → PortalSyncConsentPage → acepta
-  → PortalSyncWebViewPage (inicio.jsp) → alumno se logea con SecurID
-  → onLoadStop en layout.jsp + cookies presentes → CookieManager.getCookies
-  → PortalSyncService.importFromPortal(cookies) → POST /portal-sync/import
-  → PortalSyncResult → PortalSyncProgressPage → refresco (BR-SYNC-F-06)
+Home → HomeController.refrescarEstadoPortal() → PortalSyncService.status() → GET /portal-sync/status
+  → needsImport → banner → "Cargar ahora" → PortalSyncPage (step: consent)
+  → PortalConsentView → "Acepto" → aceptarConsentimiento() → step: form
+  → alumno escribe su contraseña de miUlima y el código del authenticator → submit()
+  → step: loading → PortalSyncService.import(password, passcode, consent: true)
+  → POST /portal-sync/import
+  → éxito: PortalSyncResult → step: done, resumen con conteos y advertencias
+    → refresco (BR-SYNC-F-06)
+  → fallo (PortalSyncFailure): step vuelve a form con el mensaje mapeado (BR-SYNC-F-04)
 ```
 
 ## API Dependencies

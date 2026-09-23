@@ -96,6 +96,18 @@ class ApiClient {
     return _send('PUT', path, token: token, body: body);
   }
 
+  /// `PATCH` con cuerpo, idéntico a [putJson] salvo el verbo. No existía
+  /// porque hasta ahora ninguna pantalla lo usaba; lo pide
+  /// `PATCH /time-blocks/me/:id` (RF-BLQ-7), la única ruta de la app con este
+  /// verbo.
+  Future<Map<String, dynamic>> patchJson(
+    String path, {
+    required Map<String, dynamic> body,
+    String? token,
+  }) {
+    return _send('PATCH', path, token: token, body: body);
+  }
+
   Future<Map<String, dynamic>> deleteJson(
     String path, {
     String? token,

@@ -12,6 +12,7 @@ import '/services/auth_service.dart';
 import '/services/alert_service.dart';
 import '/services/malla_service.dart';
 import '/services/academic_record_service.dart';
+import '/services/time_blocks_service.dart';
 import '/services/post_login_route.dart';
 import '/services/storage_service.dart';
 import 'pages/home/home_page.dart';
@@ -49,6 +50,8 @@ import 'pages/silabo/silabo_viewer_page.dart';
 import 'pages/chatbot/chatbot_page.dart';
 import 'pages/networking/networking_binding.dart';
 import 'pages/networking/networking_page.dart';
+import 'pages/time_blocks/time_block_form_binding.dart';
+import 'pages/time_blocks/time_block_form_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -69,6 +72,11 @@ void main() async {
   // Estado único del récord (RF-REC-5), compartido por la tarjeta del Perfil y
   // /mi-record. No carga nada al arrancar: la tarjeta lo pide al montarse.
   Get.put<AcademicRecordService>(AcademicRecordService(), permanent: true);
+  // Estado único de los bloques de horario propios (RF-BLQ-7). Permanente
+  // como MallaService: la pantalla de horario es una tab del shell y el
+  // formulario de /bloque escribe sobre este mismo estado. Tampoco carga nada
+  // al arrancar: el horario pide su ventana al montarse.
+  Get.put<TimeBlocksService>(TimeBlocksService(), permanent: true);
 
   // Intentar restaurar sesión guardada.
   final restored = await AuthService.to.tryRestoreSession();
@@ -230,6 +238,14 @@ class MyApp extends StatelessWidget {
           name: '/networking',
           page: () => const NetworkingPage(),
           binding: NetworkingBinding(),
+        ),
+        // Bloques de horario propios (RF-BLQ-1, RF-BLQ-2). Sin argumento crea;
+        // con un TimeBlockRule en `arguments` edita ese bloque. Binding por
+        // ruta, como el resto.
+        GetPage(
+          name: '/bloque',
+          page: () => const TimeBlockFormPage(),
+          binding: TimeBlockFormBinding(),
         ),
       ],
     );

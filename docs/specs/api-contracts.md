@@ -229,7 +229,8 @@ Retorna el horario semanal por bloques de tiempo para las secciones donde el est
       {
         "dayName": "Lunes",
         "dateText": "12 de Enero",
-        "weekText": "Semana 2 del ciclo"
+        "weekText": "Semana 2 del ciclo",
+        "isoDate": "2026-01-12"
       }
     ],
     "secciones": [
@@ -261,6 +262,8 @@ Retorna el horario semanal por bloques de tiempo para las secciones donde el est
     ]
   }
   ```
+
+> **`isoDate`** (RS-BE-36): la fecha de ese día en hora de Lima, `"YYYY-MM-DD"`, la misma de la que sale `dateText` (que no trae año). Llega en `null` cuando el ciclo no tiene semanas: el mismo caso en que `dateText` viene vacío y `weekText` dice "Semana actual". Es aditivo: un backend anterior no lo manda, y la app lo trata como `null`. La app lo usa para pedir los bloques propios del ciclo visible y para saber qué bloques caen en cada día (`specs/features/time-blocks/time-blocks.spec.md`, RF-BLQ-4 y RF-BLQ-7). Con `null`, solo el ciclo sin semanas, que llega con siete días, toma ese día de la semana en la semana de hoy; si llegan más de siete días sin `isoDate` (un ciclo con semanas que manda un backend sin RS-BE-36), no hay fecha y la app no pinta bloques propios ni la línea de horas.
 
 > **`asistenciaDisponible`** (RS-BE-10, backend `specs/features/attendance-risk/attendance-risk.spec.md`): dice si esta matrícula tiene asistencia cargada. Es una bandera POSITIVA: `asistido`, `inasistencia` y `total` en 0 NO significan "cero faltas", significan "nunca se midió". Un cliente que divida `asistido / total` obtiene `NaN`, que Flutter clampea al MÁXIMO y pinta como asistencia perfecta. Con `false` hay que mostrar estado "sin datos", nunca un porcentaje.
 >
@@ -539,3 +542,59 @@ Alumno (`requireRole(student|delegate|subdelegate)`); el alumno sale del token. 
   - Borra la copia, la foto y el resumen del alumno. No toca `student_course_progress`, así que la malla no cambia. Si vuelve a sincronizar y acepta, la copia se guarda otra vez.
 
 En la app, `AcademicRecordService` es el único que llama a estas dos rutas. Un fallo del `GET` deja la tarjeta y la pantalla en su estado de error. Un fallo del `DELETE` se muestra como "No se pudo borrar tu récord. Inténtalo de nuevo.".
+
+## Time Blocks (bloques de horario propios) — RF-BLQ-1 a RF-BLQ-7
+
+Bloques que el propio alumno registra en su horario (prácticas, trabajo): un patrón semanal con rango de fechas, más excepciones por día. Ver `specs/features/time-blocks/time-blocks.spec.md` y, en el backend, RS-BE-30 a RS-BE-35 de `ULima_Backend_IS2/specs/features/time-blocks/time-blocks.spec.md`.
+
+Alumno (`requireRole(student|delegate|subdelegate)`); el alumno sale del token y no hay parámetro de alumno ni acceso para docentes. Las horas viajan como `"HH:MM"` y las fechas como `"YYYY-MM-DD"`, siempre en hora de Lima y sin zona pegada: son horas de pared. Una fecha que no existe en el calendario o que cae fuera de 2000-01-01 a 2099-12-31 es un formato inválido para el servidor; el formulario de la app solo ofrece fechas del año pasado a dos años adelante, dentro de ese rango. `daysOfWeek` usa la convención de `schedule_session.day_of_week`: 1 es lunes y 7 es domingo.
+
+- `GET /time-blocks/me`
+  - Response `200`:
+    ```json
+    { "blocks": [ {
+      "id": 12, "title": "PRÁCTICAS DE PRUEBA", "colorHex": "#EB5757",
+      "daysOfWeek": [1, 3], "startTime": "14:00", "endTime": "18:00",
+      "startDate": "2026-09-01", "endDate": "2026-12-15",
+      "exceptions": [ { "date": "2026-10-07", "status": "cancelled",
+                        "startTime": null, "endTime": null },
+                      { "date": "2026-10-14", "status": "moved",
+                        "startTime": "15:00", "endTime": "19:00" } ]
+    } ] }
+    ```
+  - `status` es `"cancelled"` o `"moved"`. En `"cancelled"`, `startTime` y `endTime` son `null` y la app los conserva así.
+- `POST /time-blocks/me`
+  - Body: `{ "title": string, "colorHex": "#RRGGBB", "daysOfWeek": number[], "startTime": "HH:MM", "endTime": "HH:MM", "startDate": "YYYY-MM-DD", "endDate": "YYYY-MM-DD" }`
+  - Response `201`: `{ "block": { …como arriba, con "exceptions": [] } }`
+- `PATCH /time-blocks/me/:id`
+  - Body: los mismos siete campos. Reemplaza la regla entera y **conserva** las excepciones.
+  - Response `200`: `{ "block": … }`
+- `DELETE /time-blocks/me/:id`
+  - Response `200`: `{ "ok": true }`. Borra el bloque y sus excepciones.
+- `PUT /time-blocks/me/:id/occurrences/:date`
+  - Body: `{ "status": "cancelled" }` o `{ "status": "moved", "startTime": "15:00", "endTime": "19:00" }`. Con `"cancelled"` la app **no manda** `startTime` ni `endTime` (si llegaran, el servidor las ignora); con `"moved"` las dos son obligatorias.
+  - Response `200`: `{ "exception": { "date": "2026-10-14", "status": "moved", "startTime": "15:00", "endTime": "19:00" } }`, con la forma de la excepción dentro de su bloque (en `"cancelled"`, las dos horas en `null`). La app no lee la respuesta: recarga su ventana.
+  - Idempotente: repetir el mismo `PUT` deja el mismo estado, y un `PUT` sobre una fecha que ya tenía excepción la reemplaza.
+  - La fecha tiene que caer dentro del rango del bloque y en uno de sus días de la semana.
+- `DELETE /time-blocks/me/:id/occurrences/:date`
+  - Response `200`: `{ "ok": true }`. Ese día vuelve al patrón. Idempotente, y no exige que la fecha siga en el patrón: sirve para limpiar una excepción que quedó fuera después de un `PATCH`.
+- `GET /time-blocks/me/occurrences?from=YYYY-MM-DD&to=YYYY-MM-DD`
+  - La ventana es obligatoria, incluye los dos extremos y cubre 120 días como máximo.
+  - Response `200` para `?from=2026-09-21&to=2026-09-27`, con el bloque de arriba:
+    ```json
+    {
+      "occurrences": [ { "blockId": 12, "title": "PRÁCTICAS DE PRUEBA", "colorHex": "#EB5757",
+                         "date": "2026-09-21", "dayOfWeek": 1,
+                         "startTime": "14:00", "endTime": "18:00", "moved": false },
+                       { "blockId": 12, "title": "PRÁCTICAS DE PRUEBA", "colorHex": "#EB5757",
+                         "date": "2026-09-23", "dayOfWeek": 3,
+                         "startTime": "14:00", "endTime": "18:00", "moved": false } ],
+      "weeks": [ { "weekStart": "2026-09-21", "hours": 8 } ]
+    }
+    ```
+  - El servidor ya expandió el patrón y aplicó las excepciones: un día cancelado no aparece y uno movido llega con sus horas nuevas y `moved: true`. Las ocurrencias salen ordenadas por fecha y hora de inicio.
+  - `weeks` trae una entrada por cada semana de lunes a domingo entre el lunes de `from` y el lunes de `to`, ordenadas, con ese lunes en `weekStart` (puede ser anterior a `from`) y en `hours` el total de horas de los bloques del alumno en la semana **entera**, aunque la ventana la corte. `hours` puede traer decimal (`8.5`). Un día cancelado no suma y uno movido suma su duración nueva. Una semana sin ocurrencias llega con `hours: 0`. Solo cuentan los bloques propios, nunca las clases.
+  - La app pinta la línea de RF-BLQ-6 solo si `hours`, redondeado a un decimal (la precisión con que se pinta), es mayor que 0. Con `0`, con menos de `0.05` (un bloque de dos minutos llega con `0.033`, porque el servidor no redondea), con `null` (el backend no lo manda) o sin la semana en la lista, no hay línea.
+- Errores: `404 TIME_BLOCK_NOT_FOUND`; `400 INVALID_REQUEST_BODY` (body inválido en `POST`, `PATCH` y `PUT`); `400 INVALID_QUERY_PARAMS` (falta `from` o `to`, alguna no es una fecha válida, o `to` es anterior a `from`); `400 TIME_BLOCK_OUT_OF_GRID` (alguna hora fuera de 07:00–22:00, el rango que la grilla puede pintar); `400 TIME_BLOCK_LIMIT_REACHED` (máximo 20 bloques **guardados**, vencidos incluidos: el tope acota lo que el servidor expande en una ventana, y un bloque vencido se sigue expandiendo en una ventana pasada; su mensaje lo dice y sugiere borrar uno viejo); `400 TIME_BLOCK_OCCURRENCE_NOT_IN_PATTERN` (la fecha no cae en el patrón del bloque); `400 TIME_BLOCK_WINDOW_TOO_WIDE` (más de 120 días); `400 INVALID_ROUTE_PARAMS` (un `:id` o un `:date` mal formados); `400 INVALID_JSON_BODY` (un cuerpo que no es JSON, en `POST`, `PATCH` y `PUT`); más los 401/403 del middleware.
+
+En la app, `TimeBlocksService` es el único que llama a estas siete rutas. El mensaje de un error del servidor se muestra tal cual llega (RF-BLQ-2); un fallo sin mensaje —red caída o plazo vencido— se muestra como "No se pudo guardar tu bloque. Inténtalo de nuevo.", y en ese caso la app vuelve a pedir su ventana, porque la escritura pudo quedar guardada. Los ejemplos usan datos inventados.

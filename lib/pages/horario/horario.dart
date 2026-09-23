@@ -6,7 +6,10 @@ import 'package:get/get.dart';
 
 import '../descripcion_cursos/descrip_cursos.dart';
 import '../teacher/at_risk_students_page.dart';
+import '../time_blocks/time_block_actions_sheet.dart';
+import '../time_blocks/time_block_form_controller.dart';
 import 'horario_controller.dart';
+import 'horario_layout.dart';
 import 'horario_list_view.dart';
 import '../../components/skeleton.dart';
 import '../../services/contacto_service.dart';
@@ -14,9 +17,33 @@ import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/attendance_risk_service.dart';
 import '../../models/contacto_model.dart';
+import '../../models/time_block_model.dart';
+import '../../configs/course_colors.dart';
 
 class HorarioPage extends StatelessWidget {
   const HorarioPage({super.key});
+
+  /// Botón para agregar un bloque propio (RF-BLQ-1). Solo lo ve el alumno.
+  static const Key agregarBloqueKey = Key('horario-agregar-bloque');
+
+  /// La línea "Tus bloques: N h esta semana" de las vistas de día y semanal.
+  static const Key horasSemanaKey = Key('horario-horas-semana');
+
+  /// Las horas de esa línea: sin decimal cuando la cifra es entera y con uno
+  /// cuando no ("12 h", "12.5 h"). Se redondea a un decimal antes de decidir,
+  /// para que 12.96 salga "13 h" y no "13.0 h".
+  ///
+  /// Pura y expuesta para poder probarla, igual que [blockGeometry]. Solo da
+  /// forma: el número lo manda el servidor y no se recalcula en la app. La
+  /// pantalla nunca le pasa una cifra que redondeada dé 0: la filtra antes
+  /// `HorarioController.horasDeLaSemanaActiva` (D3).
+  static String textoDeHoras(double horas) {
+    final decimas = (horas * 10).round();
+    final cifra = decimas % 10 == 0
+        ? '${decimas ~/ 10}'
+        : (decimas / 10).toStringAsFixed(1);
+    return '$cifra h';
+  }
 
   static const double startHour = 7.0;
   static const double endHour = 22.0;
@@ -183,6 +210,13 @@ class HorarioPage extends StatelessWidget {
     return '$displayHour ${isPm ? 'pm' : 'am'}';
   }
 
+  /// Los días de la vista semanal, en orden fijo de lunes a domingo: la
+  /// primera aparición de cada nombre en `daysList`, que es la primera semana
+  /// del ciclo (a las clases les da igual, se repiten todas las semanas).
+  ///
+  /// El domingo entra con RF-BLQ-4: antes la lista llegaba hasta el sábado y
+  /// un bloque propio de domingo se veía en la vista de día pero desaparecía
+  /// aquí. Un horario sin domingo sigue saliendo con sus seis columnas.
   List<DaySchedule> _weekDays(HorarioController controller) {
     const expected = [
       'lunes',
@@ -191,6 +225,7 @@ class HorarioPage extends StatelessWidget {
       'jueves',
       'viernes',
       'sábado',
+      'domingo',
     ];
     final days = <DaySchedule>[];
     for (final expectedDay in expected) {
@@ -205,7 +240,7 @@ class HorarioPage extends StatelessWidget {
       }
     }
     if (days.isNotEmpty) return days;
-    return controller.daysList.take(6).toList();
+    return controller.daysList.take(7).toList();
   }
 
   double _dynamicHourHeight({
@@ -268,6 +303,146 @@ class HorarioPage extends StatelessWidget {
     );
   }
 
+  /// El mapa con el que una ocurrencia propia entra a [_courseBlock].
+  ///
+  /// Reusa las claves que ya leen las clases (`curso`, `hora_inicio`,
+  /// `hora_fin`) para no duplicar el dibujo del bloque, y agrega
+  /// `bloquePropio` con la ocurrencia tipada: de ahí salen su color y, con
+  /// RF-BLQ-5, la hoja de acciones. `diaCancelado` marca un día cancelado
+  /// (ver [HorarioController.bloquesCanceladosDelDia]), que se pinta tenue y
+  /// con [_diaCanceladoTexto].
+  /// No lleva `idSeccion`, `codigoSeccion`, `salon` ni `color`: un bloque
+  /// propio no tiene curso, sección ni salón.
+  static Map<String, dynamic> _bloqueComoCurso(
+    TimeBlockOccurrence ocurrencia, {
+    bool cancelado = false,
+  }) =>
+      <String, dynamic>{
+        'curso': ocurrencia.title,
+        'hora_inicio': ocurrencia.startTime,
+        'hora_fin': ocurrencia.endTime,
+        'isEvaluation': false,
+        'isAdvising': false,
+        'bloquePropio': ocurrencia,
+        'diaCancelado': cancelado,
+      };
+
+  /// El tramo de un bloque en minutos, leído de las mismas claves, con los
+  /// mismos respaldos (`'07:00 am'`/`'09:00 am'` si falta la hora) y con el
+  /// mismo [_timeToHours] que [_courseBlock]. Así el reparto y el dibujo
+  /// nunca discrepan sobre dónde está un bloque.
+  ({int inicio, int fin}) _tramoEnMinutos(Map<String, dynamic> course) => (
+        inicio:
+            (_timeToHours(course['hora_inicio'] as String? ?? '07:00 am') * 60)
+                .round(),
+        fin: (_timeToHours(course['hora_fin'] as String? ?? '09:00 am') * 60)
+            .round(),
+      );
+
+  /// La opacidad de un día cancelado: se ve, se toca y se distingue de uno
+  /// que sí va (RF-BLQ-5, D2).
+  static const double _opacidadDiaCancelado = 0.4;
+
+  /// Lo que dice un día cancelado debajo de su nombre (D2), en el lugar donde
+  /// una clase lleva su salón o su sección. La prueba lo busca por el texto
+  /// literal, que es el que fija la spec.
+  static const String _diaCanceladoTexto = 'Este día está cancelado';
+
+  /// Pone un bloque en su columna dentro de la pista que va de `left` a
+  /// `right` (RF-BLQ-4): mide `1/columnas` del ancho y se alinea en la columna
+  /// que le tocó. Con una sola columna el factor es 1 y la alineación la
+  /// izquierda: el bloque de siempre, al píxel. Con [tenue], a
+  /// [_opacidadDiaCancelado]: la opacidad no le quita los toques.
+  ///
+  /// Con [FractionallySizedBox] y no calculando `left`/`right` porque aquí no
+  /// se conoce el ancho del día: en la vista semanal cada día es un
+  /// [Expanded]. El hijo mide solo su parte, así que un toque en la otra
+  /// columna le llega al bloque de al lado y no a este.
+  static Widget _enSuColumna({
+    required int columna,
+    required int columnas,
+    bool tenue = false,
+    required Widget bloque,
+  }) {
+    final double eje =
+        columnas <= 1 ? -1.0 : 2 * columna / (columnas - 1) - 1;
+    return FractionallySizedBox(
+      widthFactor: 1 / columnas,
+      alignment: Alignment(eje, 0),
+      child: tenue
+          ? Opacity(opacity: _opacidadDiaCancelado, child: bloque)
+          : bloque,
+    );
+  }
+
+  /// El día que se llama como [dia] dentro de la semana del día activo.
+  ///
+  /// [_weekDays] arma la vista semanal con la primera semana del ciclo. Para
+  /// las clases da igual, pero los bloques propios cambian de una semana a
+  /// otra (un día cancelado, uno movido, uno fuera de sus fechas), así que se
+  /// buscan en la semana que la alumna estaba viendo al girar el teléfono.
+  /// `daysList` trae cada semana como siete días seguidos de lunes a domingo
+  /// (`schedule.service.ts`), de ahí el `% 7`.
+  static DaySchedule _mismoDiaEnLaSemanaActiva(
+    HorarioController controller,
+    DaySchedule dia,
+  ) {
+    final dias = controller.daysList;
+    if (dias.isEmpty) return dia;
+    final activo = math.min(
+      math.max(controller.currentDayIndex.value, 0),
+      dias.length - 1,
+    );
+    final lunes = activo - activo % 7;
+    final nombre = dia.dayName.trim().toLowerCase();
+    for (var i = lunes; i < lunes + 7 && i < dias.length; i++) {
+      if (dias[i].dayName.trim().toLowerCase() == nombre) return dias[i];
+    }
+    return dia;
+  }
+
+  /// Los bloques de un día ya repartidos en columnas (RF-BLQ-4): las clases,
+  /// los bloques propios y los días cancelados juntos, porque los propios
+  /// chocan con las clases a propósito y sin reparto el de arriba taparía al
+  /// de abajo y se comería sus toques. Las clases van primero, en su orden de
+  /// siempre; los cancelados, al final.
+  List<Widget> _bloquesRepartidos({
+    required BuildContext context,
+    required HorarioController controller,
+    required List<Map<String, dynamic>> clases,
+    required List<TimeBlockOccurrence> propios,
+    required List<TimeBlockOccurrence> cancelados,
+    required double hourHeight,
+    required double left,
+    required double right,
+    required bool compact,
+    required bool vistaDia,
+    required double lineOffset,
+  }) {
+    final bloques = <Map<String, dynamic>>[
+      ...clases,
+      ...propios.map(_bloqueComoCurso),
+      for (final o in cancelados) _bloqueComoCurso(o, cancelado: true),
+    ];
+    final slots = repartirEnColumnas(bloques.map(_tramoEnMinutos).toList());
+    return <Widget>[
+      for (var i = 0; i < bloques.length; i++)
+        _courseBlock(
+          context: context,
+          controller: controller,
+          course: bloques[i],
+          hourHeight: hourHeight,
+          left: left,
+          right: right,
+          columna: slots[i].columna,
+          columnas: slots[i].columnas,
+          compact: compact,
+          vistaDia: vistaDia,
+          lineOffset: lineOffset,
+        ),
+    ];
+  }
+
   Widget _courseBlock({
     required BuildContext context,
     required HorarioController controller,
@@ -275,6 +450,11 @@ class HorarioPage extends StatelessWidget {
     required double hourHeight,
     required double left,
     required double right,
+    /// La columna del bloque dentro de su día (desde 0) y entre cuántas se
+    /// reparte el ancho, según [repartirEnColumnas]. Por omisión 0 de 1: todo
+    /// el ancho, como antes del reparto.
+    int columna = 0,
+    int columnas = 1,
     required bool compact,
     /// true en la vista de día a día, false en la semanal horizontal. Separado
     /// de [compact] a propósito: ese dice si el bloque es chico, no qué vista es.
@@ -286,10 +466,19 @@ class HorarioPage extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final bool isEvaluation = course['isEvaluation'] == true;
 
+    // Un bloque propio de la alumna llega con su ocurrencia en `bloquePropio`
+    // (ver [_bloqueComoCurso]). No tiene curso, sección ni salón. Si además
+    // es un día cancelado, `diaCancelado` lo pinta tenue y lo dice.
+    final bloquePropio = course['bloquePropio'] as TimeBlockOccurrence?;
+    final esBloquePropio = bloquePropio != null;
+    final diaCancelado = course['diaCancelado'] == true;
+
     String nombreStr = (course['curso'] as String? ?? 'CURSO').toUpperCase();
-    if (nombreStr.contains(' / ')) {
+    // La barra separa el nombre bilingüe que manda el portal ("CURSO /
+    // COURSE"). El nombre de un bloque propio lo escribió la alumna: va entero.
+    if (!esBloquePropio && nombreStr.contains(' / ')) {
       nombreStr = nombreStr.split(' / ').first.trim();
-    } else if (nombreStr.contains('/')) {
+    } else if (!esBloquePropio && nombreStr.contains('/')) {
       nombreStr = nombreStr.split('/').first.trim();
     }
     final aulaStr = course['salon'] as String? ?? 'Sin salón';
@@ -306,9 +495,13 @@ class HorarioPage extends StatelessWidget {
     final double topPosition = geom.top;
     final double heightVal = geom.height;
 
-    final courseColor =
-        controller.colorPorCurso[course['idSeccion']?.toString()] ??
-        _resolveScheduleColor(colorStr, colors);
+    // El color de un bloque propio es el que eligió la alumna, y NO pasa por
+    // [HorarioController.colorPorCurso]: ese reparte la paleta de doce entre
+    // las secciones, y un bloque ahí dentro le quitaría el suyo a un curso.
+    final courseColor = bloquePropio != null
+        ? parseHexColor(bloquePropio.colorHex) ?? colors.outline
+        : controller.colorPorCurso[course['idSeccion']?.toString()] ??
+              _resolveScheduleColor(colorStr, colors);
     final badgeText = course['isAdvising'] == true
         ? 'ASESORIA'
         : isEvaluation
@@ -317,14 +510,52 @@ class HorarioPage extends StatelessWidget {
     final titleFontSize = compact ? 9.5 : 13.5;
     final metaFontSize = compact ? 8.0 : 11.0;
     final horizontalPadding = compact ? 5.0 : 10.0;
+    // Debajo del nombre: el salón en la vista de día y la sección en la
+    // semanal ([blockMetaLines]). Un bloque propio no tiene ninguno de los dos
+    // y va solo con su nombre; un día cancelado lleva en ese lugar
+    // [_diaCanceladoTexto] (D2), con la misma regla de alto: si el bloque es
+    // chico, no entra y se omite. Se decide aquí, y no dentro de
+    // [blockMetaLines], para no cambiar el contrato que prueba
+    // test/HU31_jeff/horario_bloque_contenido_test.dart.
+    final lineasDebajo = diaCancelado
+        ? blockMetaLines(
+            vistaDia: vistaDia,
+            compact: compact,
+            height: heightVal,
+            seccionLabel: _diaCanceladoTexto,
+            aula: _diaCanceladoTexto,
+          )
+        : esBloquePropio
+        ? const <String>[]
+        : blockMetaLines(
+            vistaDia: vistaDia,
+            compact: compact,
+            height: heightVal,
+            seccionLabel: course['isAdvising'] == true
+                ? (course['codigoSeccion']?.toString() ?? 'Asesoría')
+                : "Sección: ${course['codigoSeccion'] ?? 'Sin sección'}",
+            aula: aulaStr,
+          );
 
     return Positioned(
       top: topPosition,
       left: left,
       right: right,
       height: heightVal,
-      child: InkWell(
+      child: _enSuColumna(columna: columna, columnas: columnas, tenue: diaCancelado, bloque: InkWell(
         onTap: () async {
+          // RF-BLQ-5: un bloque propio no tiene curso al que ir; abre su
+          // hoja de acciones (la de un día cancelado solo ofrece volver al
+          // patrón). Va primero: sin esta rama caería en la del alumno, que
+          // con `idSeccion` vacío no hace nada.
+          if (bloquePropio != null) {
+            await mostrarAccionesDeBloque(
+              context,
+              bloquePropio,
+              cancelado: diaCancelado,
+            );
+            return;
+          }
           final String idSeccion = course['idSeccion']?.toString() ?? '';
           final isTeacher = AuthService.to.currentUser?.isTeacher ?? false;
 
@@ -484,15 +715,7 @@ class HorarioPage extends StatelessWidget {
                           height: 1.05,
                         ),
                       ),
-                      for (final linea in blockMetaLines(
-                        vistaDia: vistaDia,
-                        compact: compact,
-                        height: heightVal,
-                        seccionLabel: course['isAdvising'] == true
-                            ? (course['codigoSeccion']?.toString() ?? 'Asesoría')
-                            : "Sección: ${course['codigoSeccion'] ?? 'Sin sección'}",
-                        aula: aulaStr,
-                      )) ...[
+                      for (final linea in lineasDebajo) ...[
                         const SizedBox(height: 2),
                         Text(
                           linea,
@@ -535,7 +758,7 @@ class HorarioPage extends StatelessWidget {
             ],
           ),
         ),
-      ),
+      )),
     );
   }
 
@@ -545,6 +768,13 @@ class HorarioPage extends StatelessWidget {
     required DaySchedule activeDay,
     required bool isDark,
   }) {
+    // Los bloques propios se leen AQUÍ y no dentro del LayoutBuilder: su
+    // builder corre al hacer el layout, fuera del Obx de [build], y una
+    // lectura ahí no suscribe a nada. Leídos aquí, cuando el service trae o
+    // recarga su ventana el Obx se reconstruye y la grilla los pinta sola.
+    // Los días cancelados, por lo mismo.
+    final propios = controller.bloquesDelDia(activeDay);
+    final cancelados = controller.bloquesCanceladosDelDia(activeDay);
     return LayoutBuilder(
       builder: (context, constraints) {
         const topPadding = 6.0;
@@ -579,18 +809,18 @@ class HorarioPage extends StatelessWidget {
                   fontSize: 10,
                   isDark: isDark,
                 ),
-                ...courses.map(
-                  (course) => _courseBlock(
-                    context: context,
-                    controller: controller,
-                    course: course,
-                    hourHeight: dynamicHourHeight,
-                    left: 66,
-                    right: 14,
-                    compact: dynamicHourHeight < 35,
-                    vistaDia: true,
-                    lineOffset: vertLineOffset,
-                  ),
+                ..._bloquesRepartidos(
+                  context: context,
+                  controller: controller,
+                  clases: courses,
+                  propios: propios,
+                  cancelados: cancelados,
+                  hourHeight: dynamicHourHeight,
+                  left: 66,
+                  right: 14,
+                  compact: dynamicHourHeight < 35,
+                  vistaDia: true,
+                  lineOffset: vertLineOffset,
                 ),
                 if (showCurrentTimeLine)
                   Positioned(
@@ -629,6 +859,24 @@ class HorarioPage extends StatelessWidget {
     // JEFFERSON" en vez de "SANCHEZ PALACIOS JEFFERSON ANGELO".
     final studentName = user == null ? '' : user.fullName.toUpperCase();
     final cycle = user?.currentCycle ?? '';
+    // Fuera del LayoutBuilder por lo mismo que en [_portraitGrid]: así el Obx
+    // de [build] se entera cuando llegan o cambian los bloques propios.
+    final propiosPorDia = <DaySchedule, List<TimeBlockOccurrence>>{
+      for (final day in weekDays)
+        day: controller.bloquesDelDia(
+          _mismoDiaEnLaSemanaActiva(controller, day),
+        ),
+    };
+    final canceladosPorDia = <DaySchedule, List<TimeBlockOccurrence>>{
+      for (final day in weekDays)
+        day: controller.bloquesCanceladosDelDia(
+          _mismoDiaEnLaSemanaActiva(controller, day),
+        ),
+    };
+    // RF-BLQ-6 también en la vista semanal, que pinta los bloques de la
+    // semana del día activo. Se lee aquí, fuera del LayoutBuilder, por lo
+    // mismo que los bloques: así el Obx de [build] se entera solo.
+    final horasDeBloques = controller.horasDeLaSemanaActiva;
 
     return Container(
       color: bg,
@@ -723,21 +971,21 @@ class HorarioPage extends StatelessWidget {
                                   right: 0,
                                   child: Container(height: 1, color: lineColor),
                                 ),
-                              ...controller
-                                  .coursesForDay(day)
-                                  .map(
-                                    (course) => _courseBlock(
-                                      context: context,
-                                      controller: controller,
-                                      course: course,
-                                      hourHeight: hourH,
-                                      left: 2,
-                                      right: 2,
-                                      compact: true,
-                                      vistaDia: false,
-                                      lineOffset: labelPad,
-                                    ),
-                                  ),
+                              ..._bloquesRepartidos(
+                                context: context,
+                                controller: controller,
+                                clases: controller.coursesForDay(day),
+                                propios: propiosPorDia[day] ??
+                                    const <TimeBlockOccurrence>[],
+                                cancelados: canceladosPorDia[day] ??
+                                    const <TimeBlockOccurrence>[],
+                                hourHeight: hourH,
+                                left: 2,
+                                right: 2,
+                                compact: true,
+                                vistaDia: false,
+                                lineOffset: labelPad,
+                              ),
                               if (controller.isCurrentLimaDay(day) &&
                                   controller.currentLimaHourDecimal >=
                                       startHour &&
@@ -787,6 +1035,22 @@ class HorarioPage extends StatelessWidget {
                           ),
                         ),
                       ),
+                      // RF-BLQ-6: los encabezados de la vista semanal no
+                      // llevan fecha (el horario de clases es semanal), así
+                      // que la línea va aquí, junto al ciclo. Nunca un 0
+                      // inventado: sin dato no hay línea.
+                      if (horasDeBloques != null) ...[
+                        Text(
+                          'Tus bloques: ${textoDeHoras(horasDeBloques)} esta semana',
+                          key: horasSemanaKey,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                      ],
                       Text(
                         cycle,
                         style: const TextStyle(
@@ -812,10 +1076,51 @@ class HorarioPage extends StatelessWidget {
     final colors = Theme.of(context).colorScheme;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // RF-BLQ-1: agregar un bloque propio es solo del alumno; el horario del
+    // docente es el de sus clases y asesorías. En horizontal la grilla semanal
+    // ocupa toda la pantalla y el botón la taparía; en la lista de chats no
+    // hay grilla a la que agregar nada.
+    final esAlumno = !(AuthService.to.currentUser?.isTeacher ?? false);
+    final enHorizontal =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
     return Scaffold(
       backgroundColor: isDark
           ? const Color(0xFF1E1E26)
           : const Color(0xFFF8F9FA),
+      floatingActionButton: (esAlumno && !enHorizontal)
+          ? Obx(
+              () => controller.isListView.value
+                  ? const SizedBox.shrink()
+                  // `small`: la esquina inferior derecha es la franja de 9 a
+                  // 10 pm, donde sí hay clases; el botón chico tapa menos.
+                  : FloatingActionButton.small(
+                      key: agregarBloqueKey,
+                      tooltip: 'Agregar bloque',
+                      backgroundColor: colors.primary,
+                      foregroundColor: Colors.white,
+                      // Como el toque de un curso: el formulario no rota
+                      // (solo el horario puede), así que se fija en vertical
+                      // antes de abrirlo y se devuelve la rotación al volver.
+                      onPressed: () async {
+                        // get 4.7.3 borra el controller del formulario recién
+                        // al terminar la animación de salida, y antes de eso
+                        // el binding le daría a /bloque el viejo.
+                        if (Get.isRegistered<TimeBlockFormController>()) {
+                          return;
+                        }
+                        await SystemChrome.setPreferredOrientations(
+                          _portraitOnly,
+                        );
+                        await Get.toNamed<dynamic>('/bloque');
+                        await SystemChrome.setPreferredOrientations(
+                          _scheduleOrientations,
+                        );
+                      },
+                      child: const Icon(Icons.add),
+                    ),
+            )
+          : null,
       body: Obx(() {
         if (controller.isListView.value) {
           return HorarioListView();
@@ -923,15 +1228,40 @@ class HorarioPage extends StatelessWidget {
                 color: isDark ? const Color(0xFF1B1B22) : Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 alignment: Alignment.center,
-                child: Text(
-                  activeDay.weekText,
-                  style: TextStyle(
-                    color: isDark
-                        ? const Color(0xFFB0B0C0)
-                        : const Color(0xFF666666),
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      activeDay.weekText,
+                      style: TextStyle(
+                        color: isDark
+                            ? const Color(0xFFB0B0C0)
+                            : const Color(0xFF666666),
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    // RF-BLQ-6: las horas de los bloques propios en la semana
+                    // del día activo, tal como las manda el servidor. Se lee
+                    // aquí, dentro del Obx de build y fuera de cualquier
+                    // LayoutBuilder, para que la línea se entere sola cuando
+                    // llegan los bloques o cambia el día. Si no hay dato, no
+                    // hay línea: nunca un 0 inventado.
+                    if (controller.horasDeLaSemanaActiva case final horas?) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        'Tus bloques: ${textoDeHoras(horas)} esta semana',
+                        key: horasSemanaKey,
+                        style: TextStyle(
+                          color: isDark
+                              ? const Color(0xFFB0B0C0)
+                              : const Color(0xFF666666),
+                          fontSize: 12,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ),
               const Divider(height: 1, thickness: 1, color: Color(0xFFE5E5E5)),

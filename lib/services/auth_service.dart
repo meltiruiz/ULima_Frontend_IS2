@@ -14,6 +14,7 @@ import 'evaluations_service.dart';
 import 'malla_service.dart';
 import 'official_grades_service.dart';
 import 'storage_service.dart';
+import 'time_blocks_service.dart';
 
 class AuthService extends GetxService {
   static AuthService get to => Get.find();
@@ -395,6 +396,10 @@ class AuthService extends GetxService {
     // Con guarda porque, a diferencia de los tres de arriba, hay pruebas que
     // llaman a logout() sin registrar AcademicRecordService (test/HU02_jeff/).
     if (Get.isRegistered<AcademicRecordService>()) AcademicRecordService.to.clear();
+    // Los bloques de horario propios (RF-BLQ-7) son horarios de trabajo o de
+    // prácticas que el backend protege a propósito (RS-BE-35): se vacían
+    // igual que el récord. Con guarda por lo mismo que la línea de arriba.
+    if (Get.isRegistered<TimeBlocksService>()) TimeBlocksService.to.clear();
     _profesorSectionIds.clear();
     _currentUser.value = null;
     await _storage.clearSession();

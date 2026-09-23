@@ -26,20 +26,21 @@ targets:
 - **Classrooms per session**: Each regular block uses `salon`/`aula` from that session, so a section can have different classrooms on different days.
 - **Course colors**: Regular class blocks accept `color` as either a legacy name (`blue`, `green`, etc.) or a hex value in `#RRGGBB`/`#AARRGGBB` format.
 - **Current-time line**: The grid shows a red current-time line only when the selected day is the current date in Lima, calculated as UTC-5, and the current time is between 7:00 and 22:00.
-- **Course block tap**: Al tocar un bloque de curso, se navega a `DescripCursosPage` con el `idSeccion` correspondiente (no existe un details dialog separado para evaluaciones).
+- **Course block tap**: Al tocar un bloque de curso, se navega a `DescripCursosPage` con el `idSeccion` correspondiente (no existe un details dialog separado para evaluaciones). Un bloque propio del alumno no es un curso: su toque abre la hoja de acciones de `specs/features/time-blocks/time-blocks.spec.md` (RF-BLQ-5).
 - **High-load alert**: If the active academic week has 3 or more assessments, `isActiveWeekHighLoad` is true and the UI shows the existing warning banner under the day selector.
 - **Portrait calendar fit**: In vertical orientation, the calendar grid renders the complete 7:00-22:00 day without vertical scrolling by compressing hour rows and course block content to the available viewport.
 - **Course block alignment**: Course blocks align visually with the hour separators and keep a small inset from the start/end hour lines so their time range reads accurately.
-- **Landscape weekly calendar**: In horizontal orientation, `HorarioPage` remains the same page and renders a weekly grid from Monday to Saturday with the current backend-backed class blocks, course colors, evaluation markers, advising markers, tap behavior, and current-time indicator when applicable.
-- **Landscape reference layout**: The horizontal calendar follows the compact timetable reference from `PrograMovil/lib/pages/horario/horario_semanal.dart`: an orange day/date strip, a narrow hour gutter, full-height day columns, compact rounded course blocks, and a dark student identity strip with code, full name, and current cycle.
+- **Landscape weekly calendar**: In horizontal orientation, `HorarioPage` remains the same page and renders a weekly grid from Monday to Sunday with the current backend-backed class blocks, the student's own time blocks (`specs/features/time-blocks/time-blocks.spec.md`, RF-BLQ-4), course colors, evaluation markers, advising markers, tap behavior, and current-time indicator when applicable.
+- **Landscape reference layout**: The horizontal calendar follows the compact timetable reference from `PrograMovil/lib/pages/horario/horario_semanal.dart`: an orange day/date strip, a narrow hour gutter, full-height day columns, compact rounded course blocks, and a dark student identity strip with code, full name, and current cycle. For a student, the strip also carries the weekly hours of their own time blocks next to the cycle («Tus bloques: 12 h esta semana», `specs/features/time-blocks/time-blocks.spec.md`, RF-BLQ-6), only when that total, rounded to one decimal, is greater than 0.
 - **Landscape chrome removal**: When `HorarioPage` is shown horizontally from the authenticated shell, the global header and footer are hidden to maximize the schedule grid area.
 - **Schedule-only rotation**: `HorarioPage` is the only authenticated footer page that may rotate horizontally for students, delegates, subdelegates, teachers, and teaching assistants; every other footer page remains portrait-only.
 
 ## API Dependencies
 
-- `GET /schedule/me/sessions`
+- `GET /schedule/me/sessions`, whose days also carry `isoDate`, the exact date that places the student's own time blocks (`null` when the cycle has no weeks; RF-BLQ-4 and RF-BLQ-7 of `specs/features/time-blocks/time-blocks.spec.md`)
 - `GET /schedule/me/assessments`
 - `GET /schedule/me/load`
+- `GET /time-blocks/me` and `GET /time-blocks/me/occurrences?from=&to=`, only through `TimeBlocksService`, for the student's own time blocks, their cancelled days and their weekly hours (`specs/features/time-blocks/time-blocks.spec.md`, RF-BLQ-4, RF-BLQ-6 and RF-BLQ-7)
 
 ## Verification
 

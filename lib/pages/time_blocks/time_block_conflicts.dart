@@ -9,6 +9,7 @@
 // de sus reglas, así que este aviso es lo único que avisa.
 
 import '../../models/time_block_model.dart';
+import 'time_block_validators.dart' show diasConFechaEnElRango;
 
 /// Un cruce encontrado: con qué, qué día y a qué hora.
 ///
@@ -143,20 +144,37 @@ bool seCruzan(String inicioA, String finA, String inicioB, String finB) {
   return _minutosSeCruzan(ia, fa, ib, fb);
 }
 
-/// Si dos rangos de fechas `YYYY-MM-DD` (con los dos extremos dentro) se
-/// solapan. Las fechas planas se comparan como texto. Si falta alguna, no se
-/// descarta nada: sin fechas no se puede saber, y el aviso prefiere avisar de
-/// más que callar un cruce real.
-bool _rangosSeSolapan(
+const Set<int> _todaLaSemana = <int>{1, 2, 3, 4, 5, 6, 7};
+
+/// Los días de la semana con al menos una fecha real en el rango
+/// `YYYY-MM-DD` de [desde] a [hasta]. Un rango que falta o no se lee se toma
+/// como abierto, con todos los días: sin fechas no se puede descartar nada, y
+/// el aviso prefiere avisar de más que callar un cruce real.
+Set<int> _diasConFecha(String? desde, String? hasta) =>
+    diasConFechaEnElRango(desde, hasta) ?? _todaLaSemana;
+
+/// Los días de la semana con al menos una fecha real COMÚN a los dos rangos:
+/// los de su intersección. Vacío si los rangos no se solapan. Qué días de
+/// esos son de los dos bloques lo decide quien llama.
+///
+/// Un rango que falta o no se lee se toma como abierto, igual que en
+/// [_diasConFecha]: la intersección es entonces el otro rango.
+Set<int> _diasConFechaEnComun(
   String? desdeA,
   String? hastaA,
-  String desdeB,
-  String hastaB,
+  String? desdeB,
+  String? hastaB,
 ) {
-  if (desdeA == null || hastaA == null || desdeB.isEmpty || hastaB.isEmpty) {
-    return true;
-  }
-  return desdeA.compareTo(hastaB) <= 0 && desdeB.compareTo(hastaA) <= 0;
+  final aSeLee = diasConFechaEnElRango(desdeA, hastaA) != null;
+  final bSeLee = diasConFechaEnElRango(desdeB, hastaB) != null;
+  if (!aSeLee) return _diasConFecha(desdeB, hastaB);
+  if (!bSeLee) return _diasConFecha(desdeA, hastaA);
+  // Los dos rangos se leen: las fechas planas se comparan como texto. La
+  // intersección va del inicio más tardío al fin más temprano; si queda
+  // invertida, no hay fecha común y el resultado es vacío.
+  final desde = desdeA!.compareTo(desdeB!) >= 0 ? desdeA : desdeB;
+  final hasta = hastaA!.compareTo(hastaB!) <= 0 ? hastaA : hastaB;
+  return _diasConFecha(desde, hasta);
 }
 
 /// Con qué choca un bloque que el alumno está por guardar.
@@ -167,11 +185,22 @@ bool _rangosSeSolapan(
 /// bloques propios ya guardados. [ignorarBloqueId] sirve al editar: un bloque
 /// no se cruza consigo mismo.
 ///
-/// Contra las clases mira el día de la semana y la hora: el horario de clases
-/// es el del ciclo y no trae fechas. Contra los demás bloques propios mira
-/// además el rango de fechas: si [desde] y [hasta] (los del bloque que se
-/// guarda) no se solapan con los de otro bloque, los dos nunca coinciden y no
-/// hay cruce que avisar. Compara los rangos, no día por día.
+/// Solo avisa de cruces que pueden pasar en una fecha real (RF-BLQ-3):
+///
+/// - Contra las clases mira el día de la semana y la hora: el horario de
+///   clases es el del ciclo y no trae fechas. Pero solo por los días de la
+///   semana que tienen al menos una fecha real entre [desde] y [hasta] (los del
+///   bloque que se guarda): un bloque de lunes y miércoles que va de un lunes
+///   al martes siguiente no tiene miércoles, y no choca con la clase del
+///   miércoles.
+/// - Contra otro bloque propio hace falta una fecha común a los dos rangos
+///   cuyo día de la semana sea de los dos bloques, y que las horas se crucen.
+///   Que los rangos se solapen no basta: un bloque de martes y sábado que va
+///   del miércoles 23 al 23 no tiene ninguna fecha real, y no choca con nada.
+///
+/// Si [desde] o [hasta] faltan, el rango del bloque nuevo se toma como
+/// abierto, así que contra las clases queda solo el día de la semana y contra
+/// otro bloque cuentan los días con fecha en el rango del bloque guardado.
 ///
 /// La lista sale ordenada por día y por hora de inicio, para que el aviso se
 /// lea siempre igual sin importar en qué orden llegaron las clases.
@@ -190,6 +219,7 @@ List<Cruce> crucesDeBloque({
   if (inicioMin == null || finMin == null) return const <Cruce>[];
 
   final cruces = <Cruce>[];
+  final diasDelRango = _diasConFecha(desde, hasta);
 
   for (final seccion in secciones) {
     final horarios = seccion['horarios'];
@@ -198,7 +228,9 @@ List<Cruce> crucesDeBloque({
     for (final crudo in horarios) {
       if (crudo is! Map) continue;
       final dia = numeroDeDia(crudo['dia'] as String? ?? '');
-      if (dia == null || !dias.contains(dia)) continue;
+      if (dia == null || !dias.contains(dia) || !diasDelRango.contains(dia)) {
+        continue;
+      }
       final desdeMin = horaAMinutos(crudo['hora_inicio'] as String? ?? '');
       final hastaMin = horaAMinutos(crudo['hora_fin'] as String? ?? '');
       if (desdeMin == null || hastaMin == null) continue;
@@ -214,15 +246,19 @@ List<Cruce> crucesDeBloque({
 
   for (final bloque in bloques) {
     if (ignorarBloqueId != null && bloque.id == ignorarBloqueId) continue;
-    if (!_rangosSeSolapan(desde, hasta, bloque.startDate, bloque.endDate)) {
-      continue;
-    }
+    final diasEnComun = _diasConFechaEnComun(
+      desde,
+      hasta,
+      bloque.startDate,
+      bloque.endDate,
+    );
+    if (diasEnComun.isEmpty) continue;
     final desdeMin = horaAMinutos(bloque.startTime);
     final hastaMin = horaAMinutos(bloque.endTime);
     if (desdeMin == null || hastaMin == null) continue;
     if (!_minutosSeCruzan(inicioMin, finMin, desdeMin, hastaMin)) continue;
     for (final dia in bloque.daysOfWeek) {
-      if (!dias.contains(dia)) continue;
+      if (!dias.contains(dia) || !diasEnComun.contains(dia)) continue;
       cruces.add(Cruce(
         conQue: bloque.title,
         dia: dia,

@@ -52,6 +52,8 @@ import 'pages/networking/networking_binding.dart';
 import 'pages/networking/networking_page.dart';
 import 'pages/time_blocks/time_block_form_binding.dart';
 import 'pages/time_blocks/time_block_form_page.dart';
+import 'pages/time_blocks/time_block_list_binding.dart';
+import 'pages/time_blocks/time_block_list_page.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -246,6 +248,13 @@ class MyApp extends StatelessWidget {
           name: '/bloque',
           page: () => const TimeBlockFormPage(),
           binding: TimeBlockFormBinding(),
+        ),
+        // «Mis bloques» (RF-BLQ-8): todos los bloques guardados de la alumna,
+        // para editarlos o borrarlos. Binding por ruta, como /bloque.
+        GetPage(
+          name: '/mis-bloques',
+          page: () => const TimeBlockListPage(),
+          binding: TimeBlockListBinding(),
         ),
       ],
     );

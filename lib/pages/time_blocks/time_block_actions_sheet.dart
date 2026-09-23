@@ -10,6 +10,9 @@
 // No habla HTTP: cada acción llama a TimeBlocksService, que recarga la ventana
 // del horario al terminar, así que la grilla se entera sola. Un error se
 // muestra con el mensaje que llegó del servidor, tal cual (RF-BLQ-2).
+//
+// Editar y borrar el bloque entero ([editarBloque] y [borrarBloque]) también
+// se usan desde la lista «Mis bloques» (RF-BLQ-8).
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -62,12 +65,17 @@ const List<String> _meses = [
   'diciembre',
 ];
 
+/// Las horas de un bloque como las muestran sus pantallas: "14:00 a 18:00",
+/// en `HH:MM`, como en el formulario. La usan la cabecera de esta hoja y cada
+/// fila de «Mis bloques» (RF-BLQ-8), para que las dos las escriban igual.
+String rangoDeHoras(String inicio, String fin) => '$inicio a $fin';
+
 /// Qué día es y a qué hora, para la cabecera de la hoja:
 /// "Lunes 21 de septiembre, 14:00 a 18:00". Las horas van en `HH:MM`, como en
 /// el formulario. Si la fecha no se puede leer, quedan solo las horas: no se
 /// inventa un día.
 String resumenDelDia(TimeBlockOccurrence ocurrencia) {
-  final horas = '${ocurrencia.startTime} a ${ocurrencia.endTime}';
+  final horas = rangoDeHoras(ocurrencia.startTime, ocurrencia.endTime);
   final fecha = DateTime.tryParse(ocurrencia.date);
   if (fecha == null) return horas;
   final dia = _dias[fecha.weekday - 1];
@@ -117,14 +125,7 @@ Future<void> mostrarAccionesDeBloque(
   switch (accion) {
     case AccionDeBloque.editar:
       if (regla == null) return;
-      // La misma guarda que el botón de agregar (HorarioPage): get 4.7.3
-      // borra el controller del formulario recién al terminar la animación
-      // de salida, y antes de eso el binding le daría a /bloque el viejo, que
-      // ignora esta regla y queda por liberar.
-      if (Get.isRegistered<TimeBlockFormController>()) return;
-      await SystemChrome.setPreferredOrientations(_soloVertical);
-      await Get.toNamed<dynamic>('/bloque', arguments: regla);
-      await SystemChrome.setPreferredOrientations(_orientacionesDelHorario);
+      await editarBloque(regla, rotacionAlVolver: _orientacionesDelHorario);
     case AccionDeBloque.cancelarDia:
       final ok = await _intentar(
         navigator,
@@ -186,35 +187,87 @@ Future<void> mostrarAccionesDeBloque(
         () => service.clearException(id, fecha),
       );
     case AccionDeBloque.borrar:
-      if (!navigator.mounted) return;
-      final confirmar = await showDialog<bool>(
-        context: navigator.context,
-        builder: (ctx) => AlertDialog(
-          key: TimeBlockActionsSheet.confirmarBorradoKey,
-          title: const Text(TimeBlockActionsSheet.borrarTitulo),
-          content: Text(TimeBlockActionsSheet.borrarCuerpo(ocurrencia.title)),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(false),
-              child: const Text(TimeBlockActionsSheet.cancelarLabel),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(ctx).pop(true),
-              child: const Text(
-                TimeBlockActionsSheet.borrarConfirmar,
-                style: TextStyle(
-                  color: Colors.redAccent,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-            ),
-          ],
-        ),
+      await borrarBloque(
+        navigator,
+        messenger,
+        id: id,
+        titulo: ocurrencia.title,
       );
-      // Cerrar el diálogo con el barrier o con back devuelve null: no borra.
-      if (confirmar != true) return;
-      await _intentar(navigator, messenger, () => service.remove(id));
   }
+}
+
+/// Abre /bloque para editar [regla], el bloque entero (todas las semanas). La
+/// usan esta hoja y la lista «Mis bloques» (RF-BLQ-8).
+///
+/// No abre nada mientras el formulario anterior siga cerrándose: es la misma
+/// guarda que el botón de agregar (HorarioPage). get 4.7.3 borra el controller
+/// del formulario recién al terminar la animación de salida, y antes de eso el
+/// binding le daría a /bloque el viejo, que ignora esta regla y queda por
+/// liberar.
+///
+/// Con [rotacionAlVolver], el formulario se abre fijado en vertical y al volver
+/// se pide esa rotación: lo necesita el horario, que es la única pantalla que
+/// rota. «Mis bloques» ya es vertical y no la pasa.
+Future<void> editarBloque(
+  TimeBlockRule regla, {
+  List<DeviceOrientation>? rotacionAlVolver,
+}) async {
+  if (Get.isRegistered<TimeBlockFormController>()) return;
+  if (rotacionAlVolver != null) {
+    await SystemChrome.setPreferredOrientations(_soloVertical);
+  }
+  await Get.toNamed<dynamic>('/bloque', arguments: regla);
+  if (rotacionAlVolver != null) {
+    await SystemChrome.setPreferredOrientations(rotacionAlVolver);
+  }
+}
+
+/// Pide confirmación y, si la alumna confirma, borra el bloque [id] con todos
+/// sus días. La usan esta hoja y la lista «Mis bloques» (RF-BLQ-8), así que
+/// las dos piden la confirmación con el mismo título y los mismos botones.
+///
+/// El cuerpo es [TimeBlockActionsSheet.borrarCuerpo], que habla del día
+/// tocado («no solo este»), salvo que llegue [cuerpo]: la lista pasa el suyo,
+/// porque ahí no se tocó ningún día.
+///
+/// Recibe [navigator] y [messenger] y no un contexto: quien la llama los toma
+/// antes de su primer `await`, porque su contexto puede no sobrevivir a la
+/// espera (la hoja del horario, si la alumna gira el teléfono).
+Future<void> borrarBloque(
+  NavigatorState navigator,
+  ScaffoldMessengerState messenger, {
+  required int id,
+  required String titulo,
+  String? cuerpo,
+}) async {
+  if (!navigator.mounted) return;
+  final confirmar = await showDialog<bool>(
+    context: navigator.context,
+    builder: (ctx) => AlertDialog(
+      key: TimeBlockActionsSheet.confirmarBorradoKey,
+      title: const Text(TimeBlockActionsSheet.borrarTitulo),
+      content: Text(cuerpo ?? TimeBlockActionsSheet.borrarCuerpo(titulo)),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(false),
+          child: const Text(TimeBlockActionsSheet.cancelarLabel),
+        ),
+        TextButton(
+          onPressed: () => Navigator.of(ctx).pop(true),
+          child: const Text(
+            TimeBlockActionsSheet.borrarConfirmar,
+            style: TextStyle(
+              color: Colors.redAccent,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+  // Cerrar el diálogo con el barrier o con back devuelve null: no borra.
+  if (confirmar != true) return;
+  await _intentar(navigator, messenger, () => TimeBlocksService.to.remove(id));
 }
 
 /// Corre una escritura del service y dice si salió bien. Si falla, lo avisa

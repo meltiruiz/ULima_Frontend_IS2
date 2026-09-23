@@ -265,9 +265,11 @@ class TimeBlockFormPage extends StatelessWidget {
                             icono: Icons.calendar_today_outlined,
                             brightness: brightness,
                             onTap: () async {
+                              // Al crear abre en el fin del ciclo, no en
+                              // «Desde» (RF-BLQ-2): el campo no se llena.
                               final elegida = await _elegirFecha(
                                 context,
-                                c.hasta.value ?? c.desde.value,
+                                c.fechaInicialDeHasta(DateTime.now()),
                               );
                               if (elegida != null) c.hasta.value = elegida;
                             },

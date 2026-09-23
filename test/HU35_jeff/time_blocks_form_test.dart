@@ -166,7 +166,9 @@ Map<String, dynamic> _claseDelMartes() => <String, dynamic>{
 /// `uniqueEnrolledCourses` del `HorarioController` registrado. Sin su
 /// `onInit` (reloj y carga remota), como en las pruebas de la grilla.
 class _HorarioConClases extends HorarioController {
-  _HorarioConClases(this.clases);
+  _HorarioConClases(this.clases, {List<DaySchedule> dias = const []}) {
+    daysList.assignAll(dias);
+  }
 
   final List<Map<String, dynamic>> clases;
 
@@ -542,6 +544,144 @@ void main() {
       // La fecha propuesta es la de hoy: basta con que haya llegado.
       expect(_c.desde.value, isNotNull);
       expect(find.text(_c.desdeTexto!), findsOneWidget);
+    });
+  });
+
+  group('WIDGET · dónde abren las fechas al crear (RF-BLQ-2)', () {
+    /// Hoy sin hora, como la compara `showDatePicker`.
+    DateTime hoySinHora() {
+      final ahora = DateTime.now();
+      return DateTime(ahora.year, ahora.month, ahora.day);
+    }
+
+    Future<DatePickerDialog> tocarHasta(WidgetTester tester) async {
+      await tester.ensureVisible(find.byKey(TimeBlockFormPage.hastaKey));
+      await tester.tap(find.byKey(TimeBlockFormPage.hastaKey));
+      await tester.pumpAndSettle();
+      return tester.widget<DatePickerDialog>(find.byType(DatePickerDialog));
+    }
+
+    testWidgets('«Hasta» sin elegir abre en el último día del ciclo',
+        (tester) async {
+      // El ciclo termina dentro de 40 días, contados desde el día en que
+      // corre la prueba: así «Desde» (hoy) nunca queda después.
+      final hoy = hoySinHora();
+      final finDelCiclo = DateTime(hoy.year, hoy.month, hoy.day + 40);
+      final isoFin = TimeBlockFormController.fmtFecha(finDelCiclo);
+      Get.put<HorarioController>(_HorarioConClases(
+        const [],
+        dias: [
+          DaySchedule('Lunes', '', 'Semana 1',
+              isoDate: TimeBlockFormController.fmtFecha(hoy)),
+          DaySchedule('Martes', '', 'Semana 16', isoDate: isoFin),
+          // Un día sin isoDate al final no cuenta: vale el último no nulo.
+          DaySchedule('Miércoles', '', 'Semana 16'),
+        ],
+      ));
+      await _abrirFormulario(tester);
+
+      // Solo cambia dónde abre el selector: los campos siguen vacíos.
+      expect(_c.desde.value, isNull);
+      expect(_c.hasta.value, isNull);
+      expect(find.text('Elegir'), findsNWidgets(2));
+
+      final selector = await tocarHasta(tester);
+      expect(selector.initialDate, finDelCiclo);
+
+      await tester.tap(find.text(TimeBlockFormPage.pickerAceptar));
+      await tester.pumpAndSettle();
+      expect(_c.hastaTexto, isoFin);
+    });
+
+    testWidgets('sin horario en pantalla, «Hasta» abre en «Desde» más 6 días',
+        (tester) async {
+      expect(Get.isRegistered<HorarioController>(), isFalse);
+      await _abrirFormulario(tester);
+
+      // Sin «Desde» elegido, la base es hoy.
+      final hoy = hoySinHora();
+      var selector = await tocarHasta(tester);
+      expect(selector.initialDate, DateTime(hoy.year, hoy.month, hoy.day + 6));
+      await tester.tap(find.text(TimeBlockFormPage.pickerCancelar));
+      await tester.pumpAndSettle();
+      expect(_c.hasta.value, isNull);
+
+      // Con «Desde» elegido, la base es esa fecha.
+      final desde = DateTime(hoy.year, hoy.month, hoy.day + 10);
+      _c.desde.value = desde;
+      await tester.pump();
+      selector = await tocarHasta(tester);
+      expect(
+        selector.initialDate,
+        DateTime(desde.year, desde.month, desde.day + 6),
+      );
+    });
+  });
+
+  group('UNITARIA · fechaInicialDeHasta (RF-BLQ-2)', () {
+    final hoy = DateTime(2026, 9, 23, 15, 30);
+
+    TimeBlockFormController conCiclo(String? fin) =>
+        TimeBlockFormController(finDelCiclo: () => fin);
+
+    test('abre en el último día del ciclo si no es anterior a «Desde»', () {
+      expect(conCiclo('2026-12-12').fechaInicialDeHasta(hoy),
+          DateTime(2026, 12, 12));
+    });
+
+    test('el último día del ciclo igual a «Desde» todavía vale', () {
+      final c = conCiclo('2026-12-12')..desde.value = DateTime(2026, 12, 12);
+      expect(c.fechaInicialDeHasta(hoy), DateTime(2026, 12, 12));
+    });
+
+    test('si el ciclo termina antes de «Desde», abre en «Desde» más 6 días',
+        () {
+      final c = conCiclo('2026-12-12')..desde.value = DateTime(2026, 12, 20);
+      expect(c.fechaInicialDeHasta(hoy), DateTime(2026, 12, 26));
+    });
+
+    test('si el ciclo ya terminó y no hay «Desde», abre en hoy más 6 días',
+        () {
+      expect(conCiclo('2026-07-15').fechaInicialDeHasta(hoy),
+          DateTime(2026, 9, 29));
+    });
+
+    test('sin ciclo con fechas, abre en hoy más 6 días', () {
+      expect(conCiclo(null).fechaInicialDeHasta(hoy), DateTime(2026, 9, 29));
+    });
+
+    test('sin ciclo con fechas y con «Desde», abre en «Desde» más 6 días', () {
+      final c = conCiclo(null)..desde.value = DateTime(2026, 12, 28);
+      // Cruza el año sin tropezar.
+      expect(c.fechaInicialDeHasta(hoy), DateTime(2027, 1, 3));
+    });
+
+    test('si «Hasta» ya tiene fecha, abre en esa', () {
+      final c = conCiclo('2026-12-12')..hasta.value = DateTime(2026, 10, 2);
+      expect(c.fechaInicialDeHasta(hoy), DateTime(2026, 10, 2));
+    });
+
+    test('el último día del ciclo sale del último isoDate no nulo del horario',
+        () {
+      Get.put<HorarioController>(_HorarioConClases(
+        const [],
+        dias: [
+          DaySchedule('Lunes', '', 'Semana 1', isoDate: '2026-08-24'),
+          DaySchedule('Domingo', '', 'Semana 16', isoDate: '2026-12-13'),
+          DaySchedule('Lunes', '', 'Semana 17'),
+        ],
+      ));
+      expect(TimeBlockFormController.finDelCicloDelHorario(), '2026-12-13');
+    });
+
+    test('sin horario registrado, o sin días con fecha, no hay fin de ciclo',
+        () {
+      expect(TimeBlockFormController.finDelCicloDelHorario(), isNull);
+      Get.put<HorarioController>(_HorarioConClases(
+        const [],
+        dias: [DaySchedule('Lunes', '', 'Semana actual')],
+      ));
+      expect(TimeBlockFormController.finDelCicloDelHorario(), isNull);
     });
   });
 

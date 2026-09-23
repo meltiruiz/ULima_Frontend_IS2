@@ -20,11 +20,14 @@ class TimeBlockFormController extends GetxController {
   TimeBlockFormController({
     TimeBlocksService? service,
     List<Map<String, dynamic>> Function()? secciones,
+    String? Function()? finDelCiclo,
   })  : _service = service,
-        _secciones = secciones ?? seccionesDelHorario;
+        _secciones = secciones ?? seccionesDelHorario,
+        _finDelCiclo = finDelCiclo ?? finDelCicloDelHorario;
 
   final TimeBlocksService? _service;
   final List<Map<String, dynamic>> Function() _secciones;
+  final String? Function() _finDelCiclo;
 
   /// Solo para fallos que no traen mensaje del servidor. Es el MISMO texto
   /// que ya usa el service (Tarea 1): el alumno no tiene por qué leer dos
@@ -46,6 +49,20 @@ class TimeBlockFormController extends GetxController {
       Get.isRegistered<HorarioController>()
           ? Get.find<HorarioController>().uniqueEnrolledCourses
           : const <Map<String, dynamic>>[];
+
+  /// El último día del ciclo visible, `"YYYY-MM-DD"`: el último `isoDate` no
+  /// nulo de los días del horario en pantalla, el mismo extremo de la ventana
+  /// de bloques (RF-BLQ-7). null si la pantalla de horario no está montada o
+  /// si ningún día trae `isoDate` (el ciclo sin semanas).
+  static String? finDelCicloDelHorario() {
+    if (!Get.isRegistered<HorarioController>()) return null;
+    final dias = Get.find<HorarioController>().daysList;
+    for (var i = dias.length - 1; i >= 0; i--) {
+      final iso = dias[i].isoDate;
+      if (iso != null) return iso;
+    }
+    return null;
+  }
 
   /// `#RRGGBB` en mayúsculas, que es lo que pide el contrato.
   static String hexDeColor(Color color) =>
@@ -111,6 +128,28 @@ class TimeBlockFormController extends GetxController {
       desde.value == null ? null : fmtFecha(desde.value!);
   String? get hastaTexto =>
       hasta.value == null ? null : fmtFecha(hasta.value!);
+
+  /// Dónde abre el selector de «Hasta» (RF-BLQ-2). Solo eso: no llena el
+  /// campo.
+  ///
+  /// Si ya tiene fecha, en esa. Si no, en el último día del ciclo visible
+  /// ([finDelCicloDelHorario]) cuando no es anterior a «Desde» (o a [hoy], si
+  /// «Desde» sigue vacío). Sin ciclo con fechas, o con el ciclo ya terminado
+  /// para esa fecha, en «Desde» (o [hoy]) más 6 días. Antes abría en «Desde»,
+  /// y aceptar los dos selectores sin moverlos dejaba un bloque de un solo
+  /// día, que casi nunca es uno de los marcados.
+  DateTime fechaInicialDeHasta(DateTime hoy) {
+    final elegida = hasta.value;
+    if (elegida != null) return elegida;
+    final base = _soloFecha(desde.value ?? hoy);
+    final fin = fechaDeTexto(_finDelCiclo());
+    if (fin != null && !_soloFecha(fin).isBefore(base)) return _soloFecha(fin);
+    // Por calendario y no con Duration: 6 días de 24 h pueden no ser 6 días
+    // si en medio cambia la hora del dispositivo.
+    return DateTime(base.year, base.month, base.day + 6);
+  }
+
+  static DateTime _soloFecha(DateTime d) => DateTime(d.year, d.month, d.day);
 
   /// Deja el mensaje del validador en [errorMessage] y dice si se puede seguir.
   bool validar() {

@@ -2,8 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../configs/themes.dart';
 import '../../models/seccion_model.dart';
+import '../../services/chat_repository.dart';
+import '../chat/chat_page.dart';
 import 'anuncios_tab.dart';
 import 'asesoria_tab.dart';
 import 'contactos_tab.dart';
@@ -12,9 +15,25 @@ import '../../components/skeleton.dart';
 
 class DescripCursosPage extends StatelessWidget {
   final String idSeccion;
+
+  /// Color del curso, el que le da la grilla del horario
+  /// (`HorarioController.colorPorCurso`), para el círculo del chat que abre
+  /// «Chat del curso» (RF-CHAT-7). Si llega nulo, `ChatPage` usa su respaldo.
+  final Color? courseColor;
+
+  /// Repositorio inyectable para tests, que se le pasa a la `ChatPage` que
+  /// abre «Chat del curso». En producción es null y `ChatPage` usa el
+  /// repositorio real.
+  final ChatRepositoryContract? chatRepository;
+
   final DescripCursosController control = Get.put(DescripCursosController());
 
-  DescripCursosPage({super.key, required this.idSeccion}) {
+  DescripCursosPage({
+    super.key,
+    required this.idSeccion,
+    this.courseColor,
+    this.chatRepository,
+  }) {
     control.cargarDatosCurso(idSeccion);
   }
 
@@ -67,6 +86,9 @@ class DescripCursosPage extends StatelessWidget {
     );
   }
 
+  /// La franja de la sección (RF-CHAT-7) lleva «Sección: N» a la izquierda y
+  /// el botón «Chat del curso» a la derecha. Sin relleno vertical, la franja
+  /// mide lo que pide el blanco táctil del botón, 48 px.
   Widget _section(BuildContext context, Seccion seccion) {
     ColorScheme colors = Theme.of(context).colorScheme;
 
@@ -75,16 +97,56 @@ class DescripCursosPage extends StatelessWidget {
 
       color: _sectionBackground(colors),
 
-      padding: const EdgeInsets.symmetric(vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 20),
 
-      child: Center(
-        child: Text(
-          'Sección: ${seccion.codigoSeccion}',
-          style: TextStyle(
-            color: colors.onSurface,
-            fontWeight: FontWeight.w600,
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Sección: ${seccion.codigoSeccion}',
+              style: TextStyle(
+                color: colors.onSurface,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
+          const SizedBox(width: 12),
+          _chatDelCurso(context, seccion),
+        ],
+      ),
+    );
+  }
+
+  /// Botón de contorno con el fondo y el borde de tarjeta, que abre el chat de
+  /// la sección con el color del curso (RF-CHAT-7).
+  Widget _chatDelCurso(BuildContext context, Seccion seccion) {
+    final brillo = Theme.of(context).brightness;
+
+    return OutlinedButton.icon(
+      onPressed: () => Get.to<void>(
+        () => ChatPage(
+          sectionId: seccion.idSeccion,
+          courseName: seccion.curso,
+          sectionCode: seccion.codigoSeccion,
+          courseColor: courseColor,
+          repository: chatRepository,
         ),
+      ),
+      // Un ícono pide 3:1 contra el botón: iconoNaranja da 4,12:1 en claro y
+      // 5,65:1 en oscuro, como el botón de «Mis bloques» (horario.dart).
+      icon: Icon(
+        LucideIcons.messagesSquare,
+        color: MaterialTheme.iconoNaranja(brillo),
+      ),
+      label: const Text('Chat del curso'),
+      style: OutlinedButton.styleFrom(
+        backgroundColor: MaterialTheme.cardBg(brillo),
+        foregroundColor: MaterialTheme.textPrimary(brillo),
+        side: BorderSide(color: MaterialTheme.borderColor(brillo)),
+        // El blanco táctil queda en 48 px en cualquier plataforma, porque la
+        // densidad compacta de escritorio lo bajaría a 40.
+        tapTargetSize: MaterialTapTargetSize.padded,
+        visualDensity: VisualDensity.standard,
       ),
     );
   }
@@ -507,7 +569,6 @@ class DescripCursosPage extends StatelessWidget {
   }
 }
 
-
 /// Anillo de asistencia: NACE VACÍO y se llena como las manecillas de un reloj.
 ///
 /// Desde las 12 en punto y en sentido horario: primero el verde de las horas
@@ -532,12 +593,16 @@ class _AnilloAsistencia extends CustomPainter {
   final Color vacio;
 
   static const double _grosor = 16;
-  static const double _arriba = -math.pi / 2;   // las 12 en punto
+  static const double _arriba = -math.pi / 2; // las 12 en punto
 
   @override
   void paint(Canvas canvas, Size size) {
-    final rect = Rect.fromLTWH(0, 0, size.width, size.height)
-        .deflate(_grosor / 2);
+    final rect = Rect.fromLTWH(
+      0,
+      0,
+      size.width,
+      size.height,
+    ).deflate(_grosor / 2);
     final trazo = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = _grosor;
@@ -552,7 +617,13 @@ class _AnilloAsistencia extends CustomPainter {
       canvas.drawArc(rect, _arriba, verde, false, trazo..color = Colors.green);
     }
     if (rojo > 0) {
-      canvas.drawArc(rect, _arriba + verde, rojo, false, trazo..color = Colors.red);
+      canvas.drawArc(
+        rect,
+        _arriba + verde,
+        rojo,
+        false,
+        trazo..color = Colors.red,
+      );
     }
   }
 

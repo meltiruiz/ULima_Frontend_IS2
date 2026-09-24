@@ -907,22 +907,6 @@ void main() {
       await _desmontarHorario(tester);
     });
 
-    testWidgets('en la lista de chats no aparece', (tester) async {
-      _telefonoVertical(tester);
-      Get.put<AuthService>(_FakeAuthService(_alumna()));
-      await tester.pumpWidget(horario());
-      await tester.pump();
-      expect(find.byKey(HorarioPage.agregarBloqueKey), findsOneWidget);
-
-      Get.find<HorarioController>().toggleListView();
-      await tester.pump();
-
-      expect(find.text('Mis chats'), findsOneWidget);
-      expect(find.byKey(HorarioPage.agregarBloqueKey), findsNothing);
-
-      await _desmontarHorario(tester);
-    });
-
     testWidgets('en horizontal el botón no tapa la grilla semanal',
         (tester) async {
       // 800 x 600, la superficie por defecto: horizontal.

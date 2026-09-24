@@ -50,9 +50,11 @@ abstract class ChatRepositoryContract {
   Future<void> sendNetworkingCard(String sectionId, ChatSession session);
   Future<PublicNetworkingCardDto> fetchNetworkingCard(int userId);
 
-  /// HU23: elimina (borrado suave) un mensaje. Va por el backend (teacher-only,
-  /// escribe la lápida con Admin SDK); las reglas RTDB no permiten borrar desde
-  /// el cliente. Autorización real: solo el profesor titular de la sección.
+  /// HU23: elimina (borrado suave) un mensaje. Va por el backend, que escribe la
+  /// lápida con Admin SDK; las reglas RTDB no permiten borrar desde el cliente.
+  /// Autorización real (R-CHAT-4 del backend): cada participante borra sus
+  /// propios mensajes y el profesor titular, cualquiera. Un mensaje ajeno sin
+  /// ese permiso responde 403 `CHAT_DELETE_FORBIDDEN`.
   Future<void> deleteMessage(String sectionId, String messageId);
 }
 
@@ -179,8 +181,9 @@ class ChatRepository implements ChatRepositoryContract {
 
   @override
   Future<void> deleteMessage(String sectionId, String messageId) async {
-    // El borrado lo hace el backend (verifica que sea el profesor de la sección
-    // y escribe la lápida con Admin SDK). El stream de RTDB refleja el cambio.
+    // El borrado lo hace el backend (verifica la autoría o que sea el profesor
+    // titular y escribe la lápida con Admin SDK). El stream de RTDB refleja el
+    // cambio.
     await _apiClient.deleteJson(
       '/chat/sections/$sectionId/messages/$messageId',
     );

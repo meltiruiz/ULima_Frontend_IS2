@@ -65,7 +65,7 @@
 
 ULima++ es la app que un alumno de la Universidad de Lima abre para no tener que abrir otras cinco. Hoy su vida académica vive repartida entre el portal miUlima, los PDFs de sílabo en Drive, un grupo de WhatsApp por sección y una hoja de cálculo con sus propias notas. Esta app junta todo eso en un solo sitio: **malla curricular** con prerrequisitos y simulación de avance, **calculadora de notas personales**, **notas oficiales** en solo lectura, **horario** semanal con evaluaciones y carga académica, **asesorías** con confirmación de asistencia, **anuncios de sección** publicados por el delegado, **buzón de alertas**, **contactos** del salón, **chat de sección** en vivo, **carnet de networking**, **visor de sílabo** dentro de la app y **ULimaBot**, un asistente que responde en lenguaje natural sobre notas, horario, exámenes, malla, anuncios, compañeros, alertas y las conversaciones del chat de su sección.
 
-Desde **HU18** la app dejó de ser solo del alumno. Un profesor o jefe de práctica entra con las mismas credenciales y recibe otro shell: [`lib/pages/home/home_shell_config.dart`](lib/pages/home/home_shell_config.dart) decide en `forUser(user)` si arma la barra de alumno —Malla · Notas · Horario · Delegado · Perfil— o la de docente —Secciones · Calificar · Horario · Asesorias · Perfil—. La pestaña **Calificar** solo aparece si el usuario es profesor titular (`AuthService.to.canGrade`); un JP puro no la ve, y por eso `HomePage` deriva el índice de cada pestaña en runtime en lugar de hardcodearlo (`home_page.dart:42-43`). El mismo criterio se repite en el resto de la UI: la campana de alertas y el toggle del horario se ocultan para docentes (`app_header.dart:57-58, 95-115`), y la burbuja del chatbot solo se dibuja si `!user.isTeacher` (`home_page.dart:102`).
+Desde **HU18** la app dejó de ser solo del alumno. Un profesor o jefe de práctica entra con las mismas credenciales y recibe otro shell: [`lib/pages/home/home_shell_config.dart`](lib/pages/home/home_shell_config.dart) decide en `forUser(user)` si arma la barra de alumno —Malla · Notas · Horario · Chats · Perfil, con Delegado antes de Perfil si el alumno es delegado— o la de docente —Secciones · Calificar · Horario · Asesorias · Perfil—. La pestaña **Calificar** solo aparece si el usuario es profesor titular (`AuthService.to.canGrade`); un JP puro no la ve, y por eso `HomePage` deriva el índice de cada pestaña en runtime en lugar de hardcodearlo (`home_page.dart:42-43`). El mismo criterio se repite en el resto de la UI: la campana de alertas se oculta para docentes (`app_header.dart:55-56, 93-148`), y la burbuja del chatbot solo se dibuja si `!user.isTeacher` (`home_page.dart:112`).
 
 Este repositorio es **únicamente la app Flutter**: paquete Dart `ulima_plus` versión `1.0.0+1` ([`pubspec.yaml`](pubspec.yaml)), **30 217 líneas de Dart repartidas en 151 archivos** bajo [`lib/`](lib), **15 specs** en [`specs/features/`](specs/features) y **49 suites de prueba** (6 567 líneas) en [`test/`](test). Son 28 pantallas, 25 controllers GetX, 30 servicios, 21 modelos y 20 componentes. Las plataformas que realmente arrancan son **Android, iOS y Web**: `Firebase.initializeApp` corre siempre en el arranque ([`lib/main.dart:53`](lib/main.dart)) y `DefaultFirebaseOptions.currentPlatform` lanza `UnsupportedError` en macOS, Windows y Linux ([`lib/firebase_options.dart:27-45`](lib/firebase_options.dart)). Los directorios de esas tres plataformas existen en el repo, pero son andamiaje generado por `flutter create` que nadie compila.
 
@@ -167,7 +167,7 @@ return GetMaterialApp(
 | `initialRoute` | calculado en `main()` | Ver diagrama abajo. |
 | `getPages` | 15 rutas nombradas | `lib/main.dart:105-211`. |
 
-**Orientaciones.** `main.dart` fija `portraitUp` y seis puntos del código lo amplían o lo restauran. `_scheduleOrientations` y `_mallaMapOrientations` son la misma lista `[portraitUp, landscapeLeft, landscapeRight]`, y solo la aplican el shell cuando la pestaña activa es "Horario" ([`lib/pages/home/home_page.dart`](lib/pages/home/home_page.dart)`:24-31`), el toggle del header, las dos vistas de horario y la malla clásica en modo mapa. Cada una vuelve a vertical en su `dispose()`.
+**Orientaciones.** `main.dart` fija `portraitUp`, y cinco archivos amplían la rotación o la restauran. `_scheduleOrientations` y `_mallaMapOrientations` son la misma lista `[portraitUp, landscapeLeft, landscapeRight]`. Solo dos pantallas la aplican por sí mismas, el shell mientras la pestaña activa es "Horario" ([`lib/pages/home/home_page.dart`](lib/pages/home/home_page.dart)`:24-31` y `:56-60`) y la malla clásica en modo mapa (`malla_page.dart:32-51`). Las dos vuelven a vertical en su `dispose()`, y el shell también al cambiar de pestaña. La campana del header fuerza vertical antes de abrir las alertas y, al volver, devuelve la rotación del horario si la pestaña activa es Horario (`app_header.dart:100-109`). El horario hace lo mismo al abrir la ficha del curso, «Mis bloques», el formulario de un bloque nuevo y, para el docente, la lista de alumnos impedidos y en riesgo (`horario.dart:678-687`, `:1132-1138`, `:1163-1169` y `:1604-1617`). La hoja de acciones de un bloque repite el patrón al abrir su edición (`time_block_actions_sheet.dart:217-221`).
 
 > ⚠️ **Solo Android, iOS y Web arrancan.** `firebase_options.dart:27-45` lanza `UnsupportedError` para macOS, Windows y Linux, y `Firebase.initializeApp` está en el paso 3 de `main()`. Los directorios `macos/`, `windows/` y `linux/` existen en el repo pero la app moriría en el arranque en esas tres plataformas.
 
@@ -558,8 +558,8 @@ flowchart TD
     SHELL --> R1{"isTeacher"}
     R1 -->|"si · DOCENTE"| TSH["Shell docente<br/>Secciones · Calificar solo si canGrade<br/>Horario · Asesorias · Perfil"]
     R1 -->|no| R2{"isDelegate"}
-    R2 -->|"si · DELEGADO o SUBDELEGADO"| DSH["Shell alumno con 5 pestanas<br/>Malla · Notas · Horario · Delegado · Perfil"]
-    R2 -->|"no · ALUMNO"| ASH["Shell alumno con 4 pestanas<br/>Malla · Notas · Horario · Perfil"]
+    R2 -->|"si · DELEGADO o SUBDELEGADO"| DSH["Shell alumno con 6 pestanas<br/>Malla · Notas · Horario · Chats · Delegado · Perfil"]
+    R2 -->|"no · ALUMNO"| ASH["Shell alumno con 5 pestanas<br/>Malla · Notas · Horario · Chats · Perfil"]
 ```
 
 **La guarda de sesión.** Todo camino que termina una sesión — el botón de logout del Perfil, el interceptor de 401 del `ApiClient` y el éxito del reset de contraseña — pasa obligatoriamente por una sola función:
@@ -781,13 +781,16 @@ puro queda en `false`. Si ese endpoint falla, el set queda vacío y el login no 
 
 | Elemento | Archivo | Visible para | Comportamiento |
 |:---|:---|:---|:---|
-| Marca `ULIMA++` | `app_header.dart:34-48,73-91` | Todos | `InkWell` que abre una promoción externa con `url_launcher` |
-| Toggle lista/calendario | `app_header.dart:95-115` | Alumno, solo en el tab Horario | `HorarioController.toggleListView()` |
-| Campana + badge de no leídas | `app_header.dart:57-58,116-171` | **Solo alumno** | Fuerza vertical, abre `AlertasPage`, restaura orientaciones al volver |
-| Placeholder `SizedBox(30,30)` | `app_header.dart:172-173` | Docente | Mantiene la altura del header sin campana ni toggle |
+| Marca `ULIMA++` | `app_header.dart:32-46,71-89` | Todos | `InkWell` que abre una promoción externa con `url_launcher` |
+| Campana + badge de no leídas | `app_header.dart:55-56,93-148` | **Solo alumno** | Fuerza vertical, abre `AlertasPage`, restaura orientaciones al volver |
+| Placeholder `SizedBox(30,30)` | `app_header.dart:149-150` | Docente | Mantiene la altura del header sin la campana |
 | Banner de carga de ciclo | `home_page.dart:143-197` | Alumno con `needsImport` y no pospuesto | **Cargar** → `/portal-sync`; **✕ Después** → `posponerCarga()` |
 | Burbuja arrastrable de ULimaBot | `chatbot_bubble.dart:86` | Alumno, fuera del horario en landscape | `Get.toNamed('/chatbot')` |
 | Footer `BottomNavigationBar` | `app_footer.dart:27-41` | Todos salvo horario en landscape | Fondo `#1E1E24`, `elevation: 12` |
+
+Desde la fase 1 de los chats de curso, el header ya no lleva el ícono de lista del horario y la campana es el
+único control a la derecha, porque el alumno entra al chat desde la pestaña Chats del footer (RF-CHAT-5 de
+[`specs/features/chat/chat.spec.md`](specs/features/chat/chat.spec.md)).
 
 > **2 · "Después" no se persiste, y es a propósito.** `HomeController.pospuesto` vive solo en memoria
 > (`home_controller.dart:16-19`). Si el alumno cierra el banner y reabre la app, vuelve a verlo. La
@@ -798,10 +801,11 @@ puro queda en `false`. Si ese endpoint falla, el set queda vacío y el login no 
 > `PortalSyncStatus.desconocido` y el banner simplemente no aparece.
 
 **Orientación.** La app arranca bloqueada en vertical (`main.dart:50-52`). El único lugar donde se permite
-landscape dentro del shell es el tab Horario (`_scheduleOrientations`, `home_page.dart:24-31,51-55`); en
-landscape se ocultan header, banner y footer (`home_page.dart:99-134`). Fuera del shell, solo
+landscape dentro del shell es el tab Horario (`_scheduleOrientations`, `home_page.dart:24-31,56-60`); en
+landscape se ocultan header, banner y footer (`home_page.dart:109-144`). Fuera del shell, solo
 `/malla-clasica` rota (`malla_page.dart:32-51`). Toda navegación que sale del horario fuerza vertical y
-restaura al volver (`app_header.dart:123-133`, `horario.dart:404-408`, `horario.dart:1193-1206`).
+restaura la rotación al volver (`app_header.dart:100-109`, `horario.dart:678-687`, `:1132-1138`,
+`:1163-1169` y `:1604-1617`, y `time_block_actions_sheet.dart:217-221`).
 
 ---
 
@@ -819,14 +823,14 @@ restaura al volver (`app_header.dart:123-133`, `horario.dart:404-408`, `horario.
 | `CalculadoraPage` | [`lib/pages/calculadora/calculadora_page.dart:8`](lib/pages/calculadora/calculadora_page.dart) | Alumno | Notas personales por evaluación y promedio ponderado | `CoursesService`, `EvaluationSyllabusService`, `ApiClient` | `CalculadoraNotas.png`, `NotasPorCurso.png`, `AgregarNota.png` |
 | `MisNotasPage` | [`lib/pages/mis_notas/mis_notas_page.dart:10`](lib/pages/mis_notas/mis_notas_page.dart) | Alumno | Notas **oficiales** publicadas por el docente, solo lectura | `OfficialGradesService` | — |
 | `HorarioPage` | [`lib/pages/horario/horario.dart:18`](lib/pages/horario/horario.dart) | Alumno y docente | Rejilla día/semana con evaluaciones; único lugar con landscape | `ApiClient`, `AttendanceRiskService`, `ContactoService` | `HorarioAcademico_Evaluaciones.png` |
-| `DescripCursosPage` | [`lib/pages/descripcion_cursos/descrip_cursos.dart:11`](lib/pages/descripcion_cursos/descrip_cursos.dart) | Alumno | Detalle de sección: dona de asistencia + 3 pestañas | `SeccionService`, `AnuncioService`, `AsesoriaService`, `ContactoService` | `Anuncios.png`, `Asesorias.png`, `Contactos.png` |
+| `DescripCursosPage` | [`lib/pages/descripcion_cursos/descrip_cursos.dart:11`](lib/pages/descripcion_cursos/descrip_cursos.dart) | Alumno | Detalle de sección: dona de asistencia + 3 pestañas y el botón «Chat del curso» | `SeccionService`, `AnuncioService`, `AsesoriaService`, `ContactoService` | `Anuncios.png`, `Asesorias.png`, `Contactos.png` |
 | `AlertasPage` | [`lib/pages/alertas/alertas_page.dart:13`](lib/pages/alertas/alertas_page.dart) | Alumno | Buzón de alertas de riesgo académico y alta carga | `AlertService` | `BuzonAlertas.png` |
 | `ProfilePage` | [`lib/pages/perfil/perfil.dart:14`](lib/pages/perfil/perfil.dart) | Alumno y docente | Datos, carrera, especialidades, seguridad, networking, logout | `AuthService`, `PasswordResetService` | `Perfil.png` |
 | `PortalSyncPage` | [`lib/pages/portal_sync/portal_sync_page.dart:16`](lib/pages/portal_sync/portal_sync_page.dart) | Alumno | Carga del ciclo desde miUlima: formulario → cargando → resumen | `PortalSyncService` | — |
 | `SilaboViewerPage` | [`lib/pages/silabo/silabo_viewer_page.dart:25`](lib/pages/silabo/silabo_viewer_page.dart) | Alumno | Visor de PDF in-app con zoom, paginado y compartir | `SilaboService` | — |
 | `ChatbotPage` | [`lib/pages/chatbot/chatbot_page.dart:13`](lib/pages/chatbot/chatbot_page.dart) | Alumno | ULimaBot: asistente académico con historial de conversaciones | `ChatbotService`, `NotasService` | — |
 | `NetworkingPage` | [`lib/pages/networking/networking_page.dart:10`](lib/pages/networking/networking_page.dart) | Alumno y docente | Carnet público: opt-in + una red social | `NetworkingService` | — |
-| `ChatPage` | [`lib/pages/chat/chat_page.dart:10`](lib/pages/chat/chat_page.dart) | Alumno y docente | Chat grupal de sección sobre Firebase RTDB | `ChatRepository`, `NetworkingService` | — |
+| `ChatPage` | [`lib/pages/chat/chat_page.dart:17`](lib/pages/chat/chat_page.dart) | Alumno y docente | Chat de sección sobre Firebase RTDB, con el círculo del curso y «Sección N» en el `AppBar`. El alumno lo abre desde la bandeja `ChatsInboxPage` de la pestaña Chats o desde la ficha del curso | `ChatRepository`, `NetworkingService` | — |
 | `DelegadoCursosPage` | [`lib/pages/delegado/delegado_cursos/delegado_cursos_page.dart:9`](lib/pages/delegado/delegado_cursos/delegado_cursos_page.dart) | Delegado / Subdelegado | Secciones donde el alumno es representante | `DelegateService` | `GestionCursosDelegado.png` |
 | `DelegadoAnunciosPage` | [`lib/pages/delegado/delegado_anuncios/delegado_anuncios_page.dart:14`](lib/pages/delegado/delegado_anuncios/delegado_anuncios_page.dart) | Delegado / Subdelegado | Estadísticas del salón + historial de anuncios | `DelegateAnnouncementService`, `SectionStatisticsService` | `GestionAnunciosDelegado.png`, `SeguimientoProgresoSeccion.png` |
 | `CreateAnnouncementPage` | [`lib/pages/delegado/delegado_anuncios/create_announcement_page.dart:10`](lib/pages/delegado/delegado_anuncios/create_announcement_page.dart) | Delegado / Subdelegado | Formulario de anuncio, crear y editar con el mismo widget | `DelegateAnnouncementService` | — |
@@ -1109,9 +1113,10 @@ obligatorios arriba, electivos abajo, separadas por un `_PoolDivider`.
 3. El reloj es de Lima, calculado como `DateTime.now().toUtc() - 5 h` y refrescado cada minuto
    (`horario_controller.dart:47-48,90-96`); pinta la línea de hora actual sobre la rejilla.
 4. Día inicial: por fecha exacta; si no hay coincidencia, el primer **Viernes**; si tampoco, el índice 0.
-5. **Tres vistas**: día en portrait con `◀ <Día>, <d de Mes> ▶` y swipe horizontal; **semana** en landscape
+5. **Dos vistas**: día en portrait con `◀ <Día>, <d de Mes> ▶` y swipe horizontal; y **semana** en landscape
    con franja naranja `#F26522` y los nombres de día **sin fecha**, porque el horario es semanal y
-   repetitivo; y lista **"Mis chats"** (`HorarioListView`), que se togglea desde el header.
+   repetitivo. Desde la fase 1 de los chats de curso, el horario queda solo como calendario, sin la vista de
+   lista ni su ícono en el header, y los chats del alumno viven en la pestaña Chats.
 6. **Merge de evaluaciones**: `coursesForDay()` marca `isEvaluation` cuando la fecha de una evaluación cae
    en el día activo y coinciden el `sectionCode` o el nombre del curso; el badge del bloque pasa a
    `EVAL <sigla>` o `ASESORIA`.
@@ -1125,8 +1130,9 @@ obligatorios arriba, electivos abajo, separadas por un `_PoolDivider`.
 
 #### 9 · Detalle de curso y sus tres pestañas
 
-1. `DescripCursosPage(idSeccion)` se abre con `Get.to` desde un bloque del horario. Cabecera naranja con el
-   nombre del curso y franja `Sección: <codigoSeccion>`.
+1. `DescripCursosPage(idSeccion, courseColor)` se abre con `Get.to` desde un bloque del horario, con el color
+   del bloque. Cabecera naranja con el nombre del curso y franja `Sección: <codigoSeccion>` con el botón
+   «Chat del curso» a la derecha, que abre el chat de la sección con este color (RF-CHAT-7).
 2. **Bloque de asistencia**: dona con `seccion.porcentajeAsistencia` y horas asistidas e inasistidas.
    Si `!asistenciaDisponible || porcentaje == null`, muestra `Sin datos de asistencia para este curso.` +
    `Todavía no se importaron tus horas de clase desde miUlima.` + botón **Actualizar desde miUlima** →
@@ -1203,8 +1209,13 @@ obligatorios arriba, electivos abajo, separadas por un `_PoolDivider`.
 #### 12 · El mundo docente
 
 **Tab Secciones.** `TeacherSectionsPage` con `GET /advising/me/sections`. Cada card muestra curso,
-`sectionCode`, badge de rol (`Profesor` o `JP`) e ícono `forum_outlined`; **toda la tarjeta abre el chat de
-la sección** (`teacher_sections_page.dart:134-142`).
+la sección con `etiquetaDeSeccion` («Sección N» o «Sin sección», `teacher_sections_page.dart:202-209`), badge
+de rol (`Profesor` o `JP`) y, debajo, `LucideIcons.messagesSquare` con el texto «Chat»; **toda la tarjeta abre
+el chat de la sección** con el acento de la sección (`teacher_sections_page.dart:154-167`). La tarjeta es la
+`TarjetaDeChat` de la bandeja del alumno (`chats_inbox_page.dart:168-219`), un `InkWell` con ripple y la
+etiqueta accesible «Abrir el chat de <curso>, sección <N>», o «Abrir el chat de <curso>, sin sección» si el
+código llega nulo, vacío o con solo espacios (`etiquetaParaAbrirElChat`, `chat_linea_tiempo.dart:102-106`;
+RF-CHAT-13).
 
 **Tab Calificar** (solo Profesor titular).
 
@@ -1221,8 +1232,8 @@ la sección** (`teacher_sections_page.dart:134-142`).
 5. La nota final por alumno se calcula en cliente con `notas_calculo.calcularPromedioPonderado`, el mismo
    dominio que usa la calculadora del alumno.
 
-**Tab Horario docente.** Misma `HorarioPage` con endpoints `/schedule/teacher/*`, sin campana ni toggle de
-lista. El tap en una clase abre `_TeacherCourseDetailSheet` (`horario.dart:923`):
+**Tab Horario docente.** Misma `HorarioPage` con endpoints `/schedule/teacher/*`, sin campana. El tap
+en una clase abre `_TeacherCourseDetailSheet` (`horario.dart:923`):
 
 1. Carga tres cosas en paralelo y **blindadas una por una** —`ContactoService.fetchContactos`,
    `GET /schedule/teacher/sections/<id>/assessments-status` y `AttendanceRiskService.fetchSummary`— cada una
@@ -1284,28 +1295,42 @@ lista. El tap en una clase abre `_TeacherCourseDetailSheet` (`horario.dart:923`)
 
 #### 13 · Chat de sección
 
-1. Se entra desde "Mis chats" del horario (alumno) o desde `TeacherSectionsPage` (docente). Sin ruta
-   nombrada.
+1. El alumno entra desde la pestaña Chats (`ChatsInboxPage`) o desde el botón «Chat del curso» de la ficha
+   del curso, y el docente desde `TeacherSectionsPage`, cuya tarjeta nombra la sección con «Sección N» o «Sin
+   sección», igual que la fila de la bandeja. Sin ruta nombrada. La bandeja no hace pedidos
+   propios, porque lee `HorarioController.uniqueEnrolledCourses` con el color de `colorPorCurso`, y muestra un
+   indicador hasta que termina la primera carga de secciones (`seccionesCargadas`).
 2. **Autenticación**: `POST /chat/token {sectionId}` devuelve un custom token de Firebase más la sesión
    `{uid, displayName, role, roleLabel, isModerator, weight}`. El login a Firebase solo se ejecuta si
-   `_auth.currentUser?.uid != session.uid` (`chat_repository.dart:80-83`). Timeout de **8 s** en la
+   `_auth.currentUser?.uid != session.uid` (`chat_repository.dart:83-86`). Timeout de **8 s** en la
    pantalla; al fallar, `No se pudo conectar al chat.`
 3. **Mensajes**: stream de Realtime Database en `sections/<sectionId>/messages`,
    `orderByKey().limitToLast(80)`, reordenados por timestamp en cliente.
 4. **Enviar**: `push()` con `{senderId, senderName, senderRole, senderRoleLabel, moderator, weight, body,
    createdAt: ServerValue.timestamp}`. Si falla, el texto se **restaura en el campo** en lugar de perderse.
-5. **Enviar carnet**: botón `contact_page_outlined` con tooltip `Enviar carnet`; primero valida con
+5. **Enviar carnet**: botón `LucideIcons.idCard` con tooltip `Enviar carnet`; primero valida con
    `fetchNetworkingCard(ownerId)` y luego publica un mensaje cuyo `body` es
    `'__ULIMA_NETWORKING_CARD__:<ownerId>'` (`ChatMessage.networkingBodyPrefix`). Si el carnet está oculto:
    `Activa "Mostrar mi carnet" antes de enviarlo.`
 6. **Abrir carnet ajeno**: tap en la burbuja de tipo networking → `GET /networking/users/<userId>` y
    `Dialog` con `NetworkingCardPreview`; oculto → `Este usuario oculto su carnet.`
-7. **Moderación**: `canDelete = _session.role == 'teacher' && !msg.deleted`. El borrado es por **long
-   press**, pide confirmación `¿Eliminar mensaje?` y va **por el backend**
-   (`DELETE /chat/sections/<sectionId>/messages/<messageId>`) porque las reglas de RTDB no permiten borrar
-   desde el cliente. El stream refleja la lápida `_DeletedTombstone`.
-8. UI tipo WhatsApp: fondo `#ECE5DD` en claro y `#0B141A` en oscuro, `AppBar` naranja `#FF5722` con avatar
-   de grupo, nombre del curso y subtítulo `Chat grupal`.
+7. **Borrado**: `canDelete = !msg.deleted && (esPropio || session.role == 'teacher')`, donde `esPropio`
+   compara el `senderId` del mensaje con el `uid` de la sesión. Cada participante borra sus propios mensajes,
+   con cualquier rol y sin límite de tiempo, y el profesor titular borra además los de cualquiera (RF-CHAT-4).
+   El borrado es por **long press** y pide confirmación `¿Eliminar mensaje?`, con el cuerpo «Se eliminará
+   para todos.» en un mensaje propio y «Se eliminará para todos y verán que lo eliminaste tú.» cuando el
+   profesor borra uno ajeno. Va **por el backend** (`DELETE /chat/sections/<sectionId>/messages/<messageId>`)
+   porque las reglas de RTDB no permiten borrar desde el cliente, y un 403 (`CHAT_DELETE_FORBIDDEN`) muestra
+   el texto del servidor en el aviso de error. El stream trae la lápida `_DeletedTombstone`, que dice
+   «Eliminaste este mensaje» al autor y «Se eliminó este mensaje» a los demás si el borrado es del autor, y
+   «Mensaje eliminado por <deletedBy>» si es del profesor.
+8. La conversación toma la identidad de la app (RF-CHAT-8 a RF-CHAT-12 de
+   [`specs/features/chat/chat.spec.md`](specs/features/chat/chat.spec.md)). El `AppBar` va en
+   `MaterialTheme.headerColor`, con el círculo del curso y sus iniciales (`CursoAvatar`), el nombre del curso y
+   «Sección N» o «Sin sección». El fondo es `pageBg`, la burbuja propia va en `chatOwnBubbleBg` y la ajena en
+   `cardBg`, y el nombre del remitente sale solo en el mensaje ajeno que abre grupo, con la etiqueta de rol del
+   moderador a su lado. Un separador «Hoy», «Ayer» o «Lunes 21 de septiembre» abre cada día en hora de Lima, y
+   el botón enviar se ve deshabilitado mientras el campo está vacío.
 
 #### 14 · Chatbot (ULimaBot)
 
@@ -1418,8 +1443,9 @@ flowchart TD
     FOOTER --> T0["Tab 0 - Malla"]
     FOOTER --> T1["Tab 1 - Notas"]
     FOOTER --> T2["Tab 2 - Horario"]
-    FOOTER --> T3["Tab 3 - Delegado, solo isDelegate"]
-    FOOTER --> T4["Tab 4 - Perfil"]
+    FOOTER --> T3["Tab 3 - Chats"]
+    FOOTER --> T4["Tab 4 - Delegado, solo isDelegate"]
+    FOOTER --> T5["Tab 5 - Perfil"]
 
     T0 --> MALLA["MallaListPage"]
     MALLA --> MAPA["MallaPage - vista mapa clasica"]
@@ -1432,20 +1458,22 @@ flowchart TD
     CALC --> ADD["Modal agregar nota 0 a 20"]
     CALC --> OFI["MisNotasPage"]
 
-    T2 --> HOR["HorarioPage"]
-    HOR --> CHATS["HorarioListView - Mis chats"]
-    CHATS --> CHAT["ChatPage de la seccion"]
+    T2 --> HOR["HorarioPage - solo calendario"]
     HOR --> DET["DescripCursosPage"]
     DET --> TAB0["Anuncios"]
     DET --> TAB1["Asesorias con RSVP"]
     DET --> TAB2["Contactos y carnet"]
     DET --> SYNC
+    DET --> CHAT["ChatPage de la seccion"]
 
-    T3 --> DELC["DelegadoCursosPage"]
+    T3 --> INBOX["ChatsInboxPage - bandeja"]
+    INBOX --> CHAT
+
+    T4 --> DELC["DelegadoCursosPage"]
     DELC --> DELA["DelegadoAnunciosPage"]
     DELA --> DELN["CreateAnnouncementPage"]
 
-    T4 --> PERF["ProfilePage"]
+    T5 --> PERF["ProfilePage"]
     PERF --> NET["NetworkingPage"]
     PERF --> ESP["Sheet de especialidades"]
     PERF --> RST["ResetPasswordPage autenticada"]
@@ -1461,7 +1489,7 @@ flowchart TD
     LOGINT["LoginPage"] --> PLRT{"postLoginRoute - isTeacher"}
     PLRT --> HOMET["HomePage - shell docente"]
 
-    HOMET --> HEADT["AppHeader sin campana ni toggle"]
+    HOMET --> HEADT["AppHeader sin campana"]
     HOMET --> FOOTT["AppFooter docente"]
 
     FOOTT --> D0["Tab 0 - Secciones"]
@@ -1677,8 +1705,8 @@ transcribió **abriendo las ocho imágenes**, no infiriéndolo del nombre del ar
 > **12 · La convención de bindings se viola en siete lugares.** `main.dart:111-118` documenta la regla —
 > nada de `Get.put` dentro de `build()`— y aun así la incumplen `HorarioPage` (`horario.dart:779`),
 > `CalculadoraPage` (`calculadora_page.dart:15`), `ChatbotPage` (`chatbot_page.dart:18`),
-> `SetupCarreraPage` (`setup_carrera_page.dart:17`), `AppHeader` dentro de un `Obx`
-> (`app_header.dart:97`), `DelegadoCursosPage` como inicializador de campo
+> `SetupCarreraPage` (`setup_carrera_page.dart:17`), `ChatsInboxPage` (`chats_inbox_page.dart:34`, que
+> repite el patrón del horario como pide la spec del chat), `DelegadoCursosPage` como inicializador de campo
 > (`delegado_cursos_page.dart:12`) y `DescripCursosPage`, que hace `Get.put` **y** `cargarDatosCurso()` en
 > el **constructor** (`descrip_cursos.dart:13-17`), disparando una recarga completa cada vez que el padre
 > se reconstruye. Ninguno se verificó en runtime, así que no está confirmado que provoquen el bug de
@@ -1861,8 +1889,8 @@ comentario en `malla_controller.dart:10` deja constancia de que `/curriculum/me/
 | Service | Método | Endpoint backend | Modelo | Usado por |
 |:---|:---|:---|:---|:---|
 | *sin service* — `pages/horario/horario_controller.dart` | `_loadDays` :98 | `GET /schedule/me/sessions?code=` :101, lee `days` | `RxList<DaySchedule>` | `HorarioPage` |
-| *sin service* — `pages/horario/horario_controller.dart` | `_loadSecciones` :133 | `GET /schedule/me/sessions?code=` :136, lee `secciones` | `RxList<Map>` | `HorarioPage`; `DescripCursosController` lo reusa como caché :58-65 |
-| *sin service* — `pages/horario/horario_controller.dart` | `_loadAssessments` :149 | `GET /schedule/me/assessments?code=` :152 | `RxList<Map> assessmentsList` | `HorarioPage`, `horario_list_view.dart` |
+| *sin service* — `pages/horario/horario_controller.dart` | `_loadSecciones` :133 | `GET /schedule/me/sessions?code=` :136, lee `secciones` | `RxList<Map>` | `HorarioPage` y la bandeja `ChatsInboxPage`; `DescripCursosController` lo reusa como caché :58-65 |
+| *sin service* — `pages/horario/horario_controller.dart` | `_loadAssessments` :149 | `GET /schedule/me/assessments?code=` :152 | `RxList<Map> assessmentsList` | `HorarioPage` |
 | *sin service* — `pages/horario/horario_controller.dart` | `_loadWeeklyLoad` :164 | `GET /schedule/me/load?code=` :167 | `weeklyLoad` | `HorarioPage`, semanas de alta carga |
 | *sin service* — `pages/horario/horario_controller.dart` | `_loadTeacherDaysAndSessions` :181 | `GET /schedule/teacher/sessions` :183 | `daysList` + `_todasLasSecciones` | `HorarioPage` en modo docente |
 | *sin service* — `pages/horario/horario_controller.dart` | `_loadTeacherAssessments` :216 | `GET /schedule/teacher/assessments` :218 | `assessmentsList` | `HorarioPage` en modo docente |
@@ -1925,7 +1953,7 @@ defensiva: el shape de ese endpoint nunca se fijó en ningún contrato (ver más
 
 | Service | Método | Endpoint backend | Modelo | Usado por |
 |:---|:---|:---|:---|:---|
-| `alert_service.dart` | `fetchAlerts` :27 | `GET /alerts/me` :35 | `RxList<AlertModel>` + `RxBool hasError` | `main()` :75, `HomeController.onInit` :41, `AlertasPage`, badge de `app_header.dart:118`, `PortalSyncController` |
+| `alert_service.dart` | `fetchAlerts` :27 | `GET /alerts/me` :35 | `RxList<AlertModel>` + `RxBool hasError` | `main()` :75, `HomeController.onInit` :41, `AlertasPage`, badge de `app_header.dart:119`, `PortalSyncController` |
 | `alert_service.dart` | `markAsRead` :49 | `PUT /alerts/me/:alertId/read` :54 body `{}` | `void`, marca local + `refresh()` | `AlertasPage` :97, :229, :344 |
 | `attendance_risk_service.dart` | `fetchAttendanceRisk` :13 | `GET /attendance-risk/sections/:sectionId/attendance-risk` | `List<AtRiskStudent>` | `AtRiskStudentsController.loadData` :45 → `AtRiskStudentsPage` |
 | `attendance_risk_service.dart` | `fetchSummary` :23 | `GET /attendance-risk/sections/:sectionId/attendance-risk/summary` | `Map` crudo, `summary.impedido` y `summary.en_riesgo` | `horario.dart:1061`, badge de riesgo del docente |
@@ -1949,12 +1977,12 @@ Cabecera exacta del CSV
 
 | Service | Método | Endpoint backend | Modelo | Usado por |
 |:---|:---|:---|:---|:---|
-| `chat_repository.dart` | `signInWithCustomToken` :66 | `POST /chat/token` :68 body `{sectionId}`, luego `FirebaseAuth.signInWithCustomToken` :83 | `ChatSession{uid, displayName, role, roleLabel, isModerator, weight}` :9-42 | `ChatPage._initializeChat` :45 |
-| `chat_repository.dart` | `getMessages` :94 | **Firebase RTDB** `sections/$sectionId/messages`, `orderByKey().limitToLast(80)` :95 | `Stream<List<ChatMessage>>` | `ChatPage`, StreamBuilder |
-| `chat_repository.dart` | `sendMessage` :117 | **Firebase RTDB** `push()` + `set()` :128 | `void` | `ChatPage._sendMessage` :83 |
-| `chat_repository.dart` | `sendNetworkingCard` :146 | **Firebase RTDB** push con `body` prefijado por `ChatMessage.networkingBodyPrefix` :166 | `void` | `ChatPage._sendNetworkingCard` :110 |
-| `chat_repository.dart` | `fetchNetworkingCard` :176 | delega en `NetworkingService` → `GET /networking/users/:userId` | `PublicNetworkingCardDto` | `ChatPage._openNetworkingCard` :134 |
-| `chat_repository.dart` | `deleteMessage` :181 | `DELETE /chat/sections/:sectionId/messages/:messageId` :184 | `void`; la lápida la escribe el backend con Admin SDK | `ChatPage`, acción del profesor titular |
+| `chat_repository.dart` | `signInWithCustomToken` :68 | `POST /chat/token` :70 body `{sectionId}`, luego `FirebaseAuth.signInWithCustomToken` :85 | `ChatSession{uid, displayName, role, roleLabel, isModerator, weight}` :9-42 | `ChatPage._initializeChat` :45 |
+| `chat_repository.dart` | `getMessages` :96 | **Firebase RTDB** `sections/$sectionId/messages`, `orderByKey().limitToLast(80)` :98-100 | `Stream<List<ChatMessage>>` | `ChatPage`, StreamBuilder |
+| `chat_repository.dart` | `sendMessage` :119 | **Firebase RTDB** `push()` + `set()` :130 | `void` | `ChatPage._sendMessage` :83 |
+| `chat_repository.dart` | `sendNetworkingCard` :148 | **Firebase RTDB** push con `body` prefijado por `ChatMessage.networkingBodyPrefix` :168 | `void` | `ChatPage._sendNetworkingCard` :110 |
+| `chat_repository.dart` | `fetchNetworkingCard` :178 | delega en `NetworkingService` → `GET /networking/users/:userId` | `PublicNetworkingCardDto` | `ChatPage._openNetworkingCard` :134 |
+| `chat_repository.dart` | `deleteMessage` :183 | `DELETE /chat/sections/:sectionId/messages/:messageId` :187 | `void`; la lápida la escribe el backend con Admin SDK | `ChatPage`, acción del autor sobre sus mensajes y del profesor titular sobre cualquiera |
 | `chatbot_service.dart` | `createSession` :7 | `POST /chatbot/sessions` | `ChatbotSession` | `ChatbotController` → `/chatbot` |
 | `chatbot_service.dart` | `listSessions` :14 | `GET /chatbot/sessions` | `List<ChatbotSession>` | `ChatbotController` |
 | `chatbot_service.dart` | `getSession` :22 | `GET /chatbot/sessions/:id` | `Map` con `session` + `messages` | `ChatbotController` |
@@ -1962,10 +1990,10 @@ Cabecera exacta del CSV
 | `chatbot_service.dart` | `ask` :31 | `POST /chatbot/sessions/:id/ask` :39 | `String` desde `response['answer']` | `ChatbotController.send` :108-112 |
 | `networking_service.dart` | `fetchMine` :18 | `GET /networking/me` | `NetworkingCardDto` | `NetworkingController.load` → `/networking` |
 | `networking_service.dart` | `updateMine` :24 | `PUT /networking/me` body `card.toJson()` | `NetworkingCardDto` | `NetworkingController.save` |
-| `networking_service.dart` | `fetchVisibleByUserId` :30 | `GET /networking/users/:userId` | `PublicNetworkingCardDto` | `ChatRepository.fetchNetworkingCard` :177 → `ChatPage` |
+| `networking_service.dart` | `fetchVisibleByUserId` :30 | `GET /networking/users/:userId` | `PublicNetworkingCardDto` | `ChatRepository.fetchNetworkingCard` :179 → `ChatPage` |
 
 `NetworkingService` implementa la interfaz `NetworkingGateway` (`networking_service.dart:4-10`) y
-`ChatRepository` implementa `ChatRepositoryContract` (`chat_repository.dart:46-57`). Las dos
+`ChatRepository` implementa `ChatRepositoryContract` (`chat_repository.dart:46-59`). Las dos
 interfaces existen por un solo motivo: poder inyectar dobles en los tests sin arrancar FlutterFire
 ni tocar la red.
 
@@ -2067,12 +2095,12 @@ propia, y es una excepción deliberada, no un descuido. El reparto es exacto:
 | Operación | Dónde ocurre | Por qué ahí |
 |:---|:---|:---|
 | Identidad y permisos del chat | **Backend**, `POST /chat/token` | El backend firma un custom token con `uid = app_user.id` y espeja el rol; el cliente no elige quién es |
-| Autenticación | `FirebaseAuth.signInWithCustomToken` :83 | Previo `signOut()` si el uid cambió :81-84 |
-| Leer mensajes | **RTDB** `sections/$sectionId/messages`, `limitToLast(80)` :95-99 | Es lo que justifica todo: un stream en vivo con latencia de milisegundos que un REST con polling no da |
-| Escribir mensaje | **RTDB** `push()` + `set()` :128-138 | `createdAt: ServerValue.timestamp`, fijado por el servidor de Firebase |
-| Compartir carnet | **RTDB**, mismo shape con `body` prefijado :166 | Es un mensaje más |
-| Resolver el carnet compartido | **Backend**, `GET /networking/users/:userId` :177 | La visibilidad del carnet es una regla de negocio, no de transporte |
-| Borrar mensaje | **Backend**, `DELETE /chat/sections/:sid/messages/:mid` :184-186 | El cliente **no puede** borrar |
+| Autenticación | `FirebaseAuth.signInWithCustomToken` :85 | Previo `signOut()` si el uid cambió :83-86 |
+| Leer mensajes | **RTDB** `sections/$sectionId/messages`, `limitToLast(80)` :97-101 | Es lo que justifica todo: un stream en vivo con latencia de milisegundos que un REST con polling no da |
+| Escribir mensaje | **RTDB** `push()` + `set()` :130-140 | `createdAt: ServerValue.timestamp`, fijado por el servidor de Firebase |
+| Compartir carnet | **RTDB**, mismo shape con `body` prefijado :168 | Es un mensaje más |
+| Resolver el carnet compartido | **Backend**, `GET /networking/users/:userId` :179 | La visibilidad del carnet es una regla de negocio, no de transporte |
+| Borrar mensaje | **Backend**, `DELETE /chat/sections/:sid/messages/:mid` :187-189 | El cliente **no puede** borrar |
 
 La última fila es la clave. Las reglas versionadas en [`database.rules.json`](database.rules.json)
 ponen la raíz en `.read/.write = false` y abren solo lo justo: `members/$sid/$uid` es legible por su
@@ -2084,7 +2112,8 @@ membresía, que `body` tenga entre 1 y 4 000 caracteres y que `createdAt == now`
 
 Con esas reglas, el cliente puede crear un mensaje suyo y nada más: no puede editar, no puede
 borrar, no puede suplantar rol. Por eso el borrado suave va por el backend, que verifica que quien
-lo pide sea el profesor de la sección y escribe la lápida con el Admin SDK; el stream de RTDB
+lo pide sea el autor del mensaje o el profesor titular de la sección y escribe la lápida con el Admin SDK,
+con `deletedByUid`, el uid de quien borra; el stream de RTDB
 refleja el cambio solo. La seguridad del chat descansa entera en `database.rules.json` y en los
 custom tokens, no en el secreto de las claves de Firebase —que son públicas por diseño y están
 versionadas en `lib/firebase_options.dart`.
@@ -2818,7 +2847,7 @@ que los mande como texto no debe romper la pantalla»*.
 | `EstadisticasSeccion` | [`lib/models/estadisticas_seccion_model.dart`](lib/models/estadisticas_seccion_model.dart) | `promedioGeneral`, `porcentajeAprobados`, `rango0_10`, `rango11_13`, `rango14_16`, `rango17_20`; `isEmpty`, `maxRango` | `GET /section-management/sections/{id}/statistics` (payload en `data` o en la raíz) |
 | `EvaluationComponent`, `CourseSyllabus` | [`lib/models/evaluation_model.dart`](lib/models/evaluation_model.dart) | `nombre`, `sigla`, `peso`, `tipo`; `cursoId`, `cursoNombre`, `silaboUrl?`, `evaluaciones[]`, `pesoTotal` | `GET /grades/me/courses?code=` → `syllabi[]` |
 | `CourseNode`, `CourseProgress`, `CourseStatus`, `CourseCategory` | [`lib/models/malla_models.dart`](lib/models/malla_models.dart) *(reexporta `lib/domain/malla/malla_entities.dart`)* | `credits` (def. 3), `level` (def. 1), `prerequisites[]`, `category` (def. FACULTY), `row`, `specialties[]`, `externalFaculty?`; `approvedLevels`, `approvedCourseIds`, `approvedElectives`, `currentCourses` | `GET /curriculum/me` → `courses[]`; el progreso viaja anidado en `user.courseProgress` de `/auth/login`, `/auth/me` y `/auth/google` |
-| `ChatMessage` | [`lib/models/message.dart`](lib/models/message.dart) | `senderRole`, `senderRoleLabel`, `isModerator`, `weight`, `body`, `messageType`, `deleted`, `deletedBy`, `deletedByRole`; `isNetworkingCard` | **Firebase RTDB** `sections/{sectionId}/messages` vía `fromMap`; el token sale de `POST /chat/token` |
+| `ChatMessage` | [`lib/models/message.dart`](lib/models/message.dart) | `senderRole`, `senderRoleLabel`, `isModerator`, `weight`, `body`, `messageType`, `deleted`, `deletedBy`, `deletedByUid`, `deletedByRole`; `isNetworkingCard`, `deletedBySender` | **Firebase RTDB** `sections/{sectionId}/messages` vía `fromMap`; el token sale de `POST /chat/token` |
 | `SocialLinkDto`, `NetworkingCardDto`, `PublicNetworkingCardDto`, `NetworkingOwnerDto` | [`lib/models/networking_model.dart`](lib/models/networking_model.dart) | `platform`, `url`, `label?`; `optIn`, `links` (**máximo 1**); `owner`, `card`; `userId`, `fullName`, `roleLabel` | `GET/PUT /networking/me` · `GET /networking/users/{userId}` |
 | `GradingSection`, `GradingStudent`, `GradingAssessment`, `SectionGrid`, `OfficialAssessment`, `OfficialCourse` | [`lib/models/official_grades_models.dart`](lib/models/official_grades_models.dart) | `enrollmentId`, `assessmentId`, `weight`, `weekNumber`, `scores` indexado por `"enrollmentId:assessmentId"`; `value?`, `toCalcEntry()`, `gradedWeight` | `GET /official-grades/me` (alumno) · `GET`/`PUT /official-grades/teacher/sections/{id}/scores` y `GET /official-grades/teacher/sections` (docente) |
 | `PortalSyncPeriod`, `PortalSyncStatus`, `PortalSyncWarning`, `PortalSyncSummary`, `PortalSyncResult` | [`lib/models/portal_sync_models.dart`](lib/models/portal_sync_models.dart) | `activePeriod?`, `enrollmentsInActivePeriod`, `needsImport`; `code`, `block`, `message`; 8 contadores de `summary`; `token?` **JWT re-firmado** si cambió el cargo | `GET /portal-sync/status` (timeout 15 s) · `POST /portal-sync/import` (timeout 90 s) |
@@ -2947,8 +2976,8 @@ escriben inline en cada widget.
 | `CardAsesoria` | [`lib/components/descripcion_cursos/asesoria_card.dart`](lib/components/descripcion_cursos/asesoria_card.dart) | `asesoria_tab.dart`; si `onToggleRsvp` es `null` no se pinta el botón de RSVP |
 | `ContactoCard` | [`lib/components/descripcion_cursos/contacto_card.dart`](lib/components/descripcion_cursos/contacto_card.dart) | `contactos_tab.dart`; `enUlimaPlus` distingue al delegado que aún no tiene cuenta |
 | `EmptyTabState` | [`lib/components/descripcion_cursos/empty_tab_state.dart`](lib/components/descripcion_cursos/empty_tab_state.dart) | `anuncios_tab.dart`, `asesoria_tab.dart` |
-| `AppFooter` + `AppFooterItem` | [`lib/components/footer/app_footer.dart`](lib/components/footer/app_footer.dart) | `pages/home/home_page.dart`, configurado desde `home_shell_config.dart`: 5 tabs de alumno y 5 de docente |
-| `AppHeader` | [`lib/components/header/app_header.dart`](lib/components/header/app_header.dart) | `pages/home/home_page.dart`. Oculta campana y toggle de horario al docente porque *«el docente recibe 403 en `/alerts/me`»*; inyecta `AppHeaderLinkLauncher` para poder verificar la URI en widget tests |
+| `AppFooter` + `AppFooterItem` | [`lib/components/footer/app_footer.dart`](lib/components/footer/app_footer.dart) | `pages/home/home_page.dart`, configurado desde `home_shell_config.dart`: 5 tabs de alumno, 6 con Delegado, y 5 de docente |
+| `AppHeader` | [`lib/components/header/app_header.dart`](lib/components/header/app_header.dart) | `pages/home/home_page.dart`. Oculta la campana al docente porque *«el docente recibe 403 en `/alerts/me`»*; inyecta `AppHeaderLinkLauncher` para poder verificar la URI en widget tests |
 | `NetworkingCardPreview` | [`lib/components/networking/networking_card_preview.dart`](lib/components/networking/networking_card_preview.dart) | `networking_page.dart`, `chat_page.dart`, `contactos_tab.dart` |
 | `networkingPlatformLabel()` / `networkingPlatformIcon()` | [`lib/components/networking/networking_platform_presentation.dart`](lib/components/networking/networking_platform_presentation.dart) | Funciones puras de presentación; `linkedin`, `instagram`, `github`, `x`, `website`, `other` → etiqueta e ícono |
 | `NetworkingProfileEntryCard` | [`lib/components/networking/networking_profile_entry_card.dart`](lib/components/networking/networking_profile_entry_card.dart) | `pages/perfil/perfil.dart`, envuelto en `Semantics(button: true)` |
@@ -3216,18 +3245,21 @@ Ambos son artefactos **generados**: editar a mano `android/app/src/main/res/mipm
 
 | Pantalla | Orientaciones | Por qué |
 |:---|:---|:---|
-| Tab **Horario** (`home_page.dart:24-31, 51-55`) | `portraitUp`, `landscapeLeft`, `landscapeRight` | Rejilla de 7 → 22 h con 85 px por hora (`horario.dart:20-22`): en vertical los bloques de un día completo no caben legibles |
+| Tab **Horario** (`home_page.dart:24-31, 56-60`) | `portraitUp`, `landscapeLeft`, `landscapeRight` | Rejilla de 7 → 22 h con 85 px por hora (`horario.dart:20-22`): en vertical los bloques de un día completo no caben legibles |
 | **Malla clásica** `/malla-clasica` (`malla_page.dart:32-38`) | idénticas (`_mallaMapOrientations`) | Lienzo 2D con conectores de prerrequisito y zoom `[0.5, 1.6]`: es un mapa, y un mapa se lee ancho |
 
 Las dos constantes, `_scheduleOrientations` y `_mallaMapOrientations`, son literalmente la misma
 lista. La disciplina está en el retorno: **toda navegación que sale de esas pantallas fuerza
-vertical y la restaura al volver** — el toggle del header (`app_header.dart:123-133`), la vista
-lista del horario (`horario_list_view.dart:126-138`), la ida y vuelta a `DescripCursosPage`
-(`horario.dart:404-408, 1193-1206`) y el `dispose()` de la malla clásica. Sin eso, una pantalla
-de detalle heredaría el landscape y quedaría desmaquetada.
+vertical y la restaura al volver**. Lo hacen la campana del header (`app_header.dart:100-109`) y
+el horario, en la ida y vuelta a `DescripCursosPage`, a «Mis bloques», al formulario de un bloque
+nuevo y a `AtRiskStudentsPage` desde la hoja de clase del docente (`horario.dart:678-687`,
+`:1132-1138`, `:1163-1169` y `:1604-1617`). La hoja de acciones de un bloque hace lo mismo al abrir
+su edición (`time_block_actions_sheet.dart:217-221`), y la malla clásica vuelve a vertical en su
+`dispose()`. Sin esta disciplina, una pantalla de detalle heredaría el landscape y quedaría
+desmaquetada.
 
 Cuando el horario entra en landscape, header y footer se ocultan para devolver alto útil
-(`home_page.dart:107, 128-134`).
+(`home_page.dart:117, 138-144`).
 
 **Daltonismo.** En la malla, **color, ícono y texto van siempre juntos**; el comentario que lo
 exige está en `lib/pages/malla/malla_list_page.dart:1157`. El `_StatusBadge` combina fondo
@@ -3240,7 +3272,7 @@ Los electivos no se distinguen por color sino por **borde punteado** y chip `ELE
 
 **Semantics.** Marcado explícito en cuatro puntos verificados:
 `networking_profile_entry_card.dart:14` (`Semantics(button: true, label: 'Configurar carnet de
-networking')`), `asesoria_card.dart:273`, `app_header.dart:73` y `malla_list_page.dart:366`. Es
+networking')`), `asesoria_card.dart:273`, `app_header.dart:71` y `malla_list_page.dart:366`. Es
 poco; el resto de la app se apoya en los `Semantics` implícitos de los widgets Material.
 
 **Pantallas estrechas.** Solo hay dos adaptaciones documentadas en el código, y ninguna es un
@@ -3334,8 +3366,8 @@ cuando la app tiene que reaccionar a ellas.
 | `RF-APP-46` | Listar alumnos impedidos y en riesgo por inasistencia, con filtro por estado (`todos` / `impedido` / `en_riesgo` / `normal`) y búsqueda por **código o apellido**, sin distinguir mayúsculas | [`lib/pages/teacher/at_risk_students_page.dart`](lib/pages/teacher/at_risk_students_page.dart) | `AttendanceRiskService` | Implementado **sin spec** |
 | `RF-APP-46b` | Ordenar la lista por % de ausencia descendente, ascendente o por apellido, dejando **siempre al final** a los alumnos sin dato de asistencia medido | [`lib/pages/teacher/at_risk_students_controller.dart`](lib/pages/teacher/at_risk_students_controller.dart)`:6,133-153` | — | Implementado **sin spec** |
 | `RF-APP-47` | Exportar la lista de impedidos a CSV y compartirla desde el dispositivo | `at_risk_students_page.dart` | `AttendanceRiskService.exportCsv` | Implementado **sin spec**; defecto conocido: no entrecomilla, una coma en el apellido desplaza columnas |
-| `RF-APP-48` | Chat en vivo por sección sobre Firebase RTDB, con el token emitido por el backend | [`lib/pages/chat/chat_page.dart`](lib/pages/chat/chat_page.dart) | `ChatRepository` → `POST /chat/token` | Implementado **sin spec de frontend** |
-| `RF-APP-49` | Mostrar la lápida `eliminado por <profesor>` en vez de borrar la burbuja del mensaje | `chat_page.dart` | `ChatRepository` | Implementado |
+| `RF-APP-48` | Chat en vivo por sección sobre Firebase RTDB, con el token emitido por el backend | [`lib/pages/chat/chat_page.dart`](lib/pages/chat/chat_page.dart) | `ChatRepository` → `POST /chat/token` | Implementado; spec de frontend en `specs/features/chat/chat.spec.md` (RF-CHAT-1) |
+| `RF-APP-49` | Mostrar una lápida en vez de borrar la burbuja del mensaje, con «Eliminaste este mensaje» o «Se eliminó este mensaje» si el borrado es de su autor y «Mensaje eliminado por <deletedBy>» si es del profesor titular | `chat_page.dart` | `ChatRepository` | Implementado; spec de frontend en `specs/features/chat/chat.spec.md` (RF-CHAT-4) |
 | `RF-APP-50` | Preguntar en lenguaje natural por notas, horario, exámenes, malla, anuncios, compañeros, alertas y el chat de la sección (**HU-CHATBOT-01**) | [`lib/pages/chatbot/chatbot_page.dart`](lib/pages/chatbot/chatbot_page.dart) | `ChatbotService` → `POST /chatbot/sessions/:id/ask` | Implementado; el índice de features aún dice "pendiente" |
 | `RF-APP-51` | Crear varias sesiones de conversación, cambiar entre ellas y eliminarlas (**HU-CHATBOT-02**) | `chatbot_page.dart` | `ChatbotService` | Implementado |
 | `RF-APP-52` | Acceso al chatbot desde el shell del alumno, nunca desde login, setup ni pantallas de docente | [`lib/pages/home/home_page.dart`](lib/pages/home/home_page.dart) | — | Implementado como **burbuja arrastrable**, no como el `ChatbotFab` que la spec declara |
@@ -3392,9 +3424,10 @@ cuando la app tiene que reaccionar a ellas.
 
 ### Matriz de trazabilidad
 
-Las 15 features del frontend son exactamente las 15 carpetas de `specs/features/`. La columna
-**Estado** contrasta lo que declara [`docs/specs/feature-index.md`](docs/specs/feature-index.md)
-con lo que hay en el árbol.
+La tabla cubre 16 de las 19 carpetas de `specs/features/`, una por fila. Las otras tres,
+`registro/`, `academic-record/` y `time-blocks/`, no tienen fila aquí y figuran en las filas 16 a
+18 de [`docs/specs/feature-index.md`](docs/specs/feature-index.md). La columna **Estado** contrasta
+lo que declara el índice con lo que hay en el árbol.
 
 | Feature | Spec | Historias | Pantallas | Services | Pruebas | Estado |
 |:---|:---|:---|:---|:---|:---|:---|
@@ -3408,13 +3441,14 @@ con lo que hay en el árbol.
 | **Alerts** | [`.../alerts.spec.md`](specs/features/alerts/alerts.spec.md) · 32 líneas | US15, HU08 | `alertas_page`, badge del header | `AlertService` | **ninguna** | Spec existente; sin suite propia |
 | **Section Management** | [`.../section-management.spec.md`](specs/features/section-management/section-management.spec.md) · 38 líneas | US16, US17, US18, HU10, HU11 | `delegado_cursos`, `delegado_anuncios`, `create_announcement` | `DelegateService`, `DelegateAnnouncementService`, `SectionStatisticsService` | `HU10_mel` (12) | Implementado; la spec aún marca tres endpoints como NO IMPLEMENTADO |
 | **Networking** | [`.../networking.spec.md`](specs/features/networking/networking.spec.md) · 131 líneas · `BR-NET-F-01..03` | HU25-E1 (histórico HU27) | `networking_page`, preview en contactos y chat | `NetworkingService` | `HU25_mel` (33, 8 archivos) | Escenario 1 implementado; el alcance real ya superó lo declarado |
+| **Chat de sección** | [`.../chat.spec.md`](specs/features/chat/chat.spec.md) · 750 líneas · RF-CHAT-1 a RF-CHAT-13 | HU23 | `chat_page`, `chats_inbox_page`, botón de la ficha, tarjeta de Secciones | `ChatRepository`, `NetworkingService` | `HU23_jeff` (205, 9 archivos) | Implementada el 2026-09-23; falta la revisión manual que pide «Verificación» en un iPhone SE, en claro y en oscuro, del footer del delegado, de la bandeja y de la conversación. La misma revisión confirma con SF, la fuente del iPhone, que las seis etiquetas del delegado se leen completas con la activa en 13 px (RF-CHAT-5). La fase 1 incluye el borrado de los mensajes propios con cualquier rol y de cualquiera por el profesor titular (RF-CHAT-4), y su retoque final cambia el cuerpo del diálogo de borrado y la línea de la sección en la tarjeta del docente (RF-CHAT-13). El dueño aprobó el 2026-09-23 la spec, el ajuste de RF-CHAT-4 y los ajustes de app-shell, schedule, course-detail y time-blocks (RF-BLQ-8), así que no quedan aprobaciones pendientes |
 | **Chatbot** | [`.../chatbot.spec.md`](specs/features/chatbot/chatbot.spec.md) · 168 líneas · 10 criterios | HU-CHATBOT-01/02, HU28 | `chatbot_page`, burbuja del Home | `ChatbotService`, `NotasService` | **ninguna** | Índice dice "pendiente de implementar"; el código ya existe. `lib/components/chatbot_fab.dart`, declarado como target, **no existe** |
 | **Portal Sync** | [`.../portal-sync.spec.md`](specs/features/portal-sync/portal-sync.spec.md) · 158 líneas · `BR-SYNC-F-01..07` | HU-SYNC-01/02, HU31 | `portal_sync_page`, banner del Home, opción en Perfil | `PortalSyncService` | `HU31_jeff/portal_sync_test.dart` (13) | Implementado el 2026-09-02; el índice y el contrato dicen lo contrario |
 | **App Shell** | [`.../app-shell.spec.md`](specs/features/app-shell/app-shell.spec.md) · 52 líneas · `BR-SHELL-F-00/01` | Infra | `home_page`, `app_header`, `app_footer` | — | `components/header/app_header_test.dart` (1) | Activo; uno de los dos `[@test]` que resuelven |
 | **Platform Runtime** | [`.../platform-runtime.spec.md`](specs/features/platform-runtime/platform-runtime.spec.md) · 35 líneas | Infra | ninguna: *"no hay cambios visuales ni de navegación"* | `ApiClient` | `services/api_client_test.dart` (1) | Activo; el otro `[@test]` que resuelve |
 | **Release Build** | [`.../release-build.spec.md`](specs/features/release-build/release-build.spec.md) · 60 líneas · `BR-RELEASE-01..03` | Infra | ninguna | — | **manual**: la única spec con bloque `Acceptance Criteria` explícito | Documentado |
 
-**Features implementadas sin spec de frontend.** Seis piezas grandes de la app viven fuera del
+**Features implementadas sin spec de frontend.** Cinco piezas grandes de la app viven fuera del
 proceso Spec Driven Development. Están en el README porque existen, no porque estén bendecidas.
 
 | Feature | Historia | Pantallas | Services | Pruebas | Por qué no hay spec |
@@ -3422,7 +3456,6 @@ proceso Spec Driven Development. Están en el README porque existen, no porque e
 | Teacher / Advising | HU18 | `lib/pages/teacher/**` | `AdvisingService` | `HU18_jeff` (28) | `feature-index.md:17` la declara "Implementado sin spec" |
 | Password Reset | HU20 | `lib/pages/password_reset/**` | `PasswordResetService` | `HU20_jeff` (17) | `feature-index.md:18` |
 | Sílabo Viewer | HU21 | `lib/pages/silabo/**` | `SilaboService` | `HU21_jeff` (43) | `feature-index.md:19` |
-| Chat de sección | HU23 | `lib/pages/chat/chat_page.dart` | `ChatRepository` | `HU23_jeff` (20) | La spec `chat.spec.md` existe solo en el backend |
 | Official Grades | HU29 | `teacher_grade_section_page`, `mis_notas` | `OfficialGradesService` | ninguna en el frontend | Spec solo en el backend; no figura en ningún `feature-index` |
 | Attendance Risk | HU22, HU26, HU30, asistencia | `at_risk_students_page`, `descrip_cursos` | `AttendanceRiskService` | `HU22_sam` (10), `HU26_sam` (7), `HU_asistencia` (16) | **No existe spec en ninguno de los dos repositorios.** Toda la especificación vive en el código y en las cabeceras de los tests |
 
@@ -3449,8 +3482,8 @@ El backend solo conoce cuatro roles técnicos. Todo lo demás son etiquetas que 
 | Actor | Rol técnico | Qué ve en la app | Cómo obtiene el rol |
 |:---|:---|:---|:---|
 | **Visitante** | ninguno | `/login`, `/forgot-password`, `/reset-password`. Nada más | Es el estado por defecto: sin JWT válido, `main.dart` arranca en `/login` |
-| **Alumno** | `student` | 4 pestañas: Malla · Notas · Horario · Perfil. Banner de carga de ciclo, campana de alertas, burbuja de chatbot | Tiene al menos una `enrollment` con `status = 'active'`; el login lo verifica |
-| **Delegado** | `delegate` | Lo del alumno más una 5.ª pestaña **Delegado**: sus secciones, estadísticas del salón y gestión de anuncios | El backend lo deriva de `section_representative`; el portal lo trae en la nómina de la sección. `UserModel.isDelegate` lo activa en el shell |
+| **Alumno** | `student` | 5 pestañas: Malla · Notas · Horario · Chats · Perfil. Banner de carga de ciclo, campana de alertas, burbuja de chatbot | Tiene al menos una `enrollment` con `status = 'active'`; el login lo verifica |
+| **Delegado** | `delegate` | Lo del alumno más una 6.ª pestaña **Delegado**, justo antes de Perfil: sus secciones, estadísticas del salón y gestión de anuncios | El backend lo deriva de `section_representative`; el portal lo trae en la nómina de la sección. `UserModel.isDelegate` lo activa en el shell |
 | **Subdelegado** | `subdelegate` | Idéntico al delegado: `isDelegate` cubre ambos | Igual que el delegado, con `position = 'subdelegate'` |
 | **Profesor titular** | `teacher` | 5 pestañas: Secciones · **Calificar** · Horario · Asesorías · Perfil. Sin campana, sin chatbot, sin banner de portal | `app_user` vinculado a `teacher.user_id` y presente como `section.teacher_id`. La pestaña Calificar depende de `AuthService.canGrade` |
 | **Jefe de práctica** | `teacher` | 4 pestañas: Secciones · Horario · Asesorías · Perfil. **Sin Calificar**, porque `GET /official-grades/teacher/sections` solo devuelve secciones de titular | Mismo rol técnico que el profesor; se distingue por aparecer como `section.jp_id`. No existe enum de tipo docente en la persona |
@@ -3496,7 +3529,7 @@ La columna **Pruebas** cuenta casos declarados en el frontend (`test(` + `testWi
 | **HU20** | Restablecer la contraseña con OTP | Alumno / Docente | `lib/pages/password_reset/**` | jeff | 17 | Implementado **sin spec** |
 | **HU21** | Visor de sílabos PDF con zoom y compartir | Alumno | `lib/pages/silabo/**` | jeff | 43 | Implementado **sin spec** |
 | **HU22** | Lista de alumnos impedidos por inasistencia | Docente | `at_risk_students_page.dart` | sam | 10 | Implementado **sin spec** |
-| **HU23** | Chat en vivo por sección | Alumno / Docente | `lib/pages/chat/chat_page.dart` | jeff | 20 | Implementado; reglas RTDB pendientes de validar con Emulator |
+| **HU23** | Chat en vivo por sección | Alumno / Docente | `lib/pages/chat/**` | jeff | 205 | Implementado; la fase 1 (pestaña Chats) está implementada desde el 2026-09-23 y falta su revisión manual en un iPhone SE; reglas RTDB pendientes de validar con Emulator |
 | HU24 | Horario interactivo del docente | Docente | `teacher_home_page.dart`, `horario` | nehemias (backend) | — | Implementado; **sin prueba de frontend** |
 | **HU25** | Carnet de networking opt-in | Alumno / Docente | `lib/pages/networking/**` | mel | 33 | Escenario 1 implementado |
 | **HU26** | Exportar a CSV la lista de impedidos | Docente | `at_risk_students_page.dart` | sam | 7 | Implementado **sin spec**; sin endpoint, el CSV se arma en el cliente |
@@ -3947,7 +3980,7 @@ Escenario: Un fallo del catálogo no rompe el login docente
 Escenario: El docente no ve funciones de alumno
   Dado que estoy autenticado como docente
   Cuando se arma el encabezado
-  Entonces no aparecen la campana de alertas ni el toggle de horario
+  Entonces no aparece la campana de alertas
   Y no se muestra el banner de carga de miUlima ni la burbuja del chatbot
 
 Escenario: Validación del formulario de asesoría extra
@@ -4170,10 +4203,10 @@ jefe de práctica, **para** coordinar dentro de la app sin depender de WhatsApp.
 
 | | |
 |:---|:---|
-| **Pantalla** | [`lib/pages/chat/chat_page.dart`](lib/pages/chat/chat_page.dart), abierta desde "Mis chats" del alumno o desde Secciones del docente |
+| **Pantalla** | [`lib/pages/chat/chat_page.dart`](lib/pages/chat/chat_page.dart), abierta por el alumno desde la pestaña Chats o desde el botón «Chat del curso» de la ficha, y por el docente desde Secciones |
 | **Services** | `ChatRepository` → `POST /chat/token`, stream de Firebase RTDB con `limitToLast(80)`, `DELETE /chat/sections/:sectionId/messages/:messageId`; `NetworkingService` para el carnet compartido |
-| **Reglas** | El backend es el único que escribe la membresía; las reglas de `database.rules.json` hacen el hilo **append-only** y validan campo a campo contra el nodo de membresía. Pesos de rol: profesor 100, JP 90, delegado 70, subdelegado 60, alumno 10. **Feature sin spec de frontend** |
-| **Pruebas** | `test/HU23_jeff/chat_message_test.dart` (11 casos), `chat_page_test.dart` (9 casos) |
+| **Reglas** | El backend es el único que escribe la membresía; las reglas de `database.rules.json` hacen el hilo **append-only** y validan campo a campo contra el nodo de membresía. Pesos de rol: profesor 100, JP 90, delegado 70, subdelegado 60, alumno 10. Spec de frontend en [`specs/features/chat/chat.spec.md`](specs/features/chat/chat.spec.md), con RF-CHAT-1 a RF-CHAT-13 |
+| **Pruebas** | 205 casos declarados en 9 archivos de `test/HU23_jeff/`, con `chat_identidad_test.dart` (45), `chat_linea_tiempo_test.dart` (35), `chat_page_test.dart` (28), `chats_bandeja_test.dart` (26), `chats_pestana_test.dart` (17), `chat_message_test.dart` (16), `chat_moderacion_test.dart` (16), `chat_docente_secciones_test.dart` (11) y `chat_ficha_curso_test.dart` (11). Los casos con parámetros suben a 310 al correr |
 
 **Criterios de aceptación**
 
@@ -4217,6 +4250,17 @@ Escenario: Borrado suave con lápida
   Cuando se renderiza el hilo
   Entonces la burbuja muestra la lápida con quién lo eliminó
   Y el cuerpo original queda oculto
+
+Escenario: Borrar un mensaje propio
+  Dado que escribí un mensaje en el chat de mi sección, con cualquier rol
+  Cuando lo mantengo presionado y confirmo «Eliminar»
+  Entonces el mensaje se elimina para todos
+  Y yo leo «Eliminaste este mensaje» y los demás leen «Se eliminó este mensaje»
+
+Escenario: Un mensaje ajeno solo lo borra el profesor titular
+  Dado un mensaje de otra persona en el chat de mi sección
+  Cuando lo mantengo presionado sin ser el profesor titular
+  Entonces no aparece la opción de eliminarlo
 
 Escenario: Compartir el carnet exige tenerlo visible
   Dado que mi carnet de networking está oculto
@@ -4498,7 +4542,7 @@ los dobles son fakes escritos a mano con `extends` o `implements`, más `MockCli
 | [`test/HU20_jeff/`](test/HU20_jeff) | HU20 — Restablecer contraseña | jeff | 1 | 17 | Unitaria | `validateResetCode` (6 dígitos, tolera espacios, rechaza <6, >6 y no numéricos), `validateNewPassword` (mínimo 8), `validatePasswordConfirmation` y la precedencia código → contraseña → confirmación |
 | [`test/HU21_jeff/`](test/HU21_jeff) | HU21 — Visor de sílabo | jeff | 4 | 43 | Unitaria + Widget + Servicio | Parsing de las tres formas de enlace de Drive y sus inválidos; `SilaboService` con `MockClient` (firma `%PDF`, HTML de login → no accesible, 404, error de red, cuerpo > 25 MB, caché corrupta, nombre presentable recortado a 80 caracteres); estados de la ruta `/silabo`; `calcularMatrizZoom` con límites 1x–5x |
 | [`test/HU22_sam/`](test/HU22_sam) | HU22 — Lista de alumnos impedidos | sam | 2 | 10 | Unitaria + Caja negra de widget | `AtRiskStudent.fromJson` y `statusLabel` por partición (`impedido`, `en_riesgo` con y sin faltas, `normal`, desconocido); CN1–CN4 de la página: listado de 3 alumnos, filtro «Impedidos», búsqueda con y sin resultados |
-| [`test/HU23_jeff/`](test/HU23_jeff) | HU23 — Chat de sección | jeff | 2 | 20 | Unitaria + Widget | `ChatMessage.fromMap` con el esquema nuevo y el legado `text`/`timestamp`, carnet de networking, flag `moderator` explícito por encima del rol, rol desconocido → peso 10, orden cronológico, borrado suave; `ChatPage` con repo falso: spinner, error de conexión, sesión vacía, envío, no envía vacíos, lápida del mensaje borrado |
+| [`test/HU23_jeff/`](test/HU23_jeff) | HU23 — Chat de sección | jeff | 9 | 205 | Unitaria + Widget | `ChatMessage.fromMap` con el esquema nuevo y el legado `text`/`timestamp`, carnet de networking, flag `moderator` explícito por encima del rol, rol desconocido → peso 10, orden cronológico, borrado suave; `ChatPage` con repo falso: spinner, error de conexión, sesión vacía, envío, no envía vacíos, lápida del mensaje borrado. Con la fase 1 suma las iniciales del círculo del curso, la hora y el día en Lima, el inicio de grupo, el contraste de cada texto e ícono en los dos temas y el borrado de los mensajes propios con cada rol y de los ajenos por el profesor titular, con sus lápidas y el cuerpo del diálogo. También cubre la bandeja, la pestaña Chats con el footer del delegado en 375 x 667 medido con Roboto, cuyo verde no vale para el iPhone SE, el botón de la ficha y la tarjeta del docente, con su línea «Sección N» o «Sin sección». Los uid de las pruebas son ficticios, de las series 5xx para alumnos y 6xx para docentes, salvo el alumno sintético `20230001` |
 | [`test/HU25_mel/`](test/HU25_mel) | HU25 — Carnet de networking | mel | 8 | 33 | Caja blanca + Caja negra + Unitaria + Widget + Servicio | La carpeta con más archivos. Caminos C1–C5 de `NetworkingController`; `NetworkingCardDto` con 5 campos y el **límite duro de una sola red**; contrato exacto `GET /networking/me` y `PUT /networking/me`; `validateNetworkingUrl` (http/https sí, relativo y `ftp://` no); preview sin errores de flex; roles de carnet que no exponen roles académicos |
 | [`test/HU26_sam/`](test/HU26_sam) | HU26 — Exportar impedidos a CSV | sam | 1 | 7 | Caja negra | `AttendanceRiskService.exportCsv()` con el CSV generado de verdad y solo la plataforma doblada: nombre `Ausencias_<Curso>_S<sección>.csv`, encabezado exacto de 8 columnas, `ciclo` null → columna vacía y nunca el literal `null`, porcentaje siempre a un decimal, saneo del nombre del curso |
 | [`test/HU31_jeff/`](test/HU31_jeff) | HU31 — sin historia documentada: horario, colores, contactos, portal-sync | jeff | 4 | 43 | Unitaria + Widget | Geometría de bloques del horario (`hourHeight = 85`, `vertLineOffset = 9`, sin solapamiento, bloque degenerado que no se vuelve negativo); paleta de al menos 9 colores sin repetidos y desempate de `asignarColoresSinRepetir`; delegados que miUlima publica pero aún no usan la app, con la regresión de producción del 2026-09-04; validadores, `import` y `status` de `PortalSyncService` |

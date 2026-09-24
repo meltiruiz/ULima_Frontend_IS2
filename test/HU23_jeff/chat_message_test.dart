@@ -4,8 +4,8 @@ import 'package:ulima_plus/models/message.dart';
 void main() {
   test('parsea mensajes nuevos con nombre completo y rol moderador', () {
     final message = ChatMessage.fromMap('m1', {
-      'senderId': '12',
-      'senderName': 'Ada Lovelace',
+      'senderId': '603',
+      'senderName': 'Docente De Prueba',
       'senderRole': 'teacher',
       'senderRoleLabel': 'Profesor',
       'moderator': true,
@@ -14,7 +14,7 @@ void main() {
       'createdAt': 1783573983742,
     });
 
-    expect(message.senderName, 'Ada Lovelace');
+    expect(message.senderName, 'Docente De Prueba');
     expect(message.senderRole, 'teacher');
     expect(message.senderRoleLabel, 'Profesor');
     expect(message.isModerator, isTrue);
@@ -39,14 +39,14 @@ void main() {
 
   test('parsea mensaje especial de carnet de networking', () {
     final message = ChatMessage.fromMap('m3', {
-      'senderId': '4',
-      'senderName': 'Melissa Ruiz',
-      'body': '${ChatMessage.networkingBodyPrefix}4',
+      'senderId': '505',
+      'senderName': 'Alumna De Prueba',
+      'body': '${ChatMessage.networkingBodyPrefix}505',
       'createdAt': 1783573983742,
     });
 
     expect(message.isNetworkingCard, isTrue);
-    expect(message.networkingOwnerId, 4);
+    expect(message.networkingOwnerId, 505);
     expect(message.messageType, 'networking_card');
   });
 
@@ -132,14 +132,14 @@ void main() {
 
   test('HU23: parsea el borrado suave (deleted + deletedBy)', () {
     final m = ChatMessage.fromMap('x', {
-      'senderId': '6',
+      'senderId': '502',
       'body': 'texto original',
       'deleted': true,
-      'deletedBy': 'Quintana Cruz, Hernan',
+      'deletedBy': 'Docente De Prueba',
       'deletedByRole': 'teacher',
     });
     expect(m.deleted, isTrue);
-    expect(m.deletedBy, 'Quintana Cruz, Hernan');
+    expect(m.deletedBy, 'Docente De Prueba');
     expect(m.deletedByRole, 'teacher');
   });
 
@@ -147,5 +147,42 @@ void main() {
     final m = ChatMessage.fromMap('y', {'body': 'hola'});
     expect(m.deleted, isFalse);
     expect(m.deletedBy, isNull);
+    expect(m.deletedByUid, isNull);
+    expect(m.deletedBySender, isFalse);
+  });
+
+  group('RF-CHAT-4 · quién borró', () {
+    ChatMessage lapida({String senderId = '502', Object? deletedByUid}) =>
+        ChatMessage.fromMap('z', {
+          'senderId': senderId,
+          'body': 'texto original',
+          'deleted': true,
+          'deletedBy': 'Compañero De Prueba',
+          'deletedByRole': 'student',
+          'deletedByUid': ?deletedByUid,
+        });
+
+    test('lee deletedByUid tal como llega', () {
+      expect(lapida(deletedByUid: '502').deletedByUid, '502');
+      expect(lapida(deletedByUid: '601').deletedByUid, '601');
+    });
+
+    test('sin deletedByUid queda nulo, sin inventar un valor', () {
+      expect(lapida().deletedByUid, isNull);
+    });
+
+    test('lo borró su autor si deletedByUid es su senderId', () {
+      expect(lapida(deletedByUid: '502').deletedBySender, isTrue);
+    });
+
+    test('lo borró otra persona si deletedByUid es otro uid', () {
+      expect(lapida(deletedByUid: '601').deletedBySender, isFalse);
+    });
+
+    test('sin deletedByUid, o vacío, cuenta como borrado por otra persona', () {
+      expect(lapida().deletedBySender, isFalse);
+      expect(lapida(deletedByUid: '').deletedBySender, isFalse);
+      expect(lapida(senderId: '', deletedByUid: '').deletedBySender, isFalse);
+    });
   });
 }

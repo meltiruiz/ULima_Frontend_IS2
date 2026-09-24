@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:ulima_plus/configs/themes.dart';
 import 'package:ulima_plus/pages/alertas/alertas_page.dart';
-import 'package:ulima_plus/pages/horario/horario_controller.dart';
 import 'package:ulima_plus/services/alert_service.dart';
 import 'package:ulima_plus/services/auth_service.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -11,14 +10,13 @@ import 'package:url_launcher/url_launcher.dart';
 typedef AppHeaderLinkLauncher = Future<bool> Function(Uri uri);
 
 class AppHeader extends StatelessWidget {
-  final bool showScheduleToggle;
+  /// Si la pestaña activa es Horario. Solo sirve para devolverle la rotación
+  /// al volver de las alertas (BR-SHELL-F-03): el header ya no tiene el toggle
+  /// lista/calendario.
+  final bool isScheduleTab;
   final AppHeaderLinkLauncher? linkLauncher;
 
-  const AppHeader({
-    super.key,
-    this.showScheduleToggle = false,
-    this.linkLauncher,
-  });
+  const AppHeader({super.key, this.isScheduleTab = false, this.linkLauncher});
 
   static const List<DeviceOrientation> _scheduleOrientations = [
     DeviceOrientation.portraitUp,
@@ -50,10 +48,10 @@ class AppHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
-    // El header ULIMA++ (campana de alertas y toggle de horario lista/calendario)
-    // es propio del ALUMNO. El docente reusa este shell, así que ambos controles
-    // se ocultan para él (el docente recibe 403 en /alerts/me y su horario es otra
-    // vista): así no le aparecen íconos de alumno arriba a la derecha.
+    // La campana de alertas es propia del ALUMNO y es el único control a la
+    // derecha (BR-SHELL-F-03). El docente reusa este shell y no la ve, porque
+    // recibe 403 en /alerts/me: así no le aparecen íconos de alumno arriba a
+    // la derecha.
     final isTeacher = AuthService.to.currentUser?.isTeacher ?? false;
     final showAlerts = !isTeacher;
 
@@ -92,27 +90,6 @@ class AppHeader extends StatelessWidget {
 
               Row(
                 children: [
-                  if (showScheduleToggle && !isTeacher)
-                    Obx(() {
-                      final hControl = Get.put(HorarioController());
-
-                      // Mismo formato que la campana (InkWell + icono 28) para
-                      // que el header NO cambie de alto en Horario. Un IconButton
-                      // mide 48 y hacía este header ~18px más alto que los demás.
-                      return Padding(
-                        padding: const EdgeInsets.only(right: 18),
-                        child: InkWell(
-                          onTap: hControl.toggleListView,
-                          child: Icon(
-                            hControl.isListView.value
-                                ? Icons.calendar_today
-                                : Icons.format_list_bulleted,
-                            color: colors.onPrimary,
-                            size: 28,
-                          ),
-                        ),
-                      );
-                    }),
                   if (showAlerts)
                     Obx(() {
                       final count = Get.isRegistered<AlertService>()
@@ -125,7 +102,7 @@ class AppHeader extends StatelessWidget {
                             _portraitOnly,
                           );
                           await Get.to(() => const AlertasPage());
-                          if (showScheduleToggle) {
+                          if (isScheduleTab) {
                             await SystemChrome.setPreferredOrientations(
                               _scheduleOrientations,
                             );

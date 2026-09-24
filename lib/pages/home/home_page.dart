@@ -44,6 +44,11 @@ class _HomePageState extends State<HomePage> {
 
   bool get _isHorarioTabActive => _currentIndex == _horarioTabIndex;
 
+  /// Índice de la pestaña Chats del alumno, o -1 para el docente, que no la
+  /// tiene (RF-CHAT-5).
+  int get _chatsTabIndex =>
+      _config.footerItems.indexWhere((i) => i.label == 'Chats');
+
   Widget _buildBody() {
     return _config.pages[_currentIndex];
   }
@@ -67,7 +72,9 @@ class _HomePageState extends State<HomePage> {
     });
     _applyPreferredOrientations();
     // Si el usuario cambia al tab de Horario, recargamos los datos
-    // para reflejar asesorías creadas o modificadas recientemente.
+    // para reflejar asesorías creadas o modificadas recientemente. Chats hace
+    // lo mismo, porque su bandeja lee las secciones de ese controller
+    // (RF-CHAT-6).
     // Para docentes: también recargamos si venían del tab de Asesorías (su
     // índice se deriva de las pestañas reales, que varían para un JP).
     final isTeacher = user?.isTeacher ?? false;
@@ -76,11 +83,14 @@ class _HomePageState extends State<HomePage> {
     );
     final comingFromAsesorias =
         isTeacher && asesoriasIndex != -1 && previous == asesoriasIndex;
-    if (index == _horarioTabIndex || comingFromAsesorias) {
+    if (index == _horarioTabIndex ||
+        index == _chatsTabIndex ||
+        comingFromAsesorias) {
       try {
         Get.find<HorarioController>().reload();
       } catch (_) {
-        // El controller aún no existe (primera visita): onInit lo cargará.
+        // El controller aún no existe (primera visita): onInit lo cargará, sin
+        // un reload() aparte que repita la carga.
       }
     }
   }
@@ -105,7 +115,7 @@ class _HomePageState extends State<HomePage> {
       body: Column(
         children: [
           if (!isScheduleLandscape)
-            AppHeader(showScheduleToggle: _isHorarioTabActive),
+            AppHeader(isScheduleTab: _isHorarioTabActive),
           // Aviso de carga de ciclo. Sin esto, un alumno sin matrícula ve un
           // esqueleto permanente en Horario y una calculadora vacía, sin nada
           // que le diga qué hacer.

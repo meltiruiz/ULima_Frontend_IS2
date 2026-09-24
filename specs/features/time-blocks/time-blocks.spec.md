@@ -20,10 +20,11 @@ targets:
 
 > Estado: **diseñada con el dueño del proyecto el 2026-09-20**, sección por sección.
 > Aprobada por el dueño con los targets de arriba (los planes el 2026-09-22; la spec y los targets, de forma explícita el 2026-09-23), **e implementada.** Está
-> probada entera contra dobles, pero **todavía no contra el backend desplegado**: las rutas
-> `/time-blocks/**`, su migración `0012_time_blocks.sql` y el `isoDate` de los días de
-> `GET /schedule/me/sessions` tienen que estar en producción antes de mergear a `main`,
-> porque cada push a `main` publica el APK (`.github/workflows/build-apk.yml`).
+> probada entera contra dobles y, **desde el 2026-09-23, también contra el backend desplegado**. Ese
+> día se aplicó la migración `0012_time_blocks.sql`, se desplegó el backend con las rutas
+> `/time-blocks/**` y el `isoDate` de los días de `GET /schedule/me/sessions`, y el dueño recorrió
+> las siete rutas contra producción con 11 de 11 pasos correctos. Esa era la condición para mergear a
+> `main`, porque cada push a `main` publica el APK (`.github/workflows/build-apk.yml`).
 > Contraparte de backend: `ULima_Backend_IS2/specs/features/time-blocks/time-blocks.spec.md`
 > (RS-BE-30 a RS-BE-36).
 > Ajustada el 2026-09-21 con las decisiones finales del dueño: fecha exacta de cada día
@@ -32,6 +33,7 @@ targets:
 > Ajustada el 2026-09-22 en RF-BLQ-6, que ahora oculta la línea de horas también cuando el total redondeado a un decimal da 0; el dueño aprobó ese ajuste el 2026-09-23.
 > Ajustada el 2026-09-23 con el arreglo del bloque sin días reales y la lista Mis bloques, aprobado por el dueño ese día.
 > Ajustada el 2026-09-23 en RF-BLQ-8 con los retoques de la revisión visual, que cambian el cuerpo de la confirmación de borrado desde la lista y fijan el contraste de sus avisos y del botón.
+> Ajustada el 2026-09-23 en RF-BLQ-8 por la spec del chat de sección (`specs/features/chat/chat.spec.md`), que saca del horario la lista de chats. El botón de «Mis bloques» ya no tiene esa condición, y las pruebas «en la lista de chats no aparece» salen con ella. Aprobada por el dueño el 2026-09-23, junto con la spec del chat. La fase 1 del chat ya implementa este ajuste.
 
 ## User Stories
 
@@ -232,7 +234,8 @@ y sábado del miércoles 23 al miércoles 23) no se ve en ella, y sin verlo no s
 ni borrar. La lista «Mis bloques» los muestra todos.
 
 - **El botón.** Uno pequeño junto al botón de agregar del horario (RF-BLQ-1), con las
-  mismas condiciones: solo para alumnos, y ni en horizontal ni en la lista de chats. Su
+  mismas condiciones: solo para alumnos y nunca en horizontal (la lista de chats, que
+  también lo ocultaba, sale del horario con `specs/features/chat/chat.spec.md`). Su
   etiqueta accesible es «Mis bloques». Abre la pantalla en una ruta nueva, `/mis-bloques`,
   con binding por ruta. Como el formulario, la pantalla se abre fijada en vertical y, al
   volver, el horario recupera su rotación. Su ícono llega a un contraste de al menos 3:1 con

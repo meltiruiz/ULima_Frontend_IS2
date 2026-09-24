@@ -47,17 +47,22 @@ String? _fechaIsoONull(Object? valor) {
 }
 
 class HorarioController extends GetxController {
+  /// [apiClient] es inyectable para las pruebas; en la app es el real.
+  HorarioController({ApiClient? apiClient}) : _api = apiClient ?? ApiClient();
+
   final currentDayIndex = 0.obs;
   final daysList = <DaySchedule>[].obs;
   final assessmentsList = <Map<String, dynamic>>[].obs;
   final weeklyLoad = <Map<String, dynamic>>[].obs;
   final currentLimaTime = _nowInLima().obs;
 
-  // Nuevos estados para el rediseño de Horario (Lista / Calendario)
-  final isListView = false.obs;
+  /// Si ya terminó la primera carga de secciones, bien o mal. La bandeja de
+  /// chats (RF-CHAT-6) muestra un indicador mientras sea falso, y no el estado
+  /// vacío. Una recarga no la devuelve a falso.
+  final seccionesCargadas = false.obs;
 
   final _todasLasSecciones = <Map<String, dynamic>>[].obs;
-  final ApiClient _api = ApiClient();
+  final ApiClient _api;
   Timer? _clockTimer;
 
   static const List<String> _months = [
@@ -105,8 +110,9 @@ class HorarioController extends GetxController {
   }
 
   /// Recarga los datos del horario (sesiones + evaluaciones).
-  /// Llamado por [HomePage] al cambiar al tab del horario para reflejar
-  /// asesorías o cambios recientes sin destruir el controller.
+  /// Llamado por [HomePage] al cambiar al tab del horario o al de Chats, que
+  /// lee de aquí sus secciones, para reflejar asesorías o cambios recientes sin
+  /// destruir el controller.
   Future<void> reload() async {
     final isTeacher = AuthService.to.currentUser?.isTeacher ?? false;
     if (isTeacher) {
@@ -182,6 +188,8 @@ class HorarioController extends GetxController {
       );
     } catch (e) {
       debugPrint('Error al cargar secciones: $e');
+    } finally {
+      seccionesCargadas.value = true;
     }
   }
 
@@ -249,6 +257,8 @@ class HorarioController extends GetxController {
       currentDayIndex.value = idx != -1 ? idx : 0;
     } catch (e) {
       debugPrint('Error al cargar dias y sesiones del docente: $e');
+    } finally {
+      seccionesCargadas.value = true;
     }
   }
 
@@ -653,10 +663,6 @@ class HorarioController extends GetxController {
     }
   }
 
-  void toggleListView() {
-    isListView.value = !isListView.value;
-  }
-
   /// Color final de cada sección del alumno, ya sin repetidos.
   ///
   /// El backend guarda el color en `schedule_session`, fila que comparten todos
@@ -706,9 +712,9 @@ class HorarioController extends GetxController {
       final sectionIdStr = section['idSeccion']?.toString() ?? '';
       if (sectionIdStr.isNotEmpty && !uniqueCourses.containsKey(sectionIdStr)) {
         // El color real del curso vive en cada horario (schedule_session.color_hex),
-        // no a nivel de sección (ahí suele venir un default naranja). El calendario
-        // ya usa el del horario; aquí replicamos eso para que la lista tenga los
-        // mismos colores por curso.
+        // no a nivel de sección (ahí suele venir un default naranja). Cada
+        // entrada lleva el del horario, como el calendario. La bandeja de chats
+        // no lo lee: pinta [colorPorCurso], que además quita los repetidos.
         final entry = Map<String, dynamic>.from(section);
         final horarios = section['horarios'];
         if (horarios is List) {

@@ -11,6 +11,12 @@ class AppFooterItem {
 }
 
 class AppFooter extends StatelessWidget {
+  /// Tamaño de la etiqueta activa con seis pestañas, el footer del delegado.
+  /// A 14 px «Delegado» no cabe en la sexta parte de un Android de 360 dp ni
+  /// del iPhone SE, y a 13 sí (RF-CHAT-5 de la spec del chat). Con cinco o
+  /// menos pestañas la activa sigue en 14, el tamaño por omisión.
+  static const double activaConSeisPestanas = 13;
+
   final int currentIndex;
   final List<AppFooterItem> items;
   final Function(int)? onTap;
@@ -39,6 +45,8 @@ class AppFooter extends StatelessWidget {
       unselectedItemColor: Colors.white.withValues(alpha: 0.68),
 
       type: BottomNavigationBarType.fixed,
+      selectedFontSize: items.length >= 6 ? activaConSeisPestanas : 14,
+      unselectedFontSize: 12,
 
       items: items
           .map(

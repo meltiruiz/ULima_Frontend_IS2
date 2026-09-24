@@ -5,6 +5,7 @@ import '../../components/footer/app_footer.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../calculadora/calculadora_page.dart';
+import '../chat/chats_inbox_page.dart';
 import '../delegado/delegado_cursos/delegado_cursos_page.dart';
 import '../horario/horario.dart';
 import '../malla/malla_list_page.dart';
@@ -52,12 +53,15 @@ class HomeShellConfig {
     );
   }
 
+  /// Malla, Notas, Horario, Chats y Perfil; un delegado suma Delegado justo
+  /// antes de Perfil (RF-CHAT-5 y BR-SHELL-F-02).
   factory HomeShellConfig.student(UserModel? user) {
     return HomeShellConfig(
       pages: [
         const MallaListPage(),
         const CalculadoraPage(),
         const HorarioPage(),
+        const ChatsInboxPage(),
         if (user?.isDelegate ?? false) DelegadoCursosPage(),
         const ProfilePage(),
       ],
@@ -65,6 +69,7 @@ class HomeShellConfig {
         const AppFooterItem(icon: LucideIcons.network, label: 'Malla'),
         const AppFooterItem(icon: LucideIcons.calculator, label: 'Notas'),
         const AppFooterItem(icon: LucideIcons.calendar, label: 'Horario'),
+        const AppFooterItem(icon: LucideIcons.messagesSquare, label: 'Chats'),
         if (user?.isDelegate ?? false)
           const AppFooterItem(icon: LucideIcons.shield, label: 'Delegado'),
         const AppFooterItem(icon: LucideIcons.user, label: 'Perfil'),

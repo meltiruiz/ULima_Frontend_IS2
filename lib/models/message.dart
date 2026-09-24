@@ -13,10 +13,12 @@ class ChatMessage {
   final String messageType;
   final int? networkingOwnerId;
 
-  // HU23: borrado suave por el profesor. Cuando `deleted` es true, el mensaje se
-  // muestra como lápida "eliminado por <deletedBy>".
+  // HU23: borrado suave (RF-CHAT-4). Cuando `deleted` es true, el mensaje se
+  // muestra como lápida. `deletedBy` es el nombre de quien lo borró y
+  // `deletedByUid` su uid, tal como los escribe el backend; nulos si no llegan.
   final bool deleted;
   final String? deletedBy;
+  final String? deletedByUid;
   final String? deletedByRole;
 
   ChatMessage({
@@ -33,12 +35,21 @@ class ChatMessage {
     this.networkingOwnerId,
     this.deleted = false,
     this.deletedBy,
+    this.deletedByUid,
     this.deletedByRole,
   });
 
   String get text => body;
   DateTime get timestamp => createdAt;
   bool get isNetworkingCard => messageType == 'networking_card';
+
+  /// Lo borró su propio autor: `deletedByUid` llegó, no está vacío y es el
+  /// `senderId` del mensaje. Sin `deletedByUid` cuenta como borrado por otra
+  /// persona (RF-CHAT-4).
+  bool get deletedBySender {
+    final uid = deletedByUid;
+    return uid != null && uid.isNotEmpty && uid == senderId;
+  }
 
   factory ChatMessage.fromMap(String id, Map<dynamic, dynamic> map) {
     final role = (map['senderRole'] ?? map['role'] ?? 'student').toString();
@@ -67,6 +78,7 @@ class ChatMessage {
           _parseInt(map['networkingOwnerId']) ?? networkingOwnerFromBody,
       deleted: map['deleted'] == true,
       deletedBy: map['deletedBy']?.toString(),
+      deletedByUid: map['deletedByUid']?.toString(),
       deletedByRole: map['deletedByRole']?.toString(),
     );
   }

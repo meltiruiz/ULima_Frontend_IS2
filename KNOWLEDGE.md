@@ -69,7 +69,7 @@ ULima++ es una app Flutter para estudiantes de la Universidad de Lima. Centraliz
 - Docentes pueden iniciar sesión (HU18) para gestionar asesorías extra.
 - Solo cursos con matrícula activa deben mostrarse como actuales.
 - La malla debe distinguir progreso real y simulación visual.
-- Las notas son personales, no oficiales.
+- Las notas que el alumno registra en la calculadora son personales y no oficiales (`simulated_grades`). La calculadora muestra además, fijas y con la marca “ULima”, las notas parciales que publica la ULima, que guarda la tabla `student_portal_score`, escribe solo `POST /portal-sync/refresh` y lee `GET /grades/me/ulima`.
 - Riesgo académico: avance evaluado > 55% y promedio personal < 10.5.
 - Alta carga: 3+ evaluaciones en una semana académica.
 - Anuncios visibles solo para estudiantes matriculados en la sección.

@@ -269,11 +269,28 @@ class PasswordResetOtpField extends StatefulWidget {
     required this.controller,
     required this.palette,
     this.length = passwordResetCodeLength,
+    this.boxHeight = 52,
+    this.boxFill,
+    this.idleBorderColor = Colors.transparent,
+    this.readOnly = false,
   });
 
   final TextEditingController controller;
   final PasswordResetPalette palette;
   final int length;
+
+  /// Alto de cada casilla. La hoja de recarga desde la ULima usa 50 (RF-RCG-2).
+  final double boxHeight;
+
+  /// Relleno de cada casilla. Con `null` usa `palette.fieldFill`.
+  final Color? boxFill;
+
+  /// Borde de las casillas que no tienen el foco, de 1 de ancho. Con el
+  /// transparente de siempre no se ve (D13 de la recarga).
+  final Color idleBorderColor;
+
+  /// Durante la espera de la recarga, las casillas no se enfocan ni se editan.
+  final bool readOnly;
 
   @override
   State<PasswordResetOtpField> createState() => _PasswordResetOtpFieldState();
@@ -304,6 +321,7 @@ class _PasswordResetOtpFieldState extends State<PasswordResetOtpField> {
       widget.controller.addListener(_handleValueChanged);
       _paintedText = widget.controller.text;
     }
+    if (widget.readOnly && !oldWidget.readOnly) _focusNode.unfocus();
   }
 
   @override
@@ -358,6 +376,9 @@ class _PasswordResetOtpFieldState extends State<PasswordResetOtpField> {
                   palette: widget.palette,
                   digit: i < text.length ? text[i] : '',
                   active: _focusNode.hasFocus && i == activeIndex,
+                  height: widget.boxHeight,
+                  fill: widget.boxFill ?? widget.palette.fieldFill,
+                  idleBorderColor: widget.idleBorderColor,
                 ),
               ),
             ],
@@ -369,6 +390,8 @@ class _PasswordResetOtpFieldState extends State<PasswordResetOtpField> {
           child: TextField(
             controller: widget.controller,
             focusNode: _focusNode,
+            readOnly: widget.readOnly,
+            canRequestFocus: !widget.readOnly,
             keyboardType: TextInputType.number,
             textInputAction: TextInputAction.next,
             autocorrect: false,
@@ -402,25 +425,36 @@ class _OtpBox extends StatelessWidget {
     required this.palette,
     required this.digit,
     required this.active,
+    required this.height,
+    required this.fill,
+    required this.idleBorderColor,
   });
 
   final PasswordResetPalette palette;
   final String digit;
   final bool active;
+  final double height;
+  final Color fill;
+  final Color idleBorderColor;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
       duration: const Duration(milliseconds: 120),
-      height: 52,
+      height: height,
       alignment: Alignment.center,
       decoration: BoxDecoration(
-        color: palette.fieldFill,
+        color: fill,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: active ? palette.focusedFieldLine : Colors.transparent,
-          width: 2,
-        ),
+        // En reposo, el transparente de siempre conserva el ancho de 2, así
+        // que las pantallas de hoy no se mueven ni un píxel. Un borde visible
+        // en reposo va de 1 (D13 de la recarga).
+        border: active
+            ? Border.all(color: palette.focusedFieldLine, width: 2)
+            : Border.all(
+                color: idleBorderColor,
+                width: idleBorderColor == Colors.transparent ? 2 : 1,
+              ),
       ),
       child: Text(
         digit,

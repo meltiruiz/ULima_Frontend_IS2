@@ -174,6 +174,12 @@ backend).
 Se muestra antes de cada importación: son pocas —una por ciclo— y así el consentimiento
 siempre corresponde a lo que se importa en ese momento.
 
+*Enmienda del 2026-09-25, aprobada por el dueño el 2026-09-26 e implementada el 2026-09-26
+(`specs/features/recarga-portal/recarga-portal.spec.md`, decisión B4).* Esta regla sigue
+rigiendo la importación. La recarga de notas parciales y asistencia no pasa por
+`PortalConsentView` y lleva su propio aviso en la hoja, en cada recarga, sin tocar las
+constantes que congela `test/HU34_jeff/portal_sync_consent_test.dart`.
+
 `[@test] ../../../test/HU34_jeff/portal_sync_consent_test.dart`
 `[@test] ../../../test/HU34_jeff/registro_consent_test.dart`
 

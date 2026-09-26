@@ -3,9 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import '../../components/recarga_ulima/pie_asistencia.dart';
 import '../../configs/themes.dart';
 import '../../models/seccion_model.dart';
 import '../../services/chat_repository.dart';
+import '../../services/recarga_ulima_service.dart';
 import '../chat/chat_page.dart';
 import 'anuncios_tab.dart';
 import 'asesoria_tab.dart';
@@ -43,6 +45,12 @@ class DescripCursosPage extends StatelessWidget {
       MaterialTheme.bloqueAsistencia(colors.brightness);
   Color _attendanceDivider(ColorScheme colors) =>
       MaterialTheme.bloqueAsistenciaLinea(colors.brightness);
+
+  /// La recarga desde la ULima solo se monta con su servicio registrado
+  /// (RF-RCG-8). Sin él, el bloque queda como antes de la recarga.
+  bool get _conRecarga => Get.isRegistered<RecargaUlimaService>();
+
+  Future<void> _recargarSeccion() => control.recargarSeccion(idSeccion);
 
   Widget _courseTitle(BuildContext context, Seccion seccion) {
     ColorScheme colors = Theme.of(context).colorScheme;
@@ -169,7 +177,7 @@ class DescripCursosPage extends StatelessWidget {
     // (ver `_AnilloAsistencia`). El `NaN` que clampeaba al máximo y pintaba la
     // dona llena y verde murió con eso. Ver RS-BE-10 y RS-BE-16.
     if (!seccion.asistenciaDisponible) {
-      return _asistenciaSinDatos(context, colors);
+      return _asistenciaSinDatos(context, colors, seccion);
     }
 
     return Container(
@@ -301,6 +309,14 @@ class DescripCursosPage extends StatelessWidget {
               ),
             ],
           ),
+          if (_conRecarga) ...[
+            const SizedBox(height: 12),
+            PieAsistencia(
+              idSeccion: seccion.idSeccion,
+              leidaEn: seccion.asistenciaLeidaEn,
+              alRecargar: _recargarSeccion,
+            ),
+          ],
         ],
       ),
     );
@@ -311,7 +327,11 @@ class DescripCursosPage extends StatelessWidget {
   /// Deliberadamente NEUTRO, no verde: el verde es el color de "todo bien" en
   /// esta app, y "no sabemos" no es "todo bien". Tampoco muestra los tres ceros,
   /// que se leían como asistencia perfecta.
-  Widget _asistenciaSinDatos(BuildContext context, ColorScheme colors) {
+  Widget _asistenciaSinDatos(
+    BuildContext context,
+    ColorScheme colors,
+    Seccion seccion,
+  ) {
     return Container(
       width: double.infinity,
       color: _attendanceBackground(colors),
@@ -346,14 +366,22 @@ class DescripCursosPage extends StatelessWidget {
             style: TextStyle(color: colors.onSurfaceVariant, fontSize: 12),
           ),
           const SizedBox(height: 12),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: () => Get.toNamed<dynamic>('/portal-sync'),
-              icon: const Icon(Icons.sync, size: 18),
-              label: const Text('Actualizar desde miUlima'),
+          // D3. Con la recarga, el botón abre la hoja y el bloque muestra sus
+          // señales. Sin ella, sigue abriendo /portal-sync.
+          if (_conRecarga)
+            RecargaSinDatos(
+              idSeccion: seccion.idSeccion,
+              alRecargar: _recargarSeccion,
+            )
+          else
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: () => Get.toNamed<dynamic>('/portal-sync'),
+                icon: const Icon(Icons.sync, size: 18),
+                label: const Text('Actualizar desde miUlima'),
+              ),
             ),
-          ),
         ],
       ),
     );

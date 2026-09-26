@@ -138,10 +138,12 @@ class PortalSyncController extends GetxController {
         await Get.find<HorarioController>().reload();
       }
       if (Get.isRegistered<CalculadoraController>()) {
-        // Se borra en vez de recargarlo: `recargar()` no reejecuta la carga del
-        // sílabo, así que los pesos de las evaluaciones quedarían viejos. La
-        // pestaña lo vuelve a crear al abrirse.
-        await Get.delete<CalculadoraController>(force: true);
+        // Se recarga entero en vez de borrarlo (RF-RCG-11). La fila «Notas
+        // oficiales» y el aviso de IMPORT_REQUIRED abren /portal-sync con la
+        // calculadora montada debajo, y borrar su controller deja a
+        // «Registrar Nota» sin él. `recargarTodo()` sí vuelve a pedir el
+        // sílabo, así que los pesos no quedan viejos.
+        await Get.find<CalculadoraController>().recargarTodo();
       }
       // La importación crea alertas (impedimentos, riesgo académico).
       if (Get.isRegistered<AlertService>()) {

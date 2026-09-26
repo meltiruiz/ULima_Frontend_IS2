@@ -1,12 +1,18 @@
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import '../../domain/recarga_ulima/filas_calculadora.dart';
 import '../../models/evaluation_model.dart';
 import '../../services/evaluations_service.dart';
 import '../../services/courses_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/api_client.dart';
+import '../../services/recarga_ulima_service.dart';
 
 class CalculadoraController extends GetxController {
+  /// [apiClient] es para las pruebas. Sin él usa el `ApiClient` de siempre.
+  CalculadoraController({ApiClient? apiClient})
+      : _api = apiClient ?? ApiClient();
+
   late var cursos = <Map<String, dynamic>>[].obs;
 
   // Distingue "falló la carga de cursos" de "aún no registras notas": antes un
@@ -17,22 +23,99 @@ class CalculadoraController extends GetxController {
 
   late EvaluationSyllabusService _syllabusService;
   late CoursesService _coursesService;
-  late ApiClient _api;
+  final ApiClient _api;
 
   late var syllabusData = <String, CourseSyllabus>{}.obs;
+
+  /// Hay una vista de la ULima del alumno actual (RF-RCG-5). Sin ella la fila
+  /// «Notas oficiales» lleva solo el título.
+  final RxBool hayVistaUlima = false.obs;
+
+  /// La `lastReadAt` de esa vista, para la segunda línea de la fila.
+  final Rxn<DateTime> ultimaLecturaUlima = Rxn<DateTime>();
+
+  /// Escucha los cambios de la vista de la ULima. Lo cierra [onClose].
+  Worker? _vistaUlima;
 
   @override
   void onInit() {
     super.onInit();
-    _api = ApiClient();
     _syllabusService = EvaluationSyllabusService();
     _coursesService = CoursesService();
 
     _cargarDatosSyllabus();
     _inicializarCursos();
+    conectarUlima();
   }
 
-  void _cargarDatosSyllabus() async {
+  @override
+  void onClose() {
+    _vistaUlima?.dispose();
+    super.onClose();
+  }
+
+  /// Llena las filas de la ULima desde `RecargaUlimaService` y las rehace con
+  /// cada cambio de su vista (RF-RCG-7). La página nunca hace `Get.find` del
+  /// servicio. Sin el servicio registrado, la calculadora queda como hoy.
+  void conectarUlima() {
+    if (!Get.isRegistered<RecargaUlimaService>()) return;
+    final servicio = RecargaUlimaService.to;
+    _vistaUlima?.dispose();
+    _vistaUlima = servicio.alCambiarVista(aplicarVistaUlima);
+    aplicarVistaUlima();
+    if (servicio.vista == null) servicio.cargar();
+  }
+
+  /// Rehace las filas de la ULima de cada curso desde la vista del alumno
+  /// actual y, con [recalcular], pide el promedio de los cursos que cambian.
+  /// Un fallo de la carga sin vista previa deja la calculadora como hoy, y con
+  /// vista previa del mismo alumno las filas siguen. Sin vista quita las filas
+  /// y no pide el promedio, porque la vista queda en `null` solo con
+  /// `RecargaUlimaService.clear()`. En el cierre de sesión ese `clear()` llega
+  /// con el JWT ya revocado, y un `POST /grades/me/calculate` con ese token
+  /// recibe un 401 que `ApiClient` trata como sesión expirada.
+  void aplicarVistaUlima({bool recalcular = true}) {
+    final vista = Get.isRegistered<RecargaUlimaService>()
+        ? RecargaUlimaService.to.vista
+        : null;
+    hayVistaUlima.value = vista != null;
+    ultimaLecturaUlima.value = vista?.lastReadAt;
+    final cambiados = <int>[];
+    for (var i = 0; i < cursos.length; i++) {
+      final curso = cursos[i];
+      final deUlima = vista?.cursos.firstWhereOrNull(
+        (c) => '${c.sectionId}' == '${curso['id']}',
+      );
+      final notas = notasUlimaDeCurso(deUlima);
+      final sinPareja = ulimaSinPareja(deUlima);
+      if (mismasNotasUlima(curso[claveNotasUlima], notas) &&
+          (curso[claveUlimaSinPareja] ?? false) == sinPareja) {
+        continue;
+      }
+      curso[claveNotasUlima] = notas;
+      curso[claveUlimaSinPareja] = sinPareja;
+      cambiados.add(i);
+    }
+    if (cambiados.isEmpty) return;
+    cursos.refresh();
+    if (!recalcular || vista == null) return;
+    for (final i in cambiados) {
+      _calcularPromedio(i);
+    }
+  }
+
+  /// Vuelve a pedir el sílabo, los cursos, las notas simuladas y la vista de
+  /// la ULima, y recalcula los promedios (RF-RCG-11). Lo llama la importación
+  /// en vez de borrar el controller.
+  Future<void> recargarTodo() async {
+    await _cargarDatosSyllabus();
+    await _inicializarCursos();
+    if (Get.isRegistered<RecargaUlimaService>()) {
+      await RecargaUlimaService.to.cargar();
+    }
+  }
+
+  Future<void> _cargarDatosSyllabus() async {
     try {
       await _syllabusService.loadEvaluationData();
       for (var syllabus in _syllabusService.allSyllabuses) {
@@ -47,7 +130,7 @@ class CalculadoraController extends GetxController {
   /// Reintenta la carga de cursos (botón "Reintentar" del estado de error).
   void recargar() => _inicializarCursos();
 
-  void _inicializarCursos() async {
+  Future<void> _inicializarCursos() async {
     try {
       final user = AuthService.to.currentUser;
 
@@ -103,6 +186,7 @@ class CalculadoraController extends GetxController {
       }
 
       cursos.value = cursosExpandidos;
+      aplicarVistaUlima(recalcular: false);
       for (int i = 0; i < cursos.length; i++) {
         await _calcularPromedio(i);
       }
@@ -167,20 +251,16 @@ class CalculadoraController extends GetxController {
 
   Future<void> _calcularPromedio(int cursoIndex) async {
     if (cursoIndex < 0 || cursoIndex >= cursos.length) return;
-    final notas = cursos[cursoIndex]['notas'] as List;
+    final curso = cursos[cursoIndex];
     try {
-      final notasClean = notas
-          .map(
-            (n) => {
-              'valor': (n['valor'] is num)
-                  ? (n['valor'] as num).toDouble()
-                  : (double.tryParse(n['valor']?.toString() ?? '') ?? 0.0),
-              'peso': (n['peso'] is num)
-                  ? (n['peso'] as num).toDouble()
-                  : (double.tryParse(n['peso']?.toString() ?? '') ?? 0.0),
-            },
-          )
-          .toList();
+      // Las filas visibles, simuladas y de la ULima, con NP como 0 y el peso
+      // exacto de la ULima (RF-RCG-7).
+      final notasClean = notasParaPromedio(
+        filasVisibles(
+          simuladas: curso['notas'] as List,
+          ulima: (curso[claveNotasUlima] as List?) ?? const [],
+        ),
+      );
 
       final result = await _api.postJson(
         '/grades/me/calculate',
@@ -274,11 +354,19 @@ class CalculadoraController extends GetxController {
     return [];
   }
 
+  /// Las evaluaciones del sílabo sin nota simulada y sin una fila de la ULima
+  /// visible (RF-RCG-7).
   List<EvaluationComponent> getAvailableEvaluations(int cursoIndex) {
     final allEvaluations = getEvaluationsForCourse(cursoIndex);
     final registeredIds = getRegisteredEvaluationIds(cursoIndex);
+    final deUlima = cursoIndex >= 0 && cursoIndex < cursos.length
+        ? idsConNotaUlima(cursos[cursoIndex])
+        : const <String>{};
     return allEvaluations
-        .where((eval) => !registeredIds.contains(eval.id))
+        .where(
+          (eval) =>
+              !registeredIds.contains(eval.id) && !deUlima.contains(eval.id),
+        )
         .toList();
   }
 

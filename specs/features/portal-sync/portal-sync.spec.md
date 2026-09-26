@@ -18,6 +18,23 @@ targets:
 
 > Estado: **implementada el 2026-09-02**, con el diseño ALTERNATIVO (credenciales), no el original de WebView. Ver §Cambio de diseño.
 
+> **Enmienda del 2026-09-25, aprobada por el dueño el 2026-09-26 e implementada el 2026-09-26**
+> (`specs/features/recarga-portal/recarga-portal.spec.md`). BR-SYNC-F-06 deja de borrar
+> `CalculadoraController` después de importar y llama a `recargarTodo()` (RF-RCG-11), porque la
+> fila «Notas oficiales» de la calculadora y el aviso de `IMPORT_REQUIRED` abren `/portal-sync`
+> con la calculadora montada debajo. La recarga de notas parciales y asistencia no usa esta
+> pantalla ni `PortalSyncService`. Tiene su propia hoja, que reutiliza `PasswordResetOtpField` con
+> cuatro parámetros opcionales (alto de casilla, relleno, borde en reposo y solo lectura) cuyo
+> valor por defecto deja esta pantalla como está, y su propio servicio,
+> `RecargaUlimaService`, contra `POST /portal-sync/refresh`. El aviso de `IMPORT_REQUIRED` de esa
+> hoja es una entrada más a `/portal-sync`, que espera su resultado. La spec del backend, aprobada
+> el mismo día, suma a la importación el `409 PORTAL_REFRESH_IN_PROGRESS`, cuando hay una
+> recarga del mismo alumno en curso, y `details.kind` en sus dos `429`. Esta pantalla los muestra con el `message` del
+> backend, como hoy muestra el `429` y todo código que no traduce, sin cambio de código.
+
+`[@test] ../../../test/HU37_jeff/portal_sync_refresco_calculadora_test.dart`
+`[@test] ../../../test/HU37_jeff/hoja_recarga_test.dart`
+
 ## User Stories
 
 | ID | Description |

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import '../../domain/recarga_ulima/filas_calculadora.dart';
 import 'nota_tile.dart';
 
 class CursoCard extends StatelessWidget {
@@ -7,7 +8,13 @@ class CursoCard extends StatelessWidget {
   final double promedio;
   final double sumaPesos;
   final int cursoIndex;
+
+  /// Recibe la posición de la simulada en `curso['notas']`, no la de la fila
+  /// visible (RF-RCG-7).
   final Function(int, int) onDeleteNota;
+
+  /// Los ids de las evaluaciones del sílabo de la sección, en su orden (D7).
+  final List<String> ordenSilabo;
 
   const CursoCard({
     super.key,
@@ -16,6 +23,7 @@ class CursoCard extends StatelessWidget {
     required this.sumaPesos,
     required this.cursoIndex,
     required this.onDeleteNota,
+    this.ordenSilabo = const [],
   });
 
   @override
@@ -152,19 +160,66 @@ class CursoCard extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 5),
             child: Obx(() {
-              final listasNotas = curso['notas'] as List;
+              // Las simuladas y las de la ULima, en listas aparte. El doble de
+              // HU07 arma sus cursos sin la segunda.
+              final filas = filasVisibles(
+                simuladas: curso['notas'] as List,
+                ulima: (curso[claveNotasUlima] as List?) ?? const [],
+                ordenSilabo: ordenSilabo,
+              );
               return Column(
-                children: List.generate(listasNotas.length, (index) {
-                  final nota = listasNotas[index];
-                  return NotaTile(
-                    titulo: nota['titulo'],
-                    peso: nota['peso'],
-                    nota: nota['valor'],
-                    onDelete: () => onDeleteNota(cursoIndex, index),
-                  );
-                }),
+                children: [
+                  for (final fila in filas)
+                    fila.deUlima
+                        ? NotaTile(
+                            titulo: fila.titulo,
+                            peso: fila.peso,
+                            nota: fila.valor,
+                            np: fila.np,
+                            deUlima: true,
+                          )
+                        : NotaTile(
+                            titulo: fila.titulo,
+                            peso: fila.peso,
+                            nota: fila.valor,
+                            onDelete: () =>
+                                onDeleteNota(cursoIndex, fila.indiceSimulada!),
+                          ),
+                  if (curso[claveUlimaSinPareja] == true)
+                    const _SilaboQueNoCoincide(),
+                ],
               );
             }),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// La línea de un curso con evaluaciones de la ULima que no están en el
+/// sílabo cargado (D15).
+class _SilaboQueNoCoincide extends StatelessWidget {
+  const _SilaboQueNoCoincide();
+
+  @override
+  Widget build(BuildContext context) {
+    final tenue = Theme.of(
+      context,
+    ).colorScheme.onSurface.withValues(alpha: 0.7);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.info_outline, size: 16, color: tenue),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'La ULima publica evaluaciones que no están en el sílabo '
+              'cargado. Míralas en Notas oficiales.',
+              style: TextStyle(fontSize: 12, color: tenue),
+            ),
           ),
         ],
       ),

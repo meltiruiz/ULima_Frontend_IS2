@@ -173,6 +173,21 @@ class MaterialTheme {
   static Color iconoNaranja(Brightness b) =>
       b == Brightness.light ? primaryDark : primaryColor;
 
+  // ── Recarga desde la ULima (RF-RCG-10) ──────────────────────────────────
+
+  /// Naranja de un texto de acción, que pide 4,5:1 (D11). Va en `#A34300` en
+  /// claro y en `primaryColor` en oscuro, porque `primaryDark` da 4,12:1 sobre
+  /// `cardBg`. Sobre `cardBg` da 6,25:1 y 5,65:1, y sobre `bloqueAsistencia`
+  /// 5,31:1 y 4,67:1.
+  static Color textoNaranja(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFA34300) : primaryColor;
+
+  /// Texto de la marca «ULima» de la calculadora (D11). Sobre
+  /// `espPrincipalBg` da 5,66:1 en claro y 5,92:1 en oscuro, donde
+  /// `primaryDark` da 3,73:1 en claro.
+  static Color insigniaUlimaTexto(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFA34300) : const Color(0xFFFF8C42);
+
   // ── Test de especialidad (HU36, RF-TEST-12) ──────────────────────────────
   // Paleta de la maqueta `ulises-v2.html`, que ya llega al contraste pedido.
   // Las cifras de cada par están en la tabla de RF-TEST-12.

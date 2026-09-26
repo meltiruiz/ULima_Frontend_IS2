@@ -12,6 +12,7 @@ import '/services/auth_service.dart';
 import '/services/alert_service.dart';
 import '/services/malla_service.dart';
 import '/services/academic_record_service.dart';
+import '/services/recarga_ulima_service.dart';
 import '/services/specialty_test_service.dart';
 import '/services/time_blocks_service.dart';
 import '/services/post_login_route.dart';
@@ -78,6 +79,9 @@ void main() async {
   // Estado único del récord (RF-REC-5), compartido por la tarjeta del Perfil y
   // /mi-record. No carga nada al arrancar: la tarjeta lo pide al montarse.
   Get.put<AcademicRecordService>(AcademicRecordService(), permanent: true);
+  // Estado único de la recarga desde la ULima (RF-RCG-1), compartido por la
+  // calculadora, /mis-notas y la ficha del curso. No carga nada al arrancar.
+  Get.put<RecargaUlimaService>(RecargaUlimaService(), permanent: true);
   // Estado único de los bloques de horario propios (RF-BLQ-7). Permanente
   // como MallaService: la pantalla de horario es una tab del shell y el
   // formulario de /bloque escribe sobre este mismo estado. Tampoco carga nada

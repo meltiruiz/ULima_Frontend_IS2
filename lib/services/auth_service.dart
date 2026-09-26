@@ -13,6 +13,7 @@ import 'courses_service.dart';
 import 'evaluations_service.dart';
 import 'malla_service.dart';
 import 'official_grades_service.dart';
+import 'recarga_ulima_service.dart';
 import 'specialty_test_service.dart';
 import 'storage_service.dart';
 import 'time_blocks_service.dart';
@@ -443,6 +444,9 @@ class AuthService extends GetxService {
     if (Get.isRegistered<AcademicRecordService>()) {
       AcademicRecordService.to.clear();
     }
+    // Las notas y la asistencia leídas de la ULima (RF-RCG-1), con la misma
+    // guarda.
+    if (Get.isRegistered<RecargaUlimaService>()) RecargaUlimaService.to.clear();
     // Los bloques de horario propios (RF-BLQ-7) son horarios de trabajo o de
     // prácticas que el backend protege a propósito (RS-BE-35): se vacían
     // igual que el récord. Con guarda por lo mismo que la línea de arriba.

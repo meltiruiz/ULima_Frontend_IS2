@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 import '../../components/calculadora/curso_card.dart';
 import '../../components/calculadora/add_score.dart';
 import '../../components/error_retry.dart';
+import '../../components/recarga_ulima/fila_notas_oficiales.dart';
+import '../../domain/recarga_ulima/filas_calculadora.dart';
 import 'calculadora_controller.dart';
 
 class CalculadoraPage extends GetView<CalculadoraController> {
@@ -25,32 +27,19 @@ class CalculadoraPage extends GetView<CalculadoraController> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        "Calculadora de Notas",
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w900,
-                          color: colors.onSurface,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Notas oficiales',
-                      onPressed: () => Get.toNamed('/mis-notas'),
-                      icon: Icon(Icons.school_outlined, color: colors.onSurface),
-                    ),
-                  ],
+                Text(
+                  "Calculadora de Notas",
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w900,
+                    color: colors.onSurface,
+                  ),
                 ),
                 Obx(() {
-                  final cursosConNotas = controller.cursos
-                      .where(
-                        (curso) =>
-                            (curso['notas'] as List?)?.isNotEmpty ?? false,
-                      )
-                      .length;
+                  // Un curso cuenta con al menos una fila visible, simulada o
+                  // de la ULima (RF-RCG-7).
+                  final cursosConNotas =
+                      controller.cursos.where(tieneFilasVisibles).length;
                   return Text(
                     "Cursos con notas: $cursosConNotas",
                     style: TextStyle(
@@ -60,6 +49,16 @@ class CalculadoraPage extends GetView<CalculadoraController> {
                     ),
                   );
                 }),
+                // RF-RCG-5. Es la única entrada a /mis-notas, en los tres
+                // estados de la calculadora. No espera resultado, porque la
+                // calculadora lee la vista de la ULima y se actualiza sola.
+                Obx(
+                  () => FilaNotasOficiales(
+                    hayVista: controller.hayVistaUlima.value,
+                    ultimaLectura: controller.ultimaLecturaUlima.value,
+                    onTap: () => Get.toNamed('/mis-notas'),
+                  ),
+                ),
               ],
             ),
           ),
@@ -75,11 +74,8 @@ class CalculadoraPage extends GetView<CalculadoraController> {
                 );
               }
 
-              final cursosConNotas = controller.cursos
-                  .where(
-                    (curso) => (curso['notas'] as List?)?.isNotEmpty ?? false,
-                  )
-                  .toList();
+              final cursosConNotas =
+                  controller.cursos.where(tieneFilasVisibles).toList();
 
               if (cursosConNotas.isEmpty) {
                 return Center(
@@ -129,6 +125,12 @@ class CalculadoraPage extends GetView<CalculadoraController> {
                     promedio: controller.calcularPromedio(cursoIndex),
                     sumaPesos: controller.sumaPesos(cursoIndex),
                     onDeleteNota: controller.eliminarNota,
+                    ordenSilabo: [
+                      for (final e in controller.getEvaluationsForCourse(
+                        cursoIndex,
+                      ))
+                        e.id,
+                    ],
                   );
                 },
               );

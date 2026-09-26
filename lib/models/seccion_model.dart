@@ -18,6 +18,10 @@ class Seccion {
   /// RS-BE-16.
   final int horasTranscurridas;
 
+  /// Hora de la última lectura de la asistencia en miUlima (RS-BE-58 y
+  /// RF-RCG-8), o `null` si no hay ninguna o el backend no la manda.
+  final DateTime? asistenciaLeidaEn;
+
   Seccion({
     required this.idSeccion,
     required this.codigoSeccion,
@@ -30,6 +34,7 @@ class Seccion {
     required this.total,
     required this.asistenciaDisponible,
     required this.horasTranscurridas,
+    this.asistenciaLeidaEn,
   });
 
   /// Fracción asistida (0..1) sobre las horas TRANSCURRIDAS, o `null` si
@@ -81,6 +86,9 @@ class Seccion {
       horasTranscurridas: (json['horasTranscurridas'] as num?)?.toInt() ??
           (((json['asistido'] as num?)?.toInt() ?? 0) +
               ((json['inasistencia'] as num?)?.toInt() ?? 0)),
+      asistenciaLeidaEn: json['asistenciaLeidaEn'] is String
+          ? DateTime.tryParse(json['asistenciaLeidaEn'] as String)
+          : null,
     );
   }
 }

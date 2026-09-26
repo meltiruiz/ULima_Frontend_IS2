@@ -211,14 +211,56 @@ Notas:
 - `POST /grades/me/calculate` — **IMPLEMENTADO**. Calcula el promedio ponderado en el backend.
 - `GET /grades/me/notes` — **IMPLEMENTADO**. Recupera notas guardadas del alumno desde `student_score`.
 - `POST /grades/me/notes` — **IMPLEMENTADO**. Guarda notas del alumno en `student_score` (upsert).
+- `DELETE /grades/me/notes/:sectionId/:assessmentId`. **IMPLEMENTADO**. Borra una nota del alumno, y lo usa el tacho de la calculadora (`calculadora_controller.dart:235`). Faltaba en este contrato.
 - ~~`PUT /grades/me/scores`~~ — **NO IMPLEMENTADO** (reemplazado por `POST /grades/me/notes`).
 - ~~`GET /grades/me/courses/:sectionId/average`~~ — **NO IMPLEMENTADO** (el cálculo se hace vía `POST /grades/me/calculate`).
 
 Notas:
 
 - `student_score` es la tabla de persistencia de notas personales del alumno.
+- *Corrección del 2026-09-25.* Las notas de `GET /grades/me/notes`, `POST /grades/me/notes` y su `DELETE` viven en `simulated_grades` (`grades.repository.ts` del backend), no en `student_score`, que guarda las notas que carga el docente (ver Official Grades). Las menciones a `student_score` de esta sección describen mal el código. El contrato del backend arrastra la misma frase.
 - El cálculo de promedio ponderado y la persistencia de notas se delegan al backend.
 - `POST /grades/syllabi` queda fuera de v1 salvo spec aprobada; la tabla `syllabus` ya existe.
+
+### GET /grades/me/ulima
+
+*APROBADO el 2026-09-26, pendiente de implementación.* Notas parciales por evaluación que la ULima publica en el panel Nota del Aula Virtual, tal como las guarda la última `POST /portal-sync/refresh`. Detalle en RS-BE-57 de `ULima_Backend_IS2/specs/features/recarga-portal/recarga-portal.spec.md` y, en la app, en RF-RCG-1, RF-RCG-6 y RF-RCG-7 de `specs/features/recarga-portal/recarga-portal.spec.md`.
+
+- **Auth**. Bearer token, rol `student|delegate|subdelegate`. Solo el propio alumno, sin parámetros. `Cache-Control: no-store`.
+- **Response** `200 OK`.
+  ```json
+  {
+    "lastReadAt": "2026-09-25T15:42:10.000Z",
+    "courses": [
+      {
+        "sectionId": 81,
+        "courseCode": "690417",
+        "courseName": "TALLER DE PROTOTIPADO",
+        "sectionCode": "812",
+        "lastReadAt": "2026-09-25T15:42:10.000Z",
+        "assessments": [
+          { "key": "07.13", "group": "EVC", "name": "Examen escrito 1", "week": 3, "weight": 15,
+            "value": 14.5, "mark": "graded", "assessmentId": 5011, "match": "exact" },
+          { "key": "07.15", "group": "EVC", "name": "Exposición", "week": 10, "weight": 20,
+            "value": null, "mark": "pending", "assessmentId": 5013, "match": "week_shift" }
+        ]
+      }
+    ]
+  }
+  ```
+- Una entrada por matrícula activa del alumno en el período activo, aunque nunca se haya leído (`lastReadAt: null`, `assessments: []`). `mark` vale `graded`, `pending` o `np`, y `value` es `null` salvo con `graded`. `match` vale `exact`, `exact_other_name`, `week_shift` o `none`, y con `none` `assessmentId` es `null`. `assessments` llega por semana, con las `null` al final, y luego por `key`. `lastReadAt` de arriba es el máximo de los cursos. Sin período activo responde `{ "lastReadAt": null, "courses": [] }`.
+- No incluye la mínima ni la máxima de la clase ni los agregados del panel Nota.
+- En la app lo llama solo `RecargaUlimaService`. `/mis-notas` pinta todas las evaluaciones, y la calculadora solo las que tienen nota (`graded` o `np`) y pareja en el sílabo (`match` distinto de `none`). La app nunca manda estas notas a `POST /grades/me/notes`, y sí las suma a lo que manda a `POST /grades/me/calculate`.
+- No trae la sigla de la evaluación del sílabo. La app la toma de `syllabi` en `GET /grades/me/courses` por `assessmentId` (hueco 1 de la spec de la app).
+
+## Official Grades (notas que carga el docente)
+
+Faltaba en este contrato, aunque `/mis-notas` y la pantalla de calificación del docente ya lo usan. Detalle en `ULima_Backend_IS2/specs/features/official-grades/official-grades.spec.md`.
+
+- `GET /official-grades/me`. **IMPLEMENTADO**. Rol `student|delegate|subdelegate`. Notas del alumno en `student_score` por curso y sección del período activo, y el cliente calcula la nota final. Desde RF-RCG-6 ninguna pantalla de alumno lo lee (`official_grades_service.dart:40-47`).
+  - Response `{ "courses": [ { "sectionId": number, "courseName": string, "sectionCode": string, "assessments": [ { "assessmentId": number, "code": string, "name": string, "weight": number, "value": number|null } ] } ] }`.
+  - *Aprobado el 2026-09-26 e implementado en la app el 2026-09-26 (decisión B10 de `specs/features/recarga-portal/recarga-portal.spec.md`).* `/mis-notas` deja de leer esta ruta y lee `GET /grades/me/ulima`. La ruta sigue en el backend sin cambios.
+- `GET /official-grades/teacher/sections`, `GET /official-grades/teacher/sections/:sectionId/scores` y `PUT /official-grades/teacher/sections/:sectionId/scores`. **IMPLEMENTADO**. Rol `teacher`. Los usa la pantalla de calificación del docente (`official_grades_service.dart:12-35`), que la recarga no toca.
 
 ## Schedule
 
@@ -273,6 +315,8 @@ Retorna el horario semanal por bloques de tiempo para las secciones donde el est
 > Las filas de horario **docente** y de **asesoría** siempre lo emiten en `false`.
 >
 > **`horasTranscurridas`** (RS-BE-16): horas ya DICTADAS (`asistido + inasistencia`), no las del ciclo. El porcentaje se calcula sobre este número: dividir `asistido / total` daría 8/64 = 12.5% en la semana 2, que el alumno lee como "asististe al 12.5%".
+>
+> **`asistenciaLeidaEn`** (*aprobado el 2026-09-26, pendiente de implementación*, RS-BE-58 del backend y RF-RCG-8 de `specs/features/recarga-portal/recarga-portal.spec.md`). Hora de la última lectura de la asistencia de esa matrícula en miUlima, por la importación o por `POST /portal-sync/refresh`, en ISO 8601 UTC, o `null` si no hay ninguna. Es un campo más de `secciones` y ninguno de los de antes cambia. Las filas del docente y de asesoría lo emiten siempre `null`. La app lo lee en `Seccion.asistenciaLeidaEn` con `DateTime.tryParse`, y un backend que no lo manda lo deja en `null`.
 >
 > **Riesgo por inasistencias** (`/attendance-risk`): `status` admite `impedido | en_riesgo | normal | sin_datos`, y `absencePercentage` es **nullable** — llega `null` exactamente cuando `status` es `sin_datos`. El `summary` incluye `sin_datos` como contador propio, que NO se suma a `normal`.
 
@@ -339,6 +383,7 @@ Notas:
 
 - Solo roles de alumno (`requireRole('student','delegate','subdelegate')`); un token docente recibe `403 FORBIDDEN`.
 - El estudiante solo ve secciones donde está matriculado.
+- *Aprobado el 2026-09-26, pendiente de implementación (RS-BE-58 del backend y RF-RCG-8 de `specs/features/recarga-portal/recarga-portal.spec.md`).* Cada elemento de `secciones` de `GET /course-detail/sections`, y la `section` de `GET /course-detail/sections/:sectionId`, suma `asistenciaLeidaEn` (ISO 8601 UTC o `null`), igual que `GET /schedule/me/sessions`.
 - Contactos agrega la clave top-level `jefePractica` (`{ code, lastName, firstName }` o `null`) desde `section.jp_id`, entre `docente` y `alumnos`.
 - Anuncios visibles solo si pertenecen a la sección del estudiante.
 - El listado de asesorías y RSVP del alumno migraron a `advising-student` (ver abajo).
@@ -496,15 +541,44 @@ Alumno (`requireRole(student|delegate|subdelegate)`, `studentId` y `code` del JW
       "summary": {
         "coursesCreated": 0, "teachersCreated": 0, "sectionsCreated": 0, "sectionsUpdated": 5,
         "sessionsUpserted": 12, "enrollmentsUpserted": 5, "enrollmentsWithdrawn": 0,
-        "progressUpserted": 53, "progressSkipped": 4, "alertsCreated": 1
+        "progressUpserted": 53, "progressSkipped": 4, "progressViaEquivalence": 14, "progressRemoved": 2,
+        "alertsCreated": 1, "alertsDeleted": 0, "syllabiUpserted": 3,
+        "claimsUpserted": 10, "claimsDeleted": 0, "representativesPromoted": 0,
+        "attendanceUpdated": 5, "attendanceSkipped": 0
       },
-      "warnings": [ { "code": "PERIOD_DATES_DEFAULTED" | "PERIOD_NOT_ACTIVATED_YET" | "TEACHER_MISSING" | "PARSER_FAILED" | "CAREER_MISMATCH" | "PROGRESS_SKIPPED" | "WITHDRAW_SKIPPED_WOULD_LOCK_OUT" | "LEVEL_OUT_OF_RANGE" | "LEVEL_REGRESSION_BLOCKED" | "SYLLABUS_UNAVAILABLE" | "DELEGADOS_UNAVAILABLE" | "ASISTENCIA_UNAVAILABLE", "block": "string", "message": "string" } ]
+      "warnings": [ { "code": "PERIOD_DATES_DEFAULTED" | "PERIOD_NOT_ACTIVATED_YET" | "TEACHER_MISSING" | "PARSER_FAILED" | "CAREER_MISMATCH" | "PROGRESS_SKIPPED" | "PROGRESS_REMOVED" | "WITHDRAW_SKIPPED_WOULD_LOCK_OUT" | "LEVEL_OUT_OF_RANGE" | "LEVEL_REGRESSION_BLOCKED" | "SYLLABUS_UNAVAILABLE" | "DELEGADOS_UNAVAILABLE" | "ASISTENCIA_UNAVAILABLE", "block": "string", "message": "string" } ],
+      "token": "string|null"
     }
     ```
-  - Errores: **`409 PORTAL_LOGIN_REJECTED`** (miUlima rechazó la contraseña o el passcode) y **`409 PORTAL_SESSION_INVALID`** (el portal devolvió `inicio.jsp` o pidió passcode). Los dos son 409 y no 401 a propósito: `ApiClient` del frontend trata todo 401 como expiración del JWT y cerraría la sesión del usuario. `403 PORTAL_IDENTITY_MISMATCH` (código del portal ≠ `app_user.code`), `422 PORTAL_IDENTITY_UNVERIFIABLE` (no se pudo leer el código del portal), `502 PORTAL_UNAVAILABLE`, `504 PORTAL_TIMEOUT`, `429 RATE_LIMITED` (máx. 5 importaciones por alumno por hora, con `details.retryAfterMinutes`).
+  - Errores: **`409 PORTAL_LOGIN_REJECTED`** (miUlima rechazó la contraseña o el passcode) y **`409 PORTAL_SESSION_INVALID`** (el portal devolvió `inicio.jsp` o pidió passcode). Los dos son 409 y no 401 a propósito: `ApiClient` del frontend trata todo 401 como expiración del JWT y cerraría la sesión del usuario. `403 PORTAL_IDENTITY_MISMATCH` (código del portal ≠ `app_user.code`), `422 PORTAL_IDENTITY_UNVERIFIABLE` (no se pudo leer el código del portal), `400 INVALID_REQUEST_BODY` (cuerpo inválido, por ejemplo un `consent` que no es booleano), `502 PORTAL_UNAVAILABLE`, `504 PORTAL_TIMEOUT`, `429 RATE_LIMITED` (máx. 5 importaciones por alumno por hora, con `details.retryAfterMinutes`).
   - La verificación de identidad ocurre ANTES de cualquier escritura y no se degrada a `warnings`.
-  - Idempotente: repetir la importación deja el mismo estado (todos los upsert usan `ON CONFLICT` sobre constraints existentes). No toca `simulated_grades`, simulación de malla, especialidades, anuncios, asesorías, representantes, chat, networking, `schedule_session.color_hex` ni las horas de asistencia.
+  - Idempotente: repetir la importación deja el mismo estado (todos los upsert usan `ON CONFLICT` sobre constraints existentes). No toca `simulated_grades`, simulación de malla, especialidades, anuncios, asesorías, chat, networking ni `schedule_session.color_hex`. Sí escribe `section_representative`, solo para promover al propio alumno, y `section_representative_claim`, con los dos representantes que publica el portal (`delegados-portal.spec.md` del backend), además de las horas de asistencia (ver la corrección de abajo).
+  - *Corrección del 2026-09-25, alineada con el contrato del backend.* El `summary` de arriba suma los contadores que el backend ya devuelve, y `token` es el JWT re-firmado con el cargo que el alumno tiene después de importar, o `null` si el servicio no puede firmarlo (la app lo usa en `refreshAfterImport`). Esta corrección también quita de la frase anterior los representantes, que la importación escribe, igual que en el contrato del backend, y suma a los errores el `400 INVALID_REQUEST_BODY` que el backend ya lista. Desde el 2026-09-07 la importación **sí escribe** las horas de asistencia del alumno autenticado (RS-BE-15 del backend), `attendanceUpdated` y `attendanceSkipped` las cuentan, y un fallo de esa fase no aborta la importación. Desde el cambio del menú lateral del Aula Virtual, visto el 2026-09-25, esa fase termina en `PARSER_FAILED` con `block: "asistencia"` y no actualiza ninguna hora hasta que se publique RS-BE-48 de `ULima_Backend_IS2/specs/features/recarga-portal/recarga-portal.spec.md`.
+  - *Aprobado el 2026-09-26, pendiente de implementación (RS-BE-48, RS-BE-50, RS-BE-58 y RS-BE-60 del backend).* La importación lee el menú del Aula Virtual en sus dos formatos, fija `enrollment.portal_attendance_read_at` junto con las horas, comparte con `POST /portal-sync/refresh` un tope de 3 inicios de sesión rechazados cada 15 minutos, que con `credentials` se revisa antes de iniciar sesión y responde `429 RATE_LIMITED` con `details.kind: "rejected_logins"`, responde `409 PORTAL_REFRESH_IN_PROGRESS` con `credentials` si hay una recarga del mismo alumno en curso, suma `details.kind: "quota"` a su `429` de cupo, nombra el aula en los avisos de asistencia y de delegados cuando el menú no dice de qué curso es, y cierra la sesión que el portal abre cuando el inicio de sesión falla a medias. La pantalla `/portal-sync` muestra el `429` y el `409` nuevo con el mensaje del backend, igual que hoy muestra el `429` y todo código que no traduce (`portal_sync_service.dart:111-118`), así que no cambia por ellos.
   - **La primera importación de un ciclo nuevo activa ese `academic_period` para TODOS los alumnos** (`is_active` es único global). Solo avanza el ciclo, nunca lo retrocede.
+- `POST /portal-sync/refresh`. *APROBADO el 2026-09-26, pendiente de implementación.* Lee en miUlima, con un solo inicio de sesión, la asistencia (panel Asistencia) y las notas parciales por evaluación (panel Nota) del alumno autenticado, sin repetir la importación. Detalle en RS-BE-49 a RS-BE-56 de `ULima_Backend_IS2/specs/features/recarga-portal/recarga-portal.spec.md` y, en la app, en RF-RCG-1 a RF-RCG-4 de `specs/features/recarga-portal/recarga-portal.spec.md`.
+  - Body `{ "credentials": { "password": string, "passcode": string }, "consent": true }`. Esquema estricto, `password` de 1 a 200, `passcode` con `^\d{6,8}$` y `consent` literal `true`. No acepta `cookies` ni claves de más, y el usuario del portal sale de `app_user.code`, nunca del cuerpo. El cuerpo nunca se registra.
+  - Condiciones previas, antes de tocar el portal y en este orden. Período activo con al menos una matrícula activa del alumno (`409 IMPORT_REQUIRED`), `app_user.code` (`422 PORTAL_IDENTITY_UNVERIFIABLE`), ninguna otra recarga ni importación con `credentials` del mismo alumno en curso (`409 PORTAL_REFRESH_IN_PROGRESS`) y el tope de rechazos.
+  - Ciclo. Tras iniciar sesión, el backend lee el ciclo de `layout.jsp`, y si ese ciclo o el de alguna página de asistencia difiere del período activo responde `409 IMPORT_REQUIRED` sin escribir nada y sin devolver el cupo (decisión 19 del backend y B19 de la app). La app muestra el mismo aviso que ante el `409 IMPORT_REQUIRED` de la condición previa.
+  - Límites. 5 recargas por alumno por hora, aparte de las de la importación, y 3 inicios de sesión rechazados cada 15 minutos, compartidos con la importación. Los dos responden `429 RATE_LIMITED` con `details: { retryAfterMinutes, kind: "quota" | "rejected_logins" }`. El presupuesto del backend, `PORTAL_REFRESH_BUDGET_MS`, vale 60 000 por defecto, se valida entre 20 000 y 65 000 y se acota con 81 000 − 2 · `PORTAL_TIMEOUT_MS`, que resta a los 90 s de la app una petición en vuelo, el cierre de sesión, 6 s de transacción y respuesta y 3 s para la red del teléfono. Cubre también el inicio de sesión, y pasado el presupuesto no se inicia ninguna petición nueva al portal. Su peor caso suma el presupuesto, una petición en vuelo (8 s), 6 s de transacción y respuesta y el cierre de sesión (8 s), que dan 82 s con los valores por defecto y 87 s con el máximo, contados desde que el backend recibe la petición, así que quedan al menos 3 s del plazo de la app para la red. El dueño aprueba el 2026-09-26 ese máximo de 65 000, igual en el backend y en la app, en lugar del de 68 000, que no deja margen para la red (hueco 5 y D18 de `specs/features/recarga-portal/recarga-portal.spec.md`).
+  - Response `200`, con `Cache-Control: no-store`, cuando al menos un curso se lee bien en alguno de los dos paneles.
+    ```json
+    {
+      "readAt": "2026-09-25T15:42:10.000Z",
+      "attendance": { "updated": 4, "skipped": 0, "failed": 0, "unavailable": 1 },
+      "grades": { "read": 5, "failed": 0, "unavailable": 0, "withValue": 3 },
+      "courses": [
+        { "sectionId": 81, "courseCode": "690417", "sectionCode": "812",
+          "attendance": "updated|skipped|failed|unavailable|missing|not_reached",
+          "grades": "read|failed|unavailable|missing|not_reached" }
+      ],
+      "view": "<la misma forma que GET /grades/me/ulima>",
+      "warnings": [ { "code": "PARSER_FAILED" | "ASISTENCIA_UNAVAILABLE" | "NOTAS_UNAVAILABLE" | "NOT_ENROLLED" | "SYLLABUS_MISMATCH" | "PORTAL_AVERAGE_MISMATCH" | "REFRESH_BUDGET_EXCEEDED", "block": "asistencia" | "nota", "message": "string" } ]
+    }
+    ```
+  - Errores. `400 INVALID_JSON_BODY` e `INVALID_REQUEST_BODY`, `409 IMPORT_REQUIRED` (antes de tocar el portal, o después si la ULima muestra otro ciclo), `409 PORTAL_REFRESH_IN_PROGRESS`, `409 PORTAL_LOGIN_REJECTED` (nunca `401`, porque `ApiClient` cerraría la sesión de ULima++), `409 PORTAL_SESSION_INVALID`, `403 PORTAL_IDENTITY_MISMATCH` (una página de asistencia declara un código de alumno presente y distinto, y no se escribe nada), `422 PORTAL_IDENTITY_UNVERIFIABLE`, `429 RATE_LIMITED`, `502 PORTAL_UNAVAILABLE`, `502 PORTAL_UNREADABLE` (`layout.jsp` sin ciclo, o ni los menús ni ninguna página se entienden) y `504 PORTAL_TIMEOUT` (también cuando el presupuesto vence durante el inicio de sesión). Las dos fases leen los menús de Asistencia y de Nota con `parseAulas`, y los dos llegan hoy con el formato de lista, así que sin RS-BE-48 desplegado toda recarga termina en `502 PORTAL_UNREADABLE`. Los errores del portal salen solo cuando no hay ningún curso leído, con la precedencia `PORTAL_SESSION_INVALID`, `PORTAL_TIMEOUT`, `PORTAL_UNAVAILABLE` y `PORTAL_UNREADABLE`, y en todos ellos no se escribe nada.
+  - Escribe solo las tres horas de asistencia y las dos horas de lectura de `enrollment` y las filas de `student_portal_score` del alumno (migración `0015`). Nunca toca `simulated_grades`, `student_score` ni ninguna tabla compartida.
+  - En la app la llama solo `RecargaUlimaService`, con un plazo de 90 s. Tras ese plazo o un fallo de red sin respuesta, la app vuelve a pedir `GET /grades/me/ulima`, porque el backend puede haber terminado y escrito, y si la `lastReadAt` avanzó trata la recarga como guardada (D23). Con un `200`, la app aplica `view` sin pedir otra vez `GET /grades/me/ulima`, vuelve a pedir `GET /schedule/me/sessions` para la asistencia, usa `courses[].attendance` y `courses[].grades` para la línea de lectura parcial y no muestra `warnings` uno por uno. Cada error se traduce al texto de RF-RCG-4, y la app nunca muestra el `message` del backend.
 
 ## Academic Record (récord académico) — RF-REC-1 a RF-REC-5
 

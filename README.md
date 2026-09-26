@@ -99,7 +99,7 @@ La regla existe porque el sistema tiene dos escrituras vivas —el backend y la 
 
 El ciclo no se lo inventa la app: **lo trae el alumno desde miUlima**. La pantalla [`/portal-sync`](lib/pages/portal_sync) pide contraseña del portal y el código de 6 dígitos del authenticator, y el backend hace el login por él y baja cursos, secciones, horario, docentes, matrícula y avance de carrera. La contraseña vive **solo** en el `TextEditingController` —no entra en un `Rx`, no se guarda, no se imprime, se limpia al usarla y otra vez en `onClose()` antes del `dispose()` (`portal_sync_controller.dart:38-40, 51-59, 76-78`)— y el usuario del portal ni siquiera se envía: el backend lo saca del JWT. Mientras el alumno no importe, `HomeController` le muestra un banner honesto: *"Aún no tienes los cursos del ciclo `<code>`. Tráelos desde miUlima."* (`home_controller.dart:30-35`). Es la misma filosofía: la app no adivina el ciclo, lo pide.
 
-Última precisión, porque se malinterpreta seguido: **las notas de la calculadora son personales y no oficiales** (`AGENTS.md:58`, `KNOWLEDGE.md:72`, `README.md:81`). La pestaña *Notas* es una calculadora donde el alumno registra lo que él cree que sacó, y la app **no** calcula riesgo académico con esas notas: las alertas llegan hechas de `GET /alerts/me` (`alert_service.dart:35`) y el backend las deriva de las notas **oficiales** de `student_score`, con los umbrales `ACADEMIC_RISK_MIN_PROGRESS = 55` y `ACADEMIC_RISK_MAX_AVERAGE = 10.5` (`alerts.logic.ts:6,8` del backend). Lo oficial está en otra pantalla, `/mis-notas`, que lee `GET /official-grades/me` y es de **solo lectura**; se llega a ella desde el ícono `school_outlined` con tooltip "Notas oficiales" de la propia calculadora (`calculadora_page.dart:31-46`). Nunca se mezclan. En la misma línea, la simulación de la malla es visual y no debe confundirse con progreso real (`AGENTS.md:61`).
+Última precisión, porque se malinterpreta seguido. **Las notas que el alumno registra en la calculadora son personales y no oficiales (`simulated_grades`). La calculadora muestra además, fijas y con la marca “ULima”, las notas parciales que publica la ULima, que guarda la tabla `student_portal_score`, escribe solo `POST /portal-sync/refresh` y lee `GET /grades/me/ulima`.** Es el texto único de la decisión B12 de [`specs/features/recarga-portal`](specs/features/recarga-portal/recarga-portal.spec.md), el mismo de `AGENTS.md:58` y `KNOWLEDGE.md:72`. La pestaña *Notas* es una calculadora donde el alumno registra la nota que cree tener, y la app **no** calcula riesgo académico con esas notas ni con las de la ULima, porque las alertas llegan hechas de `GET /alerts/me` (`alert_service.dart:35`) y el backend las deriva de las notas que carga el docente en `student_score`, con los umbrales `ACADEMIC_RISK_MIN_PROGRESS = 55` y `ACADEMIC_RISK_MAX_AVERAGE = 10.5` (`alerts.logic.ts:6,8` del backend). Las notas oficiales están en `/mis-notas`, que lee `GET /grades/me/ulima` y es de **solo lectura**, y se llega a ella desde la fila «Notas oficiales» del encabezado de la calculadora (`fila_notas_oficiales.dart`, RF-RCG-5). Las dos clases de notas conviven en la calculadora, pero las de la ULima nunca se guardan en `simulated_grades` ni se borran desde ella. En la misma línea, la simulación de la malla es visual y no debe confundirse con progreso real (`AGENTS.md:61`).
 
 ---
 
@@ -820,10 +820,10 @@ restaura la rotación al volver (`app_header.dart:100-109`, `horario.dart:678-68
 | `HomePage` | [`lib/pages/home/home_page.dart:16`](lib/pages/home/home_page.dart) | Alumno y docente | Shell: header, footer por rol, banner de carga, burbuja de chatbot | `HomeController` → `PortalSyncService`, `AlertService` | — |
 | `MallaListPage` | [`lib/pages/malla/malla_list_page.dart:24`](lib/pages/malla/malla_list_page.dart) | Alumno | Malla por ciclos con filtros, progreso doble y modo simulación | `MallaService`, `ApiClient`, `EvaluationSyllabusService`, `StorageService` | `MallaCurricular_Electivos.png` |
 | `MallaPage` | [`lib/pages/malla/malla_page.dart:24`](lib/pages/malla/malla_page.dart) | Alumno | Vista mapa clásica: lienzo 2D con prerrequisitos y zoom, **solo lectura** | `MallaService`, `StorageService`, `EvaluationSyllabusService` | `MallaCurricular.png` |
-| `CalculadoraPage` | [`lib/pages/calculadora/calculadora_page.dart:8`](lib/pages/calculadora/calculadora_page.dart) | Alumno | Notas personales por evaluación y promedio ponderado | `CoursesService`, `EvaluationSyllabusService`, `ApiClient` | `CalculadoraNotas.png`, `NotasPorCurso.png`, `AgregarNota.png` |
-| `MisNotasPage` | [`lib/pages/mis_notas/mis_notas_page.dart:10`](lib/pages/mis_notas/mis_notas_page.dart) | Alumno | Notas **oficiales** publicadas por el docente, solo lectura | `OfficialGradesService` | — |
+| `CalculadoraPage` | [`lib/pages/calculadora/calculadora_page.dart:8`](lib/pages/calculadora/calculadora_page.dart) | Alumno | Notas personales por evaluación y promedio ponderado, con las notas que publica la ULima y la fila «Notas oficiales» | `CoursesService`, `EvaluationSyllabusService`, `ApiClient`, `RecargaUlimaService` | `CalculadoraNotas.png`, `NotasPorCurso.png`, `AgregarNota.png` |
+| `MisNotasPage` | [`lib/pages/mis_notas/mis_notas_page.dart:10`](lib/pages/mis_notas/mis_notas_page.dart) | Alumno | Notas **oficiales** que publica la ULima por evaluación, solo lectura, con la franja y la hoja de recarga | `RecargaUlimaService`, `EvaluationSyllabusService` | — |
 | `HorarioPage` | [`lib/pages/horario/horario.dart:18`](lib/pages/horario/horario.dart) | Alumno y docente | Rejilla día/semana con evaluaciones; único lugar con landscape | `ApiClient`, `AttendanceRiskService`, `ContactoService` | `HorarioAcademico_Evaluaciones.png` |
-| `DescripCursosPage` | [`lib/pages/descripcion_cursos/descrip_cursos.dart:11`](lib/pages/descripcion_cursos/descrip_cursos.dart) | Alumno | Detalle de sección: dona de asistencia + 3 pestañas y el botón «Chat del curso» | `SeccionService`, `AnuncioService`, `AsesoriaService`, `ContactoService` | `Anuncios.png`, `Asesorias.png`, `Contactos.png` |
+| `DescripCursosPage` | [`lib/pages/descripcion_cursos/descrip_cursos.dart:11`](lib/pages/descripcion_cursos/descrip_cursos.dart) | Alumno | Detalle de sección con la dona de asistencia, la hora de su última lectura y el botón de recarga, 3 pestañas y el botón «Chat del curso» | `SeccionService`, `AnuncioService`, `AsesoriaService`, `ContactoService`, `RecargaUlimaService` | `Anuncios.png`, `Asesorias.png`, `Contactos.png` |
 | `AlertasPage` | [`lib/pages/alertas/alertas_page.dart:13`](lib/pages/alertas/alertas_page.dart) | Alumno | Buzón de alertas de riesgo académico y alta carga | `AlertService` | `BuzonAlertas.png` |
 | `ProfilePage` | [`lib/pages/perfil/perfil.dart:14`](lib/pages/perfil/perfil.dart) | Alumno y docente | Datos, carrera, especialidades, seguridad, networking, logout | `AuthService`, `PasswordResetService` | `Perfil.png` |
 | `PortalSyncPage` | [`lib/pages/portal_sync/portal_sync_page.dart:16`](lib/pages/portal_sync/portal_sync_page.dart) | Alumno | Carga del ciclo desde miUlima: formulario → cargando → resumen | `PortalSyncService` | — |
@@ -999,8 +999,9 @@ detalle de curso (`descrip_cursos.dart:277`).
 5. **Post-éxito**, cinco capas invalidadas en orden (`portal_sync_controller.dart:79-122`):
    (1) `AuthService.replaceToken(r.token)` con el JWT re-firmado; (2) `refreshCurrentUser()`;
    (3) `CoursesService().clear()`, `EvaluationSyllabusService().clear()`, `MallaService.to.clear()`;
-   (4) los controllers vivos —`MallaListController.retry()`, `HorarioController.reload()`,
-   `Get.delete<CalculadoraController>(force: true)`— siempre con guarda `Get.isRegistered`;
+   (4) los controllers vivos, con `MallaListController.retry()`, `HorarioController.reload()` y
+   `CalculadoraController.recargarTodo()`, que recarga la calculadora en vez de borrarla (RF-RCG-11),
+   siempre con guarda `Get.isRegistered`;
    (5) `AlertService.to.fetchAlerts()`, porque la importación genera alertas nuevas.
 6. **Resumen**: `check_circle_rounded` de 54 px, título `Listo, ciclo <periodCode>` —o
    `Listo, ya tienes tus datos`— con los contadores de `PortalSyncSummary` y la lista de `warnings`.
@@ -1081,8 +1082,8 @@ obligatorios arriba, electivos abajo, separadas por un `_PoolDivider`.
 
 #### 7 · Calculadora de notas
 
-1. Header `Calculadora de Notas`, contador `Cursos con notas: N` y un `IconButton` `school_outlined` con
-   tooltip **Notas oficiales** → `/mis-notas` (`calculadora_page.dart:31-46`).
+1. Header `Calculadora de Notas`, contador `Cursos con notas: N` y la fila **Notas oficiales**, con la
+   hora de la última lectura de la ULima, que lleva a `/mis-notas` (`fila_notas_oficiales.dart`, RF-RCG-5).
 2. La carga cruza `user.courseProgress.currentCourses` —las secciones matriculadas— con
    `CoursesService.allCourses` (`GET /grades/me/courses?code=`) y trae lo ya guardado de
    `GET /grades/me/notes`. **Solo expande las secciones inscritas**.
@@ -1099,8 +1100,10 @@ obligatorios arriba, electivos abajo, separadas por un `_PoolDivider`.
 7. Eliminar: `DELETE /grades/me/notes/<sectionId>/<assessmentId>`.
 8. Estados: `ErrorRetry('No se pudieron cargar tus cursos')` cuando falló la carga, y vacío
    `No hay notas registradas / Comienza registrando una nota` cuando simplemente no hay nada.
-9. **Notas oficiales** (`/mis-notas`): `GET /official-grades/me`, nota final ponderada en cliente con el
-   mismo dominio `notas_calculo.calcularPromedioPonderado`, solo lectura, `AppBar 'Notas oficiales'`.
+9. **Notas oficiales** (`/mis-notas`) lee `GET /grades/me/ulima` por `RecargaUlimaService`, con la nota
+   final ponderada en el cliente con `notas_calculo.calcularPromedioPonderado`, solo lectura y con la
+   franja que abre la hoja de recarga (RF-RCG-6). Las notas que ya publica la ULima entran a la
+   calculadora con la marca «ULima», sin tacho, y nunca se guardan en `simulated_grades` (RF-RCG-7).
 
 #### 8 · Horario semanal
 
@@ -1875,14 +1878,16 @@ comentario en `malla_controller.dart:10` deja constancia de que `/curriculum/me/
 > cada uno con su propia caché, y la calculadora dispara ambos en `calculadora_controller.dart:31-32`.
 > Son dos viajes de red donde debería haber uno.
 
-#### Notas oficiales — 4 métodos
+#### Notas oficiales — 6 métodos
 
 | Service | Método | Endpoint backend | Modelo | Usado por |
 |:---|:---|:---|:---|:---|
 | `official_grades_service.dart` | `fetchTeacherSections` :12 | `GET /official-grades/teacher/sections` | `List<GradingSection>` | `TeacherGradesController` :29 y `AuthService._loadProfesorSections` :348 |
 | `official_grades_service.dart` | `fetchSectionGrid` :21 | `GET /official-grades/teacher/sections/:sectionId/scores` | `SectionGrid` con `students`, `assessments`, `scores` | `TeacherGradeSectionController` → `/teacher-grade-section` |
 | `official_grades_service.dart` | `saveScores` :27 | `PUT /official-grades/teacher/sections/:sectionId/scores` :31 body `{scores}` | `SectionGrid` actualizada | `TeacherGradeSectionController.save` |
-| `official_grades_service.dart` | `fetchMyOfficialCourses` :40 | `GET /official-grades/me` | `List<OfficialCourse>` | `MisNotasController.load` :32 → `/mis-notas` |
+| `official_grades_service.dart` | `fetchMyOfficialCourses` :40 | `GET /official-grades/me` | `List<OfficialCourse>` | ninguna pantalla desde RF-RCG-6 (decisión B10), y la ruta sigue en el backend |
+| `recarga_ulima_service.dart` | `cargar` | `GET /grades/me/ulima`, plazo 15 s | `VistaUlima`; nunca lanza, y un fallo deja `errorCarga` sin borrar la vista | `MisNotasController.load`, `CalculadoraController.conectarUlima` y `recargarTodo`, y «Cargar mis datos» |
+| `recarga_ulima_service.dart` | `recargar` | `POST /portal-sync/refresh` body `{credentials:{password, passcode}, consent: true}`, plazo 90 s | `bool`; un error deja `ultimoAviso` con el texto de RF-RCG-4 | `HojaRecargaUlima`, desde `/mis-notas` y la ficha del curso |
 
 #### Horario — 8 métodos, **ninguno tiene service**
 
@@ -2339,8 +2344,9 @@ dos contratos —o mejor, generar uno de los dos— está en la deuda técnica.
 
 ### El flujo de datos de una pantalla, paso a paso
 
-Recorrido real de `/mis-notas`, la implementación más limpia del patrón: página → controller →
-service → `ApiClient` → backend → modelo → estado observable → repintado.
+Recorrido de `/mis-notas` hasta `ef22203`, la implementación más limpia del patrón (página,
+controller, service, `ApiClient`, backend, modelo, estado observable y repintado). Desde RF-RCG-6 el
+controller lee `RecargaUlimaService` en lugar de `OfficialGradesService`, con el mismo recorrido.
 
 ```mermaid
 sequenceDiagram
@@ -4547,6 +4553,7 @@ los dobles son fakes escritos a mano con `extends` o `implements`, más `MockCli
 | [`test/HU25_mel/`](test/HU25_mel) | HU25 — Carnet de networking | mel | 8 | 33 | Caja blanca + Caja negra + Unitaria + Widget + Servicio | La carpeta con más archivos. Caminos C1–C5 de `NetworkingController`; `NetworkingCardDto` con 5 campos y el **límite duro de una sola red**; contrato exacto `GET /networking/me` y `PUT /networking/me`; `validateNetworkingUrl` (http/https sí, relativo y `ftp://` no); preview sin errores de flex; roles de carnet que no exponen roles académicos |
 | [`test/HU26_sam/`](test/HU26_sam) | HU26 — Exportar impedidos a CSV | sam | 1 | 7 | Caja negra | `AttendanceRiskService.exportCsv()` con el CSV generado de verdad y solo la plataforma doblada: nombre `Ausencias_<Curso>_S<sección>.csv`, encabezado exacto de 8 columnas, `ciclo` null → columna vacía y nunca el literal `null`, porcentaje siempre a un decimal, saneo del nombre del curso |
 | [`test/HU31_jeff/`](test/HU31_jeff) | HU31 — sin historia documentada: horario, colores, contactos, portal-sync | jeff | 4 | 43 | Unitaria + Widget | Geometría de bloques del horario (`hourHeight = 85`, `vertLineOffset = 9`, sin solapamiento, bloque degenerado que no se vuelve negativo); paleta de al menos 9 colores sin repetidos y desempate de `asignarColoresSinRepetir`; delegados que miUlima publica pero aún no usan la app, con la regresión de producción del 2026-09-04; validadores, `import` y `status` de `PortalSyncService` |
+| [`test/HU37_jeff/`](test/HU37_jeff) | HU-RCG-01 a HU-RCG-03, recarga desde la ULima | jeff | 11 | 180 | Unitaria + Widget | Modelos tolerantes de `GET /grades/me/ulima`; formato del peso, de la nota y de la hora en Lima; contraste de RF-RCG-10; `RecargaUlimaService` con el cuerpo exacto, cada aviso de RF-RCG-4, el dueño de los datos y el plazo de D23; la hoja de recarga; `/mis-notas` con la franja y el aviso; las filas de la calculadora con la marca «ULima»; el bloque de asistencia de la ficha, y la importación que recarga la calculadora |
 | [`test/HU_asistencia/`](test/HU_asistencia) | Asistencia — RS-BE-10 y RS-BE-16, sin numeración HU | **sin determinar** | 2 | 16 | Unitaria | `AtRiskStudent` con `status: "sin_datos"` y `absencePercentage: null` que antes llegaba como `normal` al 0 % y se pintaba de verde; `Seccion.porcentajeAsistencia` sin NaN y calculado sobre las horas **transcurridas**, no sobre el ciclo entero |
 | [`test/components/header/`](test/components/header) | Feature `app-shell` | jeff | 1 | 1 | Widget | `AppHeader` con `linkLauncher` inyectado: pulsar «ULIMA++» invoca el launcher exactamente una vez con la URI esperada y expone el semantics label correspondiente |
 | [`test/services/`](test/services) | Feature `platform-runtime` | jeff | 1 | 1 | Unitaria | `ApiClient` normaliza `API_BASE_URL` quitando el slash final. 12 líneas, un caso, y es el guardián de la única variable de configuración de la app |

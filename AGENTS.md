@@ -55,7 +55,7 @@ Este repositorio usa Tessl con Spec Driven Development. No implementes cambios f
 - Usuarios: estudiantes.
 - Roles: `student`, `delegate`, `subdelegate`, `teacher`.
 - Docente puede iniciar sesión (HU18) y tiene su propio home (`teacher_home_page.dart`).
-- Las notas son personales no oficiales.
+- Las notas que el alumno registra en la calculadora son personales y no oficiales (`simulated_grades`). La calculadora muestra además, fijas y con la marca “ULima”, las notas parciales que publica la ULima, que guarda la tabla `student_portal_score`, escribe solo `POST /portal-sync/refresh` y lee `GET /grades/me/ulima`.
 - Riesgo académico depende del promedio personal.
 - Alta carga depende de 3+ evaluaciones en una semana.
 - La simulación de malla es visual y no debe confundirse con progreso real.

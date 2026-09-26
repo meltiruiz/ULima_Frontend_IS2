@@ -9,18 +9,23 @@ import 'package:ulima_plus/services/anuncio_service.dart';
 import 'package:ulima_plus/services/api_client.dart';
 import 'package:ulima_plus/services/asesoria_service.dart';
 import 'package:ulima_plus/services/contacto_service.dart';
+import 'package:ulima_plus/services/recarga_ulima_service.dart';
 import 'package:ulima_plus/services/seccion_service.dart';
 import 'package:ulima_plus/pages/horario/horario_controller.dart';
 
 class DescripCursosController extends GetxController {
-  final SeccionService _seccionService = SeccionService();
+  final SeccionService _seccionService;
   final AnuncioService _anuncioService = AnuncioService();
   final AsesoriaService _asesoriaService;
   final ContactoService _contactoService = ContactoService();
 
   // HU17: `asesoriaService` es inyectable para pruebas (por defecto la real).
-  DescripCursosController({AsesoriaService? asesoriaService})
-      : _asesoriaService = asesoriaService ?? AsesoriaService();
+  // RF-RCG-8. `seccionService` también, para `recargarSeccion`.
+  DescripCursosController({
+    AsesoriaService? asesoriaService,
+    SeccionService? seccionService,
+  })  : _asesoriaService = asesoriaService ?? AsesoriaService(),
+        _seccionService = seccionService ?? SeccionService();
 
   RxList<Seccion> secciones = <Seccion>[].obs;
   Rxn<Seccion> seccionActual = Rxn<Seccion>();
@@ -190,6 +195,40 @@ class DescripCursosController extends GetxController {
     } catch (e) {
       debugPrint('contactos falló: $e');
       contactosError.value = _debeMostrarError(e);
+    }
+  }
+
+  /// Vuelve a leer solo la sección después de una recarga exitosa desde la
+  /// ULima (RF-RCG-8), sin tocar anuncios, asesorías, contactos ni la pestaña
+  /// elegida.
+  ///
+  /// Pide primero `GET /course-detail/sections/:id`, que trae las horas del
+  /// alumno y `asistenciaLeidaEn`, porque `HorarioController.reload()` se
+  /// traga sus errores y `uniqueEnrolledCourses` puede seguir vieja. Solo si
+  /// esa petición falla espera la recarga del horario que ya lanza
+  /// `RecargaUlimaService` y busca la sección ahí. Nunca llama a `reload()`.
+  Future<void> recargarSeccion(String idSeccion) async {
+    Seccion? nueva;
+    try {
+      nueva = await _seccionService.findSectionById(idSeccion);
+    } catch (e) {
+      debugPrint('recargarSeccion falló: $e');
+      final horario = Get.isRegistered<RecargaUlimaService>()
+          ? RecargaUlimaService.to.recargaHorario
+          : null;
+      if (horario != null) await horario;
+      if (Get.isRegistered<HorarioController>()) {
+        final datos = Get.find<HorarioController>()
+            .uniqueEnrolledCourses
+            .firstWhereOrNull((c) => c['idSeccion']?.toString() == idSeccion);
+        if (datos != null) nueva = Seccion.fromJson(datos);
+      }
+    }
+    if (nueva == null) return;
+    final i = secciones.indexWhere((s) => s.idSeccion == idSeccion);
+    if (i >= 0) secciones[i] = nueva;
+    if (seccionActual.value?.idSeccion == idSeccion) {
+      seccionActual.value = nueva;
     }
   }
 

@@ -1,0 +1,523 @@
+<div class="cr-w">
+<style>
+.cr-w{max-width:1060px;margin:0 auto;text-align:left;color:var(--text-primary,#1d1d1f)}
+.cr-w .cr-w-h2{font-size:1.5rem;font-weight:700;line-height:1.25;margin:0 0 .4rem;color:var(--text-primary,#1d1d1f)}
+.cr-w .cr-w-sub{font-size:.95rem;line-height:1.5;margin:0 0 1.25rem;color:var(--text-primary,#1d1d1f);opacity:.8}
+.cr-w .options .option{display:block;padding:1.25rem 1.25rem 1.5rem}
+.cr-w .cr-w-in{min-width:0}
+.cr-w .cr-w-end{font-size:.95rem;line-height:1.5;margin:1.25rem 0 0;color:var(--text-primary,#1d1d1f)}
+@media (max-width:560px){.cr-w .options .option{padding:.75rem .6rem 1rem}}
+</style>
+<h2 class="cr-w-h2">Calculadora, la misma de siempre y mejor organizada</h2>
+<p class="cr-w-sub">Se conserva el diseño que propuso el grupo y solo cambian tres cosas, que cada escena compara con la app de hoy.</p>
+<div class="options"><div class="option" data-choice="reorganizada" onclick="toggleSelect(this)"><div class="cr-w-in">
+<div class="cr-root">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,400;0,500;0,700;0,900;1,700&amp;display=swap">
+<style>
+.cr-root{--cr-ink:var(--text-primary,#1d1d1f);--cr-line:var(--border,#d1d1d6);--cr-card:var(--bg-secondary,#ffffff);--cr-acc:#B84500;--cr-acc-bg:#FFEDD5;max-width:1000px;margin:0 auto;color:var(--cr-ink);line-height:1.5;text-align:left}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .cr-root{--cr-acc:#FFB088;--cr-acc-bg:#4A2A16}
+}
+:root[data-theme="dark"] .cr-root{--cr-acc:#FFB088;--cr-acc-bg:#4A2A16}
+.cr-root *{box-sizing:border-box}
+.cr-root .cr-h2{font-size:1.5rem;font-weight:700;line-height:1.25;margin:0 0 .4rem;color:var(--cr-ink)}
+.cr-root .cr-sub{font-size:.95rem;margin:0 0 1.25rem;max-width:760px;color:var(--cr-ink);opacity:.82}
+.cr-ctl{display:flex;flex-wrap:wrap;align-items:flex-start;justify-content:space-between;gap:12px 20px;margin:0 0 1.5rem}
+.cr-grp{display:flex;flex-direction:column;gap:6px;min-width:0}
+.cr-root .cr-lbl{font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:0;color:var(--cr-ink);opacity:.7}
+.cr-scenes{display:flex;flex-wrap:wrap;gap:6px}
+.cr-root .cr-btn{font:inherit;font-size:.85rem;font-weight:600;line-height:1.2;color:var(--cr-ink);background:var(--cr-card);border:1px solid var(--cr-line);border-radius:999px;padding:.45rem .8rem .45rem .45rem;min-height:36px;display:inline-flex;align-items:center;gap:.45rem;cursor:pointer;text-align:left}
+.cr-root .cr-btn:hover{border-color:var(--cr-acc)}
+.cr-root .cr-btn:focus-visible{outline:2px solid var(--cr-acc);outline-offset:2px}
+.cr-root .cr-btn[aria-pressed="true"]{border-color:var(--cr-acc);background:var(--cr-acc-bg)}
+.cr-root .cr-num{display:inline-flex;align-items:center;justify-content:center;width:1.45rem;height:1.45rem;border-radius:50%;font-size:.75rem;font-weight:700;border:1px solid var(--cr-line);flex:none}
+.cr-root .cr-btn[aria-pressed="true"] .cr-num{background:var(--cr-acc);border-color:var(--cr-acc);color:var(--cr-card)}
+.cr-seg{display:inline-flex;gap:2px;padding:2px;border:1px solid var(--cr-line);border-radius:999px;background:var(--cr-card)}
+.cr-root .cr-seg .cr-btn{border-color:transparent;padding:.35rem .9rem;min-height:32px}
+.cr-root .cr-seg .cr-btn[aria-pressed="true"]{border-color:var(--cr-acc)}
+.cr-pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr));gap:1.75rem 1.25rem;margin:0 0 1.75rem}
+.cr-col{margin:0;min-width:0;display:flex;flex-direction:column;align-items:center}
+.cr-root .cr-tag{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin:0 0 .6rem;padding:.15rem .6rem;border-radius:999px;border:1px solid var(--cr-line);color:var(--cr-ink)}
+.cr-root .cr-tag-new{border-color:var(--cr-acc);background:var(--cr-acc-bg)}
+.cr-fit{position:relative;width:100%;max-width:320px;height:660px}
+.cr-dev{position:absolute;left:0;top:0;width:320px;height:660px;border-radius:38px;background:#0c0c0e;box-shadow:0 12px 30px rgba(0,0,0,.18),inset 0 0 0 1px rgba(255,255,255,.08);transform-origin:0 0}
+.cr-root .cr-cap{width:100%;max-width:320px;font-size:.875rem;margin:.8rem 0 0;color:var(--cr-ink)}
+.cr-sub3{display:none;width:100%;max-width:320px;margin:.6rem 0 0;align-items:center;gap:8px;flex-wrap:wrap}
+.cr-sub3.cr-on{display:flex}
+.cr-root .cr-sub3 span{font-size:.8rem;opacity:.8}
+.cr-lists{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,280px),1fr));gap:1rem}
+.cr-box{background:var(--cr-card);border:1px solid var(--cr-line);border-radius:12px;padding:14px 16px;min-width:0}
+.cr-root .cr-box h3{font-size:1rem;font-weight:700;margin:0 0 .5rem;color:var(--cr-ink)}
+.cr-root .cr-box ol{margin:0;padding:0 0 0 1.3rem;font-size:.875rem}
+.cr-root .cr-box li{margin:0;padding:0 0 0 .15rem}
+.cr-root .cr-box li+li{margin-top:.45rem}
+
+/* ---------- pantalla del teléfono (medidas lógicas de 360 x 760) ---------- */
+.cr-scr{--cr-p:#FF6600;--cr-pc:#FF6600;--cr-barf:rgba(212,85,0,.6);--cr-surf:#FEFDFC;--cr-on:#1A1A1A;--cr-on70:rgba(26,26,26,.7);--cr-on60:rgba(26,26,26,.6);--cr-on50:rgba(26,26,26,.5);--cr-on38:rgba(26,26,26,.38);--cr-onsec:#FFFFFF;--cr-tc:#EAEAEA;--cr-otc:#1A1A1A;--cr-ol20:rgba(218,218,218,.2);--cr-ol50:rgba(218,218,218,.5);--cr-hdr:#FF6600;--cr-err:#F44336;--cr-ico:#D45500;--cr-otx:#A34300;--cr-esp:#FFF1EA;--cr-pd:#D45500;--cr-erbd:rgba(244,67,54,.3);--cr-erbg:rgba(244,67,54,.12);--cr-pg:#F8FAFC;--cr-cb:#FFFFFF;--cr-tp:#0F172A;--cr-ts:#334155;--cr-tm:#64748B;--cr-bd:#E5E5E5;--cr-ebg:rgba(179,38,30,.10);--cr-etx:#B3261E;--cr-psbg:#FF6600;--cr-pscard:#FFFFFF;--cr-psbd:transparent;--cr-pssh:rgba(0,0,0,.2);--cr-pstx:#1A1A1A;--cr-pshint:#9B9B9B;--cr-psfill:#F1F5F9;--cr-psfoc:#FF6600;--cr-pserr:#D45500;--cr-psbtn:#FF6600;--cr-psbtnfg:#FFFFFF;--cr-psbtnbd:transparent;--cr-psback:#FFFFFF;
+  position:absolute;left:7px;top:7px;width:360px;height:760px;transform:scale(.85);transform-origin:0 0;border-radius:32px;overflow:hidden;background:var(--cr-surf);color:var(--cr-on);font-family:Roboto,"Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;font-size:14px;line-height:1.43;letter-spacing:.25px;text-align:left;-webkit-font-smoothing:antialiased}
+.cr-scr.cr-dk{--cr-pc:#D45500;--cr-barf:rgba(255,140,66,.6);--cr-surf:#1E1E24;--cr-on:#FFFFFF;--cr-on70:rgba(255,255,255,.7);--cr-on60:rgba(255,255,255,.6);--cr-on50:rgba(255,255,255,.5);--cr-on38:rgba(255,255,255,.38);--cr-onsec:#1A1A1A;--cr-tc:#202020;--cr-otc:#FFFFFF;--cr-ol20:rgba(68,68,68,.2);--cr-ol50:rgba(68,68,68,.5);--cr-hdr:#1E1E24;--cr-ico:#FF6600;--cr-otx:#FF6600;--cr-esp:#3A2A22;--cr-pg:#16161C;--cr-cb:#1E1E24;--cr-tp:#EDEDF3;--cr-ts:#A0A0B0;--cr-tm:#787890;--cr-bd:#2E2E38;--cr-ebg:rgba(179,38,30,.24);--cr-etx:#F2B8B5;--cr-psbg:#262626;--cr-pscard:#050505;--cr-psbd:#262626;--cr-pssh:rgba(0,0,0,.6);--cr-pstx:#F4F4F4;--cr-pshint:#9A9AA6;--cr-psfill:#2A2A36;--cr-psfoc:#FA7525;--cr-pserr:#FA7525;--cr-psbtn:transparent;--cr-psbtnfg:#F4F4F4;--cr-psbtnbd:#E7E7E7;--cr-psback:#F4F4F4}
+.cr-scr *{margin:0;padding:0;box-sizing:border-box}
+.cr-scr svg{display:block;flex:none}
+.cr-scr :where(button){font:inherit;color:inherit;background:none;border:0;cursor:pointer;text-align:inherit;letter-spacing:inherit}
+.cr-sb{position:absolute;left:0;right:0;top:0;height:24px;padding:0 18px 0 22px;display:flex;align-items:center;justify-content:space-between;color:#fff;font-size:13px;font-weight:500;z-index:8;pointer-events:none}
+.cr-sbi{display:flex;align-items:center;gap:5px}
+.cr-app{position:absolute;inset:0;display:flex;flex-direction:column}
+/* AppHeader */
+.cr-hdr{flex:none;height:102px;padding:50px 20px 20px;background:var(--cr-hdr);border-bottom:2px solid var(--cr-pc);display:flex;align-items:center;justify-content:space-between}
+.cr-brand{color:#fff;font-size:20px;font-style:italic;font-weight:700}
+.cr-bell{position:relative;color:#fff;width:30px;height:30px}
+.cr-badge{position:absolute;right:-4px;top:-4px;min-width:18px;height:18px;padding:0 4px;border-radius:9px;background:#1D6FDB;color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center}
+/* CalculadoraPage */
+.cr-body{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;background:var(--cr-surf)}
+.cr-ph{flex:none;padding:20px}
+.cr-trow{display:flex;align-items:center}
+.cr-title{flex:1;min-width:0;font-size:24px;font-weight:900;color:var(--cr-on)}
+.cr-ib{width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--cr-on)}
+.cr-count{font-size:14px;font-weight:800;color:var(--cr-on70)}
+.cr-ofi{margin-top:12px;width:100%;display:flex;align-items:center;gap:12px;padding:8px 12px 8px 14px;border-radius:12px;background:rgba(255,102,0,.1);border:1px solid rgba(255,102,0,.3);color:var(--cr-on)}
+.cr-ofi .cr-oi{color:var(--cr-ico)}
+.cr-ofi .cr-ot{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.cr-ofi b{font-size:14px;font-weight:700;color:var(--cr-on)}
+.cr-ofi small{font-size:12px;color:var(--cr-on70)}
+.cr-ofi b,.cr-ofi small{display:block}
+.cr-ofi .cr-oc{color:var(--cr-on50)}
+.cr-list{flex:1;min-height:0;overflow-y:auto;padding:10px 20px;scrollbar-width:none;display:flex;flex-direction:column}
+.cr-list::-webkit-scrollbar,.cr-mlist::-webkit-scrollbar{display:none}
+.cr-card{flex:none;margin:10px 16px;border-radius:30px;background:var(--cr-onsec)}
+.cr-ch{padding:20px;border-radius:25px;background:var(--cr-pc);box-shadow:0 4px 10px rgba(0,0,0,.1);color:#fff}
+.cr-chr{display:flex;align-items:center;justify-content:space-between}
+.cr-chl{flex:1;min-width:0}
+.cr-sec{font-size:13px;font-weight:700}
+.cr-cn{font-size:16px;font-weight:600}
+.cr-cy{font-size:11px;color:rgba(255,255,255,.8)}
+.cr-chp{display:flex;flex-direction:column;align-items:flex-end}
+.cr-avg{font-size:36px;font-weight:700}
+.cr-des{display:flex;align-items:center;font-size:11px;white-space:pre}
+.cr-bar{position:relative;margin-top:15px;height:38px;border-radius:12px;background:rgba(0,0,0,.15);overflow:hidden}
+.cr-barf{position:absolute;left:0;top:0;bottom:0;border-radius:12px;background:var(--cr-barf)}
+.cr-bart{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;white-space:nowrap}
+.cr-tiles{padding:5px 0;display:flex;flex-direction:column}
+.cr-tile{flex:none;margin:5px 15px;padding:12px 16px;border-radius:18px;background:var(--cr-tc);border:1px solid var(--cr-ol20);display:flex;align-items:center}
+.cr-tl{flex:1;min-width:0}
+.cr-tt{font-size:15px;font-weight:700;color:var(--cr-otc)}
+.cr-ts{margin-top:4px;font-size:12px;line-height:1.172;letter-spacing:0;color:var(--cr-on60);white-space:pre}
+.cr-ts b{color:var(--cr-p);font-weight:700}
+.cr-del{width:40px;height:40px;display:flex;align-items:center;justify-content:center;color:var(--cr-err)}
+.cr-ulw{height:40px;display:flex;align-items:center;padding-left:6px}
+.cr-ul{font-size:11px;font-weight:800;color:var(--cr-pd);background:var(--cr-esp);border-radius:999px;padding:4px 10px}
+.cr-regw{flex:none;padding:20px}
+.cr-reg{height:55px;border-radius:15px;background:var(--cr-pc);color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:500;letter-spacing:.1px;box-shadow:0 1px 2px rgba(0,0,0,.3),0 1px 3px 1px rgba(0,0,0,.15)}
+.cr-bub{position:absolute;left:12px;bottom:12px;width:60px;height:60px;z-index:3}
+.cr-halo{position:absolute;left:50%;top:50%;width:60px;height:60px;margin:-30px 0 0 -30px;border-radius:50%;border:2.5px solid rgba(245,124,0,.22);transform:scale(1.42)}
+.cr-bub img{position:relative;display:block;width:60px;height:60px;border-radius:50%;box-shadow:0 4px 10px rgba(0,0,0,.22)}
+/* AppFooter */
+.cr-nav{flex:none;height:74px;padding-bottom:16px;background:#1E1E24;display:flex;box-shadow:0 -2px 8px rgba(0,0,0,.18);position:relative;z-index:2}
+.cr-ni{flex:1;display:flex;flex-direction:column;align-items:center;padding-top:7px;color:rgba(255,255,255,.68)}
+.cr-ni span{font-size:14px;line-height:20px;letter-spacing:.25px;white-space:nowrap;transform:scale(.8571);transform-origin:50% 100%}
+.cr-ni.cr-act{color:#FF6600}
+.cr-ni.cr-act span{transform:none}
+/* Notas oficiales (/mis-notas) */
+.cr-mn{background:var(--cr-pg)}
+.cr-ab{flex:none;height:80px;padding-top:24px;background:#FF6600;color:#fff;display:flex;align-items:center}
+.cr-abl{width:56px;height:56px;display:flex;align-items:center;justify-content:center}
+.cr-abt{flex:1;min-width:0;padding-left:16px;font-size:22px;font-weight:400;line-height:1.27;letter-spacing:0;white-space:nowrap}
+.cr-aba{width:48px;height:48px;display:flex;align-items:center;justify-content:center}
+.cr-sync{width:100%;margin-bottom:12px;padding:14px;border-radius:14px;background:var(--cr-cb);border:1px solid var(--cr-bd);display:flex;align-items:center;gap:12px;text-align:left;color:var(--cr-tp)}
+.cr-syi{flex:none;width:42px;height:42px;border-radius:12px;background:var(--cr-esp);color:var(--cr-pd);display:flex;align-items:center;justify-content:center}
+.cr-syt{flex:1;min-width:0;display:flex;flex-direction:column}
+.cr-syt b{font-size:14px;font-weight:800;color:var(--cr-tp)}
+.cr-syt small{margin-top:2px;font-size:11px;color:var(--cr-ts)}
+.cr-syt small+small{color:var(--cr-tm)}
+.cr-syc{flex:none;color:var(--cr-tm)}
+.cr-sync.cr-bad{align-items:flex-start;border-color:var(--cr-erbd)}
+.cr-bad .cr-syi{background:var(--cr-erbg);color:var(--cr-err)}
+.cr-retry{flex:none;align-self:flex-start;margin:4px 0 -6px -10px;padding:0 10px;height:32px;display:flex;align-items:center;font-size:12px;font-weight:800;color:var(--cr-ico)}
+.cr-mlist{flex:1;min-height:0;overflow-y:auto;padding:12px 16px 88px;scrollbar-width:none}
+.cr-oc2{margin-bottom:12px;padding:16px;border-radius:14px;background:var(--cr-cb);border:1px solid var(--cr-bd)}
+.cr-och{display:flex;align-items:flex-start}
+.cr-och .cr-ochl{flex:1;min-width:0}
+.cr-ocn{font-size:16px;font-weight:800;color:var(--cr-tp)}
+.cr-ocs{margin-top:2px;font-size:13px;color:var(--cr-ts)}
+.cr-fb{flex:none;padding:6px 12px;border-radius:10px;display:flex;flex-direction:column;align-items:center}
+.cr-fb i{font-style:normal;font-size:10px;font-weight:700}
+.cr-fb b{font-size:18px;font-weight:900}
+.cr-arows{margin-top:12px}
+.cr-ar{display:flex;align-items:center;padding:5px 0}
+.cr-arn{flex:1;min-width:0;font-size:13px;color:var(--cr-tp);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cr-arw{display:block;margin-top:2px;font-size:11px;color:var(--cr-ts)}
+.cr-arp{font-size:12px;color:var(--cr-ts)}
+.cr-arv{flex:none;width:44px;margin-left:14px;text-align:right;font-size:14px;font-weight:800;color:var(--cr-tp)}
+.cr-arv.cr-nil{color:var(--cr-ts)}
+.cr-mn2 .cr-arv{width:56px}
+.cr-arv.cr-sn{font-size:12px;font-weight:600;color:var(--cr-ts)}
+/* hoja de recarga */
+.cr-scrim{position:absolute;inset:0;background:rgba(0,0,0,.54);z-index:6}
+.cr-sheet{position:absolute;left:0;right:0;bottom:0;z-index:7;padding:24px 24px 36px;border-radius:30px 30px 0 0;background:var(--cr-surf);color:var(--cr-on)}
+.cr-shh{display:flex;align-items:flex-start}
+.cr-shh>div{flex:1;min-width:0}
+.cr-shx{flex:none;width:48px;height:48px;margin:-4px -8px 0 0;display:flex;align-items:center;justify-content:center;color:var(--cr-on)}
+.cr-sht{font-size:22px;font-weight:700;color:var(--cr-on)}
+.cr-shs{margin-top:1px;font-size:12px;color:var(--cr-on)}
+.cr-shs b{font-weight:700}
+.cr-shp{margin-top:14px;font-size:13px;color:var(--cr-on70)}
+.cr-shl{margin-top:20px;font-size:14px;font-weight:700;color:var(--cr-on)}
+.cr-shl+.cr-fld,.cr-shl+.cr-otp{margin-top:8px}
+.cr-fld{height:52px;border-radius:12px;border:1px solid var(--cr-ol50);padding:0 12px 0 16px;display:flex;align-items:center;font-size:16px;line-height:1.5;letter-spacing:.5px;color:var(--cr-on)}
+.cr-fld .cr-fv{flex:1;min-width:0;letter-spacing:2px}
+.cr-fld .cr-fh{flex:1;min-width:0;color:var(--cr-on60);font-size:16px}
+.cr-fld .cr-eye{color:var(--cr-on60)}
+.cr-otp{display:flex;gap:8px}
+.cr-otp span{flex:1;height:50px;border-radius:12px;border:1px solid var(--cr-ol50);display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--cr-on)}
+.cr-shc{margin-top:8px;font-size:11px;color:var(--cr-on50);text-align:center}
+.cr-shb{margin-top:24px;display:flex;gap:12px}
+.cr-shb button{flex:1;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.cr-cancel{border:1px solid var(--cr-ol50)!important;color:var(--cr-on)!important;font-weight:500}
+.cr-go{background:#FF6600!important;color:#fff!important;font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.3),0 1px 3px 1px rgba(0,0,0,.15)}
+.cr-go[disabled]{background:rgba(255,102,0,.3)!important;color:var(--cr-on38)!important;box-shadow:none;cursor:default}
+/* /portal-sync (la pantalla de carga de hoy) */
+.cr-ps{background:var(--cr-psbg)}
+.cr-psback{position:absolute;left:4px;top:28px;width:48px;height:48px;display:flex;align-items:center;justify-content:center;color:var(--cr-psback);z-index:2}
+.cr-psw{position:absolute;left:0;right:0;top:24px;bottom:0;display:flex;align-items:center;justify-content:center;padding:24px}
+.cr-psc{width:100%;padding:36px 32px 32px;border-radius:18px;background:var(--cr-pscard);border:1px solid var(--cr-psbd);box-shadow:0 18px 32px var(--cr-pssh);display:flex;flex-direction:column}
+.cr-pst{font-size:20px;font-weight:800;text-align:center;color:var(--cr-pstx)}
+.cr-psp{margin-top:10px;font-size:12px;line-height:1.4;text-align:center;color:var(--cr-pshint)}
+.cr-psl{margin-top:24px;font-size:13px;font-weight:600;letter-spacing:.1px;color:var(--cr-pstx)}
+.cr-psm+.cr-psl{margin-top:20px}
+.cr-psf{margin-top:8px;height:50px;border-radius:12px;background:var(--cr-psfill);padding:0 16px;display:flex;align-items:center;font-size:15px;line-height:1.5;letter-spacing:.5px;color:var(--cr-pshint)}
+.cr-psf.cr-val{color:var(--cr-pstx);font-weight:500;letter-spacing:2px}
+.cr-psm{margin-top:6px;font-size:11px;font-weight:600;text-align:right;color:var(--cr-pshint)}
+.cr-pso{margin-top:8px;display:flex;gap:8px}
+.cr-pso span{flex:1;height:52px;border-radius:12px;background:var(--cr-psfill);border:2px solid transparent}
+.cr-pso span.cr-foc{border-color:var(--cr-psfoc)}
+.cr-psh{margin:8px 0 16px;font-size:11px;text-align:center;color:var(--cr-pshint)}
+.cr-pse{margin-top:12px;font-size:12px;font-weight:600;text-align:center;color:var(--cr-pserr)}
+.cr-psb{margin-top:8px;height:50px;border-radius:10px;background:var(--cr-psbtn);border:1.5px solid var(--cr-psbtnbd);color:var(--cr-psbtnfg);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;letter-spacing:.3px}
+.cr-psn{margin-top:14px;font-size:12px;font-weight:600;text-align:center;color:var(--cr-pshint)}
+</style>
+
+
+<div class="cr-ctl">
+  <div class="cr-grp">
+    <p class="cr-lbl" id="cr-lbl-esc">Escena</p>
+    <div class="cr-scenes" role="group" aria-labelledby="cr-lbl-esc">
+      <button type="button" class="cr-btn" data-cr-scene="1" aria-pressed="true"><span class="cr-num">1</span>Calculadora</button>
+      <button type="button" class="cr-btn" data-cr-scene="2" aria-pressed="false"><span class="cr-num">2</span>Notas oficiales</button>
+      <button type="button" class="cr-btn" data-cr-scene="3" aria-pressed="false"><span class="cr-num">3</span>Hoja de recarga</button>
+      <button type="button" class="cr-btn" data-cr-scene="4" aria-pressed="false"><span class="cr-num">4</span>Error</button>
+      <button type="button" class="cr-btn" data-cr-scene="5" aria-pressed="false"><span class="cr-num">5</span>Calculadora con notas de la ULima</button>
+    </div>
+  </div>
+  <div class="cr-grp">
+    <p class="cr-lbl" id="cr-lbl-modo">Modo de la app</p>
+    <div class="cr-seg" role="group" aria-labelledby="cr-lbl-modo">
+      <button type="button" class="cr-btn" data-cr-theme="claro" aria-pressed="true">Claro</button>
+      <button type="button" class="cr-btn" data-cr-theme="oscuro" aria-pressed="false">Oscuro</button>
+    </div>
+  </div>
+</div>
+
+<div class="cr-pair">
+  <figure class="cr-col">
+    <figcaption class="cr-tag">Hoy</figcaption>
+    <div class="cr-fit"><div class="cr-dev"><div class="cr-scr" data-cr-side="antes"></div></div></div>
+    <p class="cr-cap" data-cr-cap="antes" aria-live="polite"></p>
+  </figure>
+  <figure class="cr-col">
+    <figcaption class="cr-tag cr-tag-new">Propuesta</figcaption>
+    <div class="cr-fit"><div class="cr-dev"><div class="cr-scr" data-cr-side="despues"></div></div></div>
+    <p class="cr-cap" data-cr-cap="despues" aria-live="polite"></p>
+    <div class="cr-sub3" data-cr-sub3>
+      <span id="cr-lbl-hoja">Ver la hoja</span>
+      <div class="cr-seg" role="group" aria-labelledby="cr-lbl-hoja">
+        <button type="button" class="cr-btn" data-cr-fill="0" aria-pressed="true">Vacía</button>
+        <button type="button" class="cr-btn" data-cr-fill="1" aria-pressed="false">Completa</button>
+      </div>
+    </div>
+  </figure>
+</div>
+
+<div class="cr-lists">
+  <section class="cr-box">
+    <h3>Qué cambia</h3>
+    <ol>
+      <li>El birrete del título pasa a una fila con el rótulo «Notas oficiales» y la hora de la última lectura, bajo «Cursos con notas». La fila usa el naranja suave de la hoja «Selecciona un Curso», así que no compite con las tarjetas ni con «+ Registrar Nota».</li>
+      <li>La pantalla «Notas oficiales» recibe las notas parciales de la ULima por evaluación, con semana, peso y nota o «Sin nota». Su primera tarjeta, la misma de «Actualizar desde miUlima» del Perfil, dice «Actualizar desde la ULima» y la hora de la última lectura. Esa tarjeta abre una hoja con el formato de «Registrar Nota» y, si la lectura falla, muestra el aviso.</li>
+      <li>En la calculadora, la nota que ya publicó la ULima aparece como una fila de nota_tile.dart con la insignia «ULima» del récord en lugar del tacho, y el promedio la cuenta. Si esa evaluación ya estaba registrada a mano, manda la nota de la ULima.</li>
+    </ol>
+  </section>
+  <section class="cr-box">
+    <h3>Qué no cambia</h3>
+    <ol>
+      <li>La cabecera ULIMA++ con la campana, el título «Calculadora de Notas» y el conteo «Cursos con notas».</li>
+      <li>La tarjeta de cada curso, con su cabecera naranja, el promedio grande, el aviso «Desaprobado» y la barra «Suma de pesos».</li>
+      <li>Las filas de nota con peso, nota y tacho, el botón ancho «+ Registrar Nota» y su modal.</li>
+      <li>La barra inferior con Malla, Notas, Horario, Chats y Perfil, y la burbuja de Ulises.</li>
+      <li>En «Notas oficiales», la barra naranja, las tarjetas de curso, la insignia «Final», que suma solo lo ya publicado, y la flecha de recarga, que sigue consultando solo a ULima++.</li>
+    </ol>
+  </section>
+</div>
+
+<script>
+(function () {
+  var cs = document.currentScript;
+  var root = (cs && cs.closest && cs.closest('.cr-root')) || document.querySelector('.cr-root');
+  if (!root) return;
+  var ULISES = 'data:image/jpeg;base64,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';
+
+  /* Íconos. Material (relleno) y Lucide (trazo), los mismos que usa la app. */
+  var M = {
+    school: 'M12 3 1 9l4 2.18v6L12 21l7-3.82v-6l2-1.09V17h2V9L12 3zm6.82 6L12 12.72 5.18 9 12 5.28 18.82 9zM17 15.99l-5 2.73-5-2.73v-3.72L12 15l5-2.73v3.72z',
+    del: 'M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM8 9h8v10H8V9zm7.5-5-1-1h-5l-1 1H5v2h14V4z',
+    bell: 'M12 22c1.1 0 2-.9 2-2h-4c0 1.1.89 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z',
+    add: 'M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z',
+    err: 'M11 15h2v2h-2zm0-8h2v6h-2zm.99-5C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z',
+    refresh: 'M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z',
+    back: 'M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z',
+    chev: 'M10 6 8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z',
+    sync: 'M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z',
+    close: 'M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z',
+    eye: 'M12 6c3.79 0 7.17 2.13 8.82 5.5C19.17 14.87 15.79 17 12 17s-7.17-2.13-8.82-5.5C4.83 8.13 8.21 6 12 6m0-2C7 4 2.73 7.11 1 11.5 2.73 15.89 7 19 12 19s9.27-3.11 11-7.5C21.27 7.11 17 4 12 4zm0 5c1.38 0 2.5 1.12 2.5 2.5S13.38 14 12 14s-2.5-1.12-2.5-2.5S10.62 9 12 9m0-2c-2.48 0-4.5 2.02-4.5 4.5S9.52 16 12 16s4.5-2.02 4.5-4.5S14.48 7 12 7z'
+  };
+  function mi(k, s) { return '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="currentColor" aria-hidden="true"><path d="' + M[k] + '"/></svg>'; }
+  var L = {
+    malla: '<rect x="16" y="16" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="9" y="2" width="6" height="6" rx="1"/><path d="M5 16v-3a1 1 0 0 1 1-1h12a1 1 0 0 1 1 1v3"/><path d="M12 12V8"/>',
+    notas: '<rect width="16" height="20" x="4" y="2" rx="2"/><line x1="8" x2="16" y1="6" y2="6"/><line x1="16" x2="16" y1="14" y2="18"/><path d="M16 10h.01"/><path d="M12 10h.01"/><path d="M8 10h.01"/><path d="M12 14h.01"/><path d="M8 14h.01"/><path d="M12 18h.01"/><path d="M8 18h.01"/>',
+    horario: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/>',
+    chats: '<path d="M14 9a2 2 0 0 1-2 2H6l-4 4V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2z"/><path d="M18 9h2a2 2 0 0 1 2 2v11l-4-4h-6a2 2 0 0 1-2-2v-1"/>',
+    perfil: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+    refreshCw: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+    chevronRight: '<path d="m9 18 6-6-6-6"/>'
+  };
+  function lu(k, s) { s = s || 24; return '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + L[k] + '</svg>'; }
+
+  /* Datos ficticios. Cursos y evaluaciones del plan, notas inventadas. */
+  var CUR = [
+    { sec: '812', n: 'INGENIERÍA DE SOFTWARE II', ev: [['PC1', 'Práctica Calificada 1', 4, 20], ['TA1', 'Trabajo Académico', 7, 20], ['EP', 'Examen Parcial', 8, 30], ['EF', 'Examen Final', 16, 30]] },
+    { sec: '801', n: 'SISTEMAS ERP', ev: [['PC1', 'Práctica Calificada 1', 4, 20], ['TA1', 'Trabajo Académico 1', 6, 20], ['EP', 'Examen Parcial', 8, 30], ['EF', 'Examen Final', 16, 30]] },
+    { sec: '830', n: 'PROGRAMACIÓN MÓVIL', ev: [['PC1', 'Práctica Calificada 1', 3, 15], ['PC2', 'Práctica Calificada 2', 6, 15], ['PROY', 'Proyecto', 15, 40], ['EF', 'Examen Final', 16, 30]] }
+  ];
+  /* Lo que la alumna registró a mano (la captura de hoy). */
+  var SIM = { '812': { PC1: 16, TA1: 17, EP: 14, EF: 15 }, '801': { PC1: 9, TA1: 10.2 } };
+  /* Lo que ya publicó la ULima. */
+  var ULI = { '812': { PC1: 15, TA1: 17.5, EP: 13.5 }, '801': { PC1: 9, TA1: 10.5 }, '830': { PC1: 17, PC2: 15 } };
+  function has(o, k) { return !!o && Object.prototype.hasOwnProperty.call(o, k); }
+
+  var SB = '<div class="cr-sb"><span>10:42</span><span class="cr-sbi">' +
+    '<svg width="16" height="12" viewBox="0 0 16 12" fill="currentColor" aria-hidden="true"><rect x="0" y="8" width="3" height="4" rx=".6"/><rect x="4.3" y="5.5" width="3" height="6.5" rx=".6"/><rect x="8.6" y="3" width="3" height="9" rx=".6"/><rect x="12.9" y="0" width="3" height="12" rx=".6"/></svg>' +
+    '<svg width="15" height="12" viewBox="0 0 24 18" fill="currentColor" aria-hidden="true"><path d="M12 18 0 5.2C3.3 2 7.5 0 12 0s8.7 2 12 5.2L12 18z"/></svg>' +
+    '<svg width="24" height="12" viewBox="0 0 24 12" aria-hidden="true"><rect x=".5" y=".5" width="20" height="11" rx="3" fill="none" stroke="currentColor" opacity=".45"/><rect x="2" y="2" width="14" height="8" rx="1.6" fill="currentColor"/><rect x="21.6" y="4" width="1.8" height="4" rx=".8" fill="currentColor" opacity=".45"/></svg>' +
+    '</span></div>';
+
+  /* ---------- Pestaña Notas (CalculadoraPage) ---------- */
+  function calc(o) {
+    var cursos = [];
+    CUR.forEach(function (c) {
+      var rows = [];
+      c.ev.forEach(function (e) {
+        if (o.uli && has(ULI[c.sec], e[0])) rows.push({ t: e[1], p: e[3], v: ULI[c.sec][e[0]], u: true });
+        else if (has(SIM[c.sec], e[0])) rows.push({ t: e[1], p: e[3], v: SIM[c.sec][e[0]], u: false });
+      });
+      if (rows.length) cursos.push({ c: c, rows: rows });
+    });
+    var h = '<div class="cr-app">';
+    h += '<div class="cr-hdr"><span class="cr-brand">ULIMA++</span><span class="cr-bell">' + mi('bell', 30) + '<span class="cr-badge">2</span></span></div>';
+    h += '<div class="cr-body"><div class="cr-ph"><div class="cr-trow"><div class="cr-title">Calculadora de Notas</div>';
+    if (!o.row) h += '<span class="cr-ib" title="Notas oficiales">' + mi('school', 24) + '</span>';
+    h += '</div><div class="cr-count">Cursos con notas: ' + cursos.length + '</div>';
+    if (o.row) {
+      h += '<button type="button" class="cr-ofi" data-cr-go="2"><span class="cr-oi">' + mi('school', 22) + '</span><span class="cr-ot"><b>Notas oficiales</b><small>' +
+        (o.row === 'hoy' ? 'Última lectura hoy a las 10:42' : 'Aún no se actualizan desde la ULima') +
+        '</small></span><span class="cr-oc">' + mi('chev', 22) + '</span></button>';
+    }
+    h += '</div><div class="cr-list">';
+    cursos.forEach(function (x) {
+      var prom = 0, suma = 0;
+      x.rows.forEach(function (r) { prom += r.v * (r.p / 100); suma += r.p; });
+      h += '<div class="cr-card"><div class="cr-ch"><div class="cr-chr"><div class="cr-chl"><div class="cr-sec">Sección: ' + x.c.sec + '</div><div class="cr-cn">' + x.c.n + '</div><div class="cr-cy">Ciclo: 2026-2</div></div>';
+      h += '<div class="cr-chp"><div class="cr-avg">' + prom.toFixed(2) + '</div>' + (prom < 11 ? '<div class="cr-des">' + mi('err', 14) + ' Desaprobado</div>' : '') + '</div></div>';
+      h += '<div class="cr-bar"><div class="cr-barf" style="width:' + Math.min(100, suma) + '%"></div><div class="cr-bart">Suma de pesos: ' + suma.toFixed(1) + '% / 100%</div></div></div><div class="cr-tiles">';
+      x.rows.forEach(function (r) {
+        h += '<div class="cr-tile"><div class="cr-tl"><div class="cr-tt">' + r.t + '</div><div class="cr-ts">Peso: ' + r.p + '%  •  <b>Nota: ' + r.v.toFixed(1) + '/20</b></div></div>' +
+          (r.u ? '<span class="cr-ulw"><span class="cr-ul">ULima</span></span>' : '<span class="cr-del">' + mi('del', 22) + '</span>') + '</div>';
+      });
+      h += '</div></div>';
+    });
+    h += '</div><div class="cr-regw"><div class="cr-reg">' + mi('add', 18) + 'Registrar Nota</div></div>';
+    h += '<div class="cr-bub"><i class="cr-halo"></i><img alt="" src="' + ULISES + '"></div></div>';
+    h += '<div class="cr-nav">';
+    [['malla', 'Malla'], ['notas', 'Notas'], ['horario', 'Horario'], ['chats', 'Chats'], ['perfil', 'Perfil']].forEach(function (it) {
+      h += '<div class="cr-ni' + (it[0] === 'notas' ? ' cr-act' : '') + '">' + lu(it[0]) + '<span>' + it[1] + '</span></div>';
+    });
+    h += '</div></div>';
+    return h;
+  }
+
+  /* ---------- Notas oficiales (/mis-notas) ---------- */
+  function misNotas(o) {
+    var h = '<div class="cr-app cr-mn' + (o.nueva ? ' cr-mn2' : '') + '"><div class="cr-ab"><button type="button" class="cr-abl" data-cr-go="' + (o.nueva ? '5' : '1') + '" aria-label="Volver">' + mi('back', 24) + '</button><span class="cr-abt">Notas oficiales</span><span class="cr-aba">' + mi('refresh', 24) + '</span></div>';
+    h += '<div class="cr-mlist">';
+    if (o.nueva && o.error) {
+      h += '<div class="cr-sync cr-bad" role="alert"><span class="cr-syi">' + mi('err', 20) + '</span><span class="cr-syt"><b>No se pudo actualizar</b><small>miUlima rechazó los datos. Revisa tu contraseña y que el código del autenticador siga vigente.</small><small>Se muestran las notas leídas hoy a las 10:42.</small><button type="button" class="cr-retry" data-cr-go="3">Reintentar</button></span></div>';
+    } else if (o.nueva) {
+      h += '<button type="button" class="cr-sync" data-cr-go="3"><span class="cr-syi">' + lu('refreshCw', 20) + '</span><span class="cr-syt"><b>Actualizar desde la ULima</b><small>Última lectura hoy a las 10:42</small></span><span class="cr-syc">' + lu('chevronRight', 18) + '</span></button>';
+    }
+    CUR.forEach(function (c) {
+      var fin = 0, cal = false;
+      c.ev.forEach(function (e) { if (o.nueva && has(ULI[c.sec], e[0])) { fin += ULI[c.sec][e[0]] * e[3] / 100; cal = true; } });
+      h += '<div class="cr-oc2"><div class="cr-och"><div class="cr-ochl"><div class="cr-ocn">' + c.n + '</div><div class="cr-ocs">Sección ' + c.sec + '</div></div>';
+      if (cal) {
+        var ok = fin >= 10.5, col = ok ? '#16A34A' : '#DC2626', bg = ok ? 'rgba(22,163,74,.12)' : 'rgba(220,38,38,.12)';
+        h += '<div class="cr-fb" style="background:' + bg + ';color:' + col + '"><i>Final</i><b>' + fin.toFixed(2) + '</b></div>';
+      }
+      h += '</div><div class="cr-arows">';
+      c.ev.forEach(function (e) {
+        var v = o.nueva && has(ULI[c.sec], e[0]) ? ULI[c.sec][e[0]] : null;
+        h += '<div class="cr-ar"><span class="cr-arn">' + e[0] + ' · ' + e[1] + (o.nueva ? '<span class="cr-arw">Semana ' + e[2] + '</span>' : '') + '</span><span class="cr-arp">' + e[3] + '%</span>';
+        if (v !== null) h += '<span class="cr-arv">' + v.toFixed(1) + '</span>';
+        else if (o.nueva) h += '<span class="cr-arv cr-sn">Sin nota</span>';
+        else h += '<span class="cr-arv cr-nil">—</span>';
+        h += '</div>';
+      });
+      h += '</div></div>';
+    });
+    h += '</div></div>';
+    return h;
+  }
+
+  /* ---------- Hoja de recarga (formato del modal Registrar Nota) ---------- */
+  function hoja(lleno) {
+    var h = '<div class="cr-scrim"></div><div class="cr-sheet" role="dialog" aria-label="Actualizar desde la ULima">';
+    h += '<div class="cr-shh"><div><div class="cr-sht">Actualizar desde la ULima</div><div class="cr-shs">Entras como <b>20230001</b></div></div><button type="button" class="cr-shx" data-cr-go="2" aria-label="Cerrar">' + mi('close', 24) + '</button></div>';
+    h += '<p class="cr-shp">Al tocar «Actualizar» aceptas que ULima++ lea en miUlima tus notas parciales y tu asistencia. La contraseña y el código se usan una sola vez y no se guardan.</p>';
+    h += '<div class="cr-shl">Contraseña de miUlima</div><div class="cr-fld">' + (lleno ? '<span class="cr-fv">••••••••••</span>' : '<span class="cr-fh">Tu contraseña del portal</span>') + '<span class="cr-eye">' + mi('eye', 22) + '</span></div>';
+    h += '<div class="cr-shl">Código del autenticador</div><div class="cr-otp">';
+    var d = '482913';
+    for (var i = 0; i < 6; i++) h += '<span>' + (lleno ? d.charAt(i) : '') + '</span>';
+    h += '</div><div class="cr-shc">El código de 6 dígitos que cambia cada 30 segundos.</div>';
+    h += '<div class="cr-shb"><button type="button" class="cr-cancel" data-cr-go="2">Cancelar</button><button type="button" class="cr-go"' + (lleno ? ' data-cr-go="5"' : ' disabled') + '>Actualizar</button></div></div>';
+    return h;
+  }
+
+  /* ---------- /portal-sync, la carga de hoy ---------- */
+  function portal(conError) {
+    var h = '<div class="cr-app cr-ps"><span class="cr-psback">' + mi('back', 24) + '</span><div class="cr-psw"><div class="cr-psc">';
+    h += '<div class="cr-pst">Carga tus datos del ciclo</div><p class="cr-psp">Traemos de miUlima tus cursos, secciones, horario, docentes y tu avance de carrera. Entramos al portal con tus datos una sola vez y no los guardamos.</p>';
+    h += '<div class="cr-psl">Contraseña de miUlima</div><div class="cr-psf' + (conError ? ' cr-val' : '') + '">' + (conError ? '••••••••••' : 'Tu contraseña del portal') + '</div><div class="cr-psm">Mostrar contraseña</div>';
+    h += '<div class="cr-psl">Código del authenticator</div><div class="cr-pso">';
+    for (var i = 0; i < 6; i++) h += '<span' + (conError && i === 0 ? ' class="cr-foc"' : '') + '></span>';
+    h += '</div><div class="cr-psh">El código de 6 dígitos que cambia cada 30 segundos.</div>';
+    if (conError) h += '<div class="cr-pse">miUlima rechazó los datos. Revisa tu contraseña y que el código del authenticator siga vigente.</div>';
+    h += '<div class="cr-psb">Cargar mis datos</div><div class="cr-psn">Ahora no</div></div></div></div>';
+    return h;
+  }
+
+  function pantalla(lado, esc, lleno) {
+    if (lado === 'antes') {
+      if (esc === 1 || esc === 5) return calc({});
+      if (esc === 2) return misNotas({});
+      return portal(esc === 4);
+    }
+    if (esc === 1) return calc({ row: 'sin' });
+    if (esc === 5) return calc({ row: 'hoy', uli: true });
+    if (esc === 2) return misNotas({ nueva: true });
+    if (esc === 3) return misNotas({ nueva: true }) + hoja(lleno);
+    return misNotas({ nueva: true, error: true });
+  }
+
+  var CAP = {
+    antes: {
+      1: 'Hoy el único acceso a las notas oficiales es el birrete junto al título. No tiene texto y su nombre solo aparece al mantenerlo presionado.',
+      2: 'Hoy esta pantalla muestra solo las notas que el docente pone en ULima++, así que casi todas salen vacías. Su flecha de recarga no entra a la ULima.',
+      3: 'Hoy la contraseña se pide en una pantalla aparte, a la que se llega desde el Perfil, y esa carga no trae las notas parciales.',
+      4: 'Hoy el error aparece dentro de esa pantalla de carga, lejos de las notas, y la contraseña sigue escrita.',
+      5: 'Hoy cada nota se registra a mano, aunque la ULima ya la haya publicado.'
+    },
+    despues: {
+      1: 'El birrete baja a una fila con el rótulo «Notas oficiales» y la hora de la última lectura de la ULima, que aquí aún no ocurre. Las tarjetas y «+ Registrar Nota» quedan igual. Toca la fila para abrirla.',
+      2: 'Tras la lectura llegan las notas parciales de la ULima con su semana, su peso y su nota, o «Sin nota» si aún no se publica. La primera tarjeta, la misma de «Actualizar desde miUlima» del Perfil, dice la hora de la última lectura.',
+      3: 'La hoja usa el formato de «Registrar Nota». Muestra con qué código entras y deja «Actualizar» apagado hasta tener la contraseña y los seis dígitos. No guarda ninguno de los dos.',
+      4: 'Si la lectura falla, la hoja se cierra y borra la contraseña y el código. La primera tarjeta muestra el aviso hasta que reintentes, y las notas leídas antes siguen a la vista.',
+      5: 'Cada nota que ya publicó la ULima entra como una fila más, con la insignia «ULima» en lugar del tacho, y el promedio la cuenta. Si esa evaluación ya estaba registrada a mano, queda la nota de la ULima. Programación Móvil aparece porque ya tiene notas.'
+    }
+  };
+
+  var scrA = root.querySelector('[data-cr-side="antes"]');
+  var scrD = root.querySelector('[data-cr-side="despues"]');
+  var capA = root.querySelector('[data-cr-cap="antes"]');
+  var capD = root.querySelector('[data-cr-cap="despues"]');
+  var sub3 = root.querySelector('[data-cr-sub3]');
+  var st = { esc: 1, oscuro: false, lleno: false };
+  var manual = false;
+
+  function pinta() {
+    scrA.innerHTML = SB + pantalla('antes', st.esc, st.lleno);
+    scrD.innerHTML = SB + pantalla('despues', st.esc, st.lleno);
+    [scrA, scrD].forEach(function (s) { s.classList.toggle('cr-dk', st.oscuro); });
+    capA.textContent = CAP.antes[st.esc];
+    capD.textContent = CAP.despues[st.esc];
+    sub3.classList.toggle('cr-on', st.esc === 3);
+    root.querySelectorAll('[data-cr-scene]').forEach(function (b) { b.setAttribute('aria-pressed', String(+b.getAttribute('data-cr-scene') === st.esc)); });
+    root.querySelectorAll('[data-cr-theme]').forEach(function (b) { b.setAttribute('aria-pressed', String((b.getAttribute('data-cr-theme') === 'oscuro') === st.oscuro)); });
+    root.querySelectorAll('[data-cr-fill]').forEach(function (b) { b.setAttribute('aria-pressed', String((b.getAttribute('data-cr-fill') === '1') === st.lleno)); });
+  }
+
+  function ve(esc) { st.esc = esc; if (esc !== 3) st.lleno = false; pinta(); }
+
+  root.querySelectorAll('[data-cr-scene]').forEach(function (b) {
+    b.addEventListener('click', function (ev) { ev.stopPropagation(); ve(+b.getAttribute('data-cr-scene')); });
+  });
+  root.querySelectorAll('[data-cr-theme]').forEach(function (b) {
+    b.addEventListener('click', function (ev) { ev.stopPropagation(); manual = true; st.oscuro = b.getAttribute('data-cr-theme') === 'oscuro'; pinta(); });
+  });
+  root.querySelectorAll('[data-cr-fill]').forEach(function (b) {
+    b.addEventListener('click', function (ev) { ev.stopPropagation(); st.lleno = b.getAttribute('data-cr-fill') === '1'; pinta(); });
+  });
+  /* Toques dentro del teléfono de la propuesta: la fila, el botón, Cancelar, Reintentar. */
+  scrD.addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    var t = ev.target.closest ? ev.target.closest('[data-cr-go]') : null;
+    if (t && scrD.contains(t)) ve(+t.getAttribute('data-cr-go'));
+  });
+  scrA.addEventListener('click', function (ev) { ev.stopPropagation(); });
+
+  function hostOscuro() {
+    var d = document.documentElement, t = d.getAttribute('data-theme');
+    if (t === 'dark') return true;
+    if (t === 'light') return false;
+    if (d.classList.contains('dark')) return true;
+    if (d.classList.contains('light')) return false;
+    return !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  }
+  st.oscuro = hostOscuro();
+  if (window.MutationObserver) {
+    new MutationObserver(function () { if (!manual) { st.oscuro = hostOscuro(); pinta(); } })
+      .observe(document.documentElement, { attributes: true, attributeFilter: ['class', 'data-theme'] });
+  }
+  if (window.matchMedia) {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    var cambio = function () { if (!manual) { st.oscuro = hostOscuro(); pinta(); } };
+    if (mq.addEventListener) mq.addEventListener('change', cambio); else if (mq.addListener) mq.addListener(cambio);
+  }
+
+  /* Cada teléfono mide 320 x 660 y se achica si la columna es más angosta. */
+  var fits = root.querySelectorAll('.cr-fit');
+  function ajusta() {
+    fits.forEach(function (f) {
+      var w = f.clientWidth || 320, k = Math.min(1, w / 320);
+      var dev = f.querySelector('.cr-dev');
+      dev.style.transform = 'scale(' + k + ')';
+      dev.style.left = Math.max(0, (w - 320 * k) / 2) + 'px';
+      f.style.height = (660 * k) + 'px';
+    });
+  }
+  ajusta();
+  if (window.ResizeObserver) { var ro = new ResizeObserver(ajusta); fits.forEach(function (f) { ro.observe(f); }); }
+  else window.addEventListener('resize', ajusta);
+
+  pinta();
+})();
+</script>
+</div>
+</div></div></div>
+<p class="cr-w-end">Si te gusta, márcala. Si prefieres otra cosa, dime qué cambiarías.</p>
+</div>

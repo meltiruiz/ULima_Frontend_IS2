@@ -46,6 +46,7 @@ targets:
 
 - `GET /schedule/me/sessions`, whose days also carry `isoDate`, the exact date that places the student's own time blocks (`null` when the cycle has no weeks; RF-BLQ-4 and RF-BLQ-7 of `specs/features/time-blocks/time-blocks.spec.md`)
 - `GET /schedule/me/assessments`
+- *Enmienda del 2026-09-25, aprobada por el dueño el 2026-09-26 e implementada el 2026-09-26 (`specs/features/recarga-portal/recarga-portal.spec.md`, RF-RCG-3 y RF-RCG-8).* Cada elemento de `secciones` de `GET /schedule/me/sessions` trae `asistenciaLeidaEn`, que el horario no pinta y que la ficha del curso lee a través de `uniqueEnrolledCourses`. Después de una recarga exitosa desde la ULima, `RecargaUlimaService` llama una sola vez a `HorarioController.reload()`, para traer las horas nuevas, y expone su `Future` para que la ficha no la repita.
 - `GET /schedule/me/load`
 - `GET /time-blocks/me` and `GET /time-blocks/me/occurrences?from=&to=`, only through `TimeBlocksService`, for the student's own time blocks, their cancelled days and their weekly hours (`specs/features/time-blocks/time-blocks.spec.md`, RF-BLQ-4, RF-BLQ-6 and RF-BLQ-7)
 

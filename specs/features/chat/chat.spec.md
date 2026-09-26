@@ -68,6 +68,14 @@ targets:
 > El retoque final del mismo día cambia el cuerpo del diálogo de borrado, con sus dos textos
 > en «Textos nuevos» (RF-CHAT-4), y la línea de la sección en la tarjeta del docente, que pasa
 > a «Sección N» o «Sin sección» como en la bandeja (RF-CHAT-13).
+> Ajustada el 2026-09-25 por la spec del truco del 67
+> (`specs/features/six-seven/six-seven.spec.md`, RF-67-6 y RF-67-7). `ChatPage` crea el
+> stream de mensajes una sola vez y lo guarda en su estado, en lugar de pedirlo en cada
+> `build` (RF-CHAT-2). Un 67 que llega en vivo inclina toda la pantalla de la conversación unos
+> 2 s, también el AppBar con el nombre del curso, y muestra el rótulo pasajero «SIX SEVEN!!!»,
+> que cumple el contraste de RF-CHAT-8. El mensaje se envía y se guarda como cualquier otro, y
+> el contrato no cambia. Aprobada por el dueño el 2026-09-25, junto con la spec del truco del
+> 67, con la elección de «toda la pantalla» en su D4, e implementada el 2026-09-25.
 
 ## User Stories
 
@@ -135,6 +143,9 @@ de Firebase actual es otro (`chat_repository.dart:81-84`).
 - `ChatMessage.fromMap` acepta el esquema nuevo (`body`, `createdAt`, `senderRole`) y el
   antiguo (`text`, `timestamp`), y deriva la etiqueta, el peso y el flag de moderador del rol
   cuando no vienen (`message.dart:43-72` y `:113-147`).
+- `ChatPage` pide el stream una sola vez, cuando la sesión queda lista, y el `StreamBuilder`
+  recibe siempre esa misma instancia, así que una reconstrucción de la página no vuelve a
+  suscribirse (ajuste del 2026-09-25, RF-67-6 de `specs/features/six-seven/six-seven.spec.md`).
 - Cada lista nueva lleva la vista al último mensaje (`chat_page.dart:237-247` y `:439-441`).
 - Sin mensajes, la pantalla muestra «Chat privado de la sección» y «Solo los miembros de esta
   sección pueden leer y escribir. Sé el primero en saludar 👋» (`chat_page.dart:381-437`),
@@ -144,6 +155,7 @@ de Firebase actual es otro (`chat_repository.dart:81-84`).
 
 `[@test] ../../../test/HU23_jeff/chat_message_test.dart`
 `[@test] ../../../test/HU23_jeff/chat_page_test.dart`
+`[@test] ../../../test/six_seven/chat_seccion_seis_siete_test.dart`
 
 ### RF-CHAT-3 — Enviar texto y carnet (se conserva)
 

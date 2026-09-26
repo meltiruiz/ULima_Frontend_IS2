@@ -1,11 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
+import '../../domain/seis_siete/seis_siete.dart';
 import '../../models/chatbot_models.dart';
 import '../../services/chatbot_service.dart';
 import '../../services/notas_service.dart';
 
 class ChatbotController extends GetxController {
-  final ChatbotService _service = ChatbotService();
+  /// [service] se inyecta en las pruebas, como el repositorio de `ChatPage`.
+  /// Sin él usa el servicio real, así que `ChatbotPage` no cambia (RF-67-5).
+  ChatbotController({ChatbotService? service})
+    : _service = service ?? ChatbotService();
+
+  final ChatbotService _service;
   final NotasService _notasService = NotasService();
 
   final RxList<ChatbotSession> sessions = <ChatbotSession>[].obs;
@@ -17,6 +23,13 @@ class ChatbotController extends GetxController {
   final RxBool sendingQuestion = false.obs;
 
   final RxBool isTyping = false.obs;
+
+  /// Contador de disparos del truco del 67. Solo sube, y lo lee el
+  /// `TambaleoSeisSiete` de `ChatbotPage` (RF-67-5).
+  final RxInt disparosSeisSiete = 0.obs;
+
+  /// Cuenta las burbujas locales del 67 para que cada una tenga su id.
+  int _burbujasSeisSiete = 0;
 
   @override
   void onInit() {
@@ -46,7 +59,10 @@ class ChatbotController extends GetxController {
       final data = await _service.getSession(sessionId);
       final List<dynamic> msgsRaw = data['messages'] ?? [];
       final List<ChatbotMessage> msgs = msgsRaw
-          .map((item) => ChatbotMessage.fromJson(Map<String, dynamic>.from(item as Map)))
+          .map(
+            (item) =>
+                ChatbotMessage.fromJson(Map<String, dynamic>.from(item as Map)),
+          )
           .toList();
       messages.assignAll(msgs);
     } catch (e) {
@@ -93,15 +109,23 @@ class ChatbotController extends GetxController {
     final sessionId = activeSessionId.value;
     if (sessionId == null || question.trim().isEmpty) return;
 
+    // Un 67 no llega al backend ni gasta el límite de preguntas (RF-67-5).
+    if (esSeisSiete(question)) {
+      _responderSeisSiete(question);
+      return;
+    }
+
     // Optimista: el mensaje del usuario aparece de INMEDIATO (antes se agregaba
     // recién al llegar la respuesta, así que desaparecía mientras el bot pensaba).
     final now = DateTime.now();
-    messages.add(ChatbotMessage(
-      id: now.millisecondsSinceEpoch.toString(),
-      role: 'user',
-      content: question,
-      createdAt: now,
-    ));
+    messages.add(
+      ChatbotMessage(
+        id: now.millisecondsSinceEpoch.toString(),
+        role: 'user',
+        content: question,
+        createdAt: now,
+      ),
+    );
     isTyping.value = true;
 
     try {
@@ -112,12 +136,14 @@ class ChatbotController extends GetxController {
         localGrades: localGrades,
       );
 
-      messages.add(ChatbotMessage(
-        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
-        role: 'assistant',
-        content: answer,
-        createdAt: DateTime.now(),
-      ));
+      messages.add(
+        ChatbotMessage(
+          id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+          role: 'assistant',
+          content: answer,
+          createdAt: DateTime.now(),
+        ),
+      );
     } catch (e) {
       debugPrint('Error sending question: $e');
       final msg = _extractErrorMessage(e);
@@ -133,6 +159,28 @@ class ChatbotController extends GetxController {
     // sync no toca loadingSessions ni activeSessionId, así que solo se actualiza
     // la barra de conversaciones y los mensajes se quedan quietos abajo.
     await _syncSessionsQuietly();
+  }
+
+  /// Agrega en el mismo instante la burbuja del alumno y la de Ulises con
+  /// «SIX SEVEN!!!», las dos solo en memoria, y sube el contador del
+  /// tambaleo. No enciende «escribiendo…» ni llama a ningún endpoint.
+  void _responderSeisSiete(String pregunta) {
+    final ahora = DateTime.now();
+    messages.addAll([
+      ChatbotMessage(
+        id: 'local-seis-siete-${_burbujasSeisSiete++}',
+        role: 'user',
+        content: pregunta,
+        createdAt: ahora,
+      ),
+      ChatbotMessage(
+        id: 'local-seis-siete-${_burbujasSeisSiete++}',
+        role: 'assistant',
+        content: textoSeisSiete,
+        createdAt: ahora,
+      ),
+    ]);
+    disparosSeisSiete.value++;
   }
 
   /// Actualiza la lista de sesiones en segundo plano sin flags de carga, para no
@@ -157,13 +205,20 @@ class ChatbotController extends GetxController {
         return {
           'id': curso['id']?.toString() ?? '',
           'nombre': curso['nombre']?.toString() ?? '',
-          'notas': (curso['notas'] as List?)?.map((nota) {
-            return {
-              'titulo': nota['titulo']?.toString() ?? '',
-              'peso': (nota['peso'] is int) ? nota['peso'] : int.tryParse(nota['peso']?.toString() ?? '0') ?? 0,
-              'valor': (nota['valor'] is double) ? nota['valor'] : double.tryParse(nota['valor']?.toString() ?? '0') ?? 0.0,
-            };
-          }).toList() ?? [],
+          'notas':
+              (curso['notas'] as List?)?.map((nota) {
+                return {
+                  'titulo': nota['titulo']?.toString() ?? '',
+                  'peso': (nota['peso'] is int)
+                      ? nota['peso']
+                      : int.tryParse(nota['peso']?.toString() ?? '0') ?? 0,
+                  'valor': (nota['valor'] is double)
+                      ? nota['valor']
+                      : double.tryParse(nota['valor']?.toString() ?? '0') ??
+                            0.0,
+                };
+              }).toList() ??
+              [],
         };
       }).toList();
     } catch (e) {
@@ -174,7 +229,8 @@ class ChatbotController extends GetxController {
 
   String _extractErrorMessage(dynamic e) {
     if (e is Map && e.containsKey('error')) {
-      return e['error']?['message']?.toString() ?? 'No se pudo obtener respuesta. Intenta de nuevo.';
+      return e['error']?['message']?.toString() ??
+          'No se pudo obtener respuesta. Intenta de nuevo.';
     }
     return 'No se pudo obtener respuesta. Intenta de nuevo.';
   }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
+import '../../components/seis_siete/tambaleo_seis_siete.dart';
 import '../../components/skeleton.dart';
 import '../../configs/themes.dart';
 import '../../models/chatbot_models.dart';
@@ -19,6 +20,54 @@ class ChatbotPage extends StatelessWidget {
     final brightness = Theme.brightnessOf(context);
     final colors = Theme.of(context).colorScheme;
 
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        if (constraints.maxWidth <= 600) {
+          // Teléfono. El truco del 67 inclina toda la pantalla, también el
+          // AppBar con su título (RF-67-2 y RF-67-5).
+          return _ConTambaleo(
+            controller: controller,
+            child: _pantalla(
+              context,
+              controller,
+              brightness,
+              body: _buildBody(controller, colors, brightness),
+            ),
+          );
+        }
+        return Obx(() {
+          if (controller.loadingSessions.value) {
+            return _pantalla(
+              context,
+              controller,
+              brightness,
+              body: const Center(child: CircularProgressIndicator()),
+            );
+          }
+          if (controller.sessions.isEmpty) {
+            return _pantalla(
+              context,
+              controller,
+              brightness,
+              body: _EmptyConversations(
+                brightness: brightness,
+                onCreate: () => controller.createSession(),
+              ),
+            );
+          }
+          return _pantallaDividida(controller, colors, brightness);
+        });
+      },
+    );
+  }
+
+  /// La pantalla con un solo AppBar a todo el ancho.
+  Widget _pantalla(
+    BuildContext context,
+    ChatbotController controller,
+    Brightness brightness, {
+    required Widget body,
+  }) {
     return Scaffold(
       backgroundColor: MaterialTheme.pageBg(brightness),
       appBar: AppBar(
@@ -38,46 +87,105 @@ class ChatbotPage extends StatelessWidget {
             }
           },
         ),
-        title: Row(
-          children: [
-            const _BotAvatar(size: 30),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: const [
-                Text(
-                  'ULimaBot',
-                  style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-                ),
-                Text(
-                  'Asistente académico',
-                  style: TextStyle(fontSize: 11.5, color: Colors.white70),
-                ),
-              ],
-            ),
-          ],
-        ),
+        title: const _TituloUlises(),
         actions: [
-          IconButton(
-            icon: const Icon(LucideIcons.plus),
-            tooltip: 'Nueva conversación',
-            onPressed: () => controller.createSession(),
-          ),
+          _BotonNuevaConversacion(controller: controller),
           const SizedBox(width: 4),
         ],
       ),
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final isWide = constraints.maxWidth > 600;
-          return _buildBody(controller, colors, brightness, isWide);
-        },
+      body: body,
+    );
+  }
+
+  /// Pantalla ancha con conversaciones. Cada panel lleva su propio tramo de
+  /// barra, así que el panel del chat se inclina con su barra y la lista queda
+  /// quieta (RF-67-2 y D4).
+  Widget _pantallaDividida(
+    ChatbotController controller,
+    ColorScheme colors,
+    Brightness brightness,
+  ) {
+    return Scaffold(
+      backgroundColor: MaterialTheme.pageBg(brightness),
+      body: Row(
+        children: [
+          SizedBox(
+            width: 288,
+            child: Column(
+              children: [
+                AppBar(
+                  backgroundColor: MaterialTheme.headerColor(brightness),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  automaticallyImplyLeading: false,
+                  leading: IconButton(
+                    icon: const Icon(LucideIcons.arrowLeft),
+                    onPressed: () => Get.back(),
+                  ),
+                ),
+                Expanded(
+                  child: _bajoSuTramo(
+                    _buildSessionList(controller, colors, brightness),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          VerticalDivider(
+            width: 1,
+            color: MaterialTheme.borderColor(brightness),
+          ),
+          Expanded(
+            child: _ConTambaleo(
+              controller: controller,
+              child: Column(
+                children: [
+                  AppBar(
+                    backgroundColor: MaterialTheme.headerColor(brightness),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    automaticallyImplyLeading: false,
+                    title: const _TituloUlises(),
+                    actions: [
+                      _BotonNuevaConversacion(controller: controller),
+                      const SizedBox(width: 4),
+                    ],
+                  ),
+                  Expanded(
+                    child: _bajoSuTramo(
+                      _ChatArea(controller: controller, brightness: brightness),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
 
+  /// Quita a [child] el relleno superior, que ya ocupa el tramo de barra de
+  /// encima. El contexto del `Builder` queda dentro del `Scaffold`, así que
+  /// `removePadding` parte del `MediaQuery` que ya descuenta el teclado, y el
+  /// `LayoutBuilder` de `build` no depende del `MediaQuery` ni se reconstruye
+  /// mientras el teclado se mueve.
+  static Widget _bajoSuTramo(Widget child) {
+    return Builder(
+      builder: (context) => MediaQuery.removePadding(
+        context: context,
+        removeTop: true,
+        child: child,
+      ),
+    );
+  }
+
+  /// Cuerpo del teléfono. La pantalla ancha arma el suyo en `build`.
   Widget _buildBody(
-      ChatbotController controller, ColorScheme colors, Brightness brightness, bool isWide) {
+    ChatbotController controller,
+    ColorScheme colors,
+    Brightness brightness,
+  ) {
     return Obx(() {
       if (controller.loadingSessions.value) {
         return const Center(child: CircularProgressIndicator());
@@ -90,19 +198,6 @@ class ChatbotPage extends StatelessWidget {
         );
       }
 
-      if (isWide) {
-        return Row(
-          children: [
-            SizedBox(
-              width: 288,
-              child: _buildSessionList(controller, colors, brightness),
-            ),
-            VerticalDivider(width: 1, color: MaterialTheme.borderColor(brightness)),
-            Expanded(child: _ChatArea(controller: controller, brightness: brightness)),
-          ],
-        );
-      }
-
       if (controller.activeSessionId.value == null) {
         return _buildSessionList(controller, colors, brightness);
       }
@@ -112,7 +207,10 @@ class ChatbotPage extends StatelessWidget {
   }
 
   Widget _buildSessionList(
-      ChatbotController controller, ColorScheme colors, Brightness brightness) {
+    ChatbotController controller,
+    ColorScheme colors,
+    Brightness brightness,
+  ) {
     return Obx(() {
       return ListView.separated(
         padding: const EdgeInsets.all(12),
@@ -139,7 +237,9 @@ class ChatbotPage extends StatelessWidget {
                     context: context,
                     builder: (ctx) => AlertDialog(
                       title: const Text('Eliminar conversación'),
-                      content: const Text('¿Estás seguro de eliminar esta conversación?'),
+                      content: const Text(
+                        '¿Estás seguro de eliminar esta conversación?',
+                      ),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
@@ -147,7 +247,10 @@ class ChatbotPage extends StatelessWidget {
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, true),
-                          child: Text('Eliminar', style: TextStyle(color: colors.error)),
+                          child: Text(
+                            'Eliminar',
+                            style: TextStyle(color: colors.error),
+                          ),
                         ),
                       ],
                     ),
@@ -164,7 +267,10 @@ class ChatbotPage extends StatelessWidget {
                 borderRadius: BorderRadius.circular(12),
                 onTap: () => controller.selectSession(session.id),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
                   child: Row(
                     children: [
                       Icon(
@@ -185,7 +291,9 @@ class ChatbotPage extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                               style: TextStyle(
                                 fontSize: 14,
-                                fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                                fontWeight: isActive
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
                                 color: MaterialTheme.textPrimary(brightness),
                               ),
                             ),
@@ -219,6 +327,71 @@ class ChatbotPage extends StatelessWidget {
     if (diff.inDays < 1) return '${diff.inHours}h';
     if (diff.inDays == 1) return 'Ayer';
     return '${date.day}/${date.month}/${date.year}';
+  }
+}
+
+/// Envuelve [child] con el tambaleo del 67. El `Obx` solo lee
+/// `disparosSeisSiete` y [child] llega ya armado, así que cada disparo
+/// reconstruye solo el envoltorio (RF-67-5).
+class _ConTambaleo extends StatelessWidget {
+  const _ConTambaleo({required this.controller, required this.child});
+
+  final ChatbotController controller;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Obx(
+      () => TambaleoSeisSiete(
+        disparos: controller.disparosSeisSiete.value,
+        child: child,
+      ),
+    );
+  }
+}
+
+/// Avatar de Ulises con «ULimaBot» y «Asistente académico».
+class _TituloUlises extends StatelessWidget {
+  const _TituloUlises();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Row(
+      children: [
+        _BotAvatar(size: 30),
+        SizedBox(width: 10),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              'ULimaBot',
+              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+            ),
+            Text(
+              'Asistente académico',
+              style: TextStyle(fontSize: 11.5, color: Colors.white70),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Botón «Nueva conversación» del AppBar.
+class _BotonNuevaConversacion extends StatelessWidget {
+  const _BotonNuevaConversacion({required this.controller});
+
+  final ChatbotController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      icon: const Icon(LucideIcons.plus),
+      tooltip: 'Nueva conversación',
+      onPressed: () => controller.createSession(),
+    );
   }
 }
 
@@ -268,7 +441,8 @@ class _ChatAreaState extends State<_ChatArea> {
   void _scrollToBottom({bool animate = true}) {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scroll.hasClients) return;
-      final target = _scroll.position.minScrollExtent; // reverse:true → 0 = fondo
+      final target =
+          _scroll.position.minScrollExtent; // reverse:true → 0 = fondo
       if (animate && !MediaQuery.of(context).disableAnimations) {
         _scroll.animateTo(
           target,
@@ -332,7 +506,9 @@ class _ChatAreaState extends State<_ChatArea> {
                       return _TypingBubble(brightness: brightness);
                     }
                     final msgIndex =
-                        controller.messages.length - 1 - (typing ? index - 1 : index);
+                        controller.messages.length -
+                        1 -
+                        (typing ? index - 1 : index);
                     return _MessageBubble(
                       message: controller.messages[msgIndex],
                       brightness: brightness,
@@ -436,7 +612,9 @@ class _InputBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: MaterialTheme.cardBg(brightness),
-        border: Border(top: BorderSide(color: MaterialTheme.borderColor(brightness))),
+        border: Border(
+          top: BorderSide(color: MaterialTheme.borderColor(brightness)),
+        ),
       ),
       child: SafeArea(
         top: false,
@@ -456,14 +634,22 @@ class _InputBar extends StatelessWidget {
                   counterText: '',
                   filled: true,
                   fillColor: MaterialTheme.pageBg(brightness),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 18,
+                    vertical: 12,
+                  ),
                   enabledBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide(color: MaterialTheme.borderColor(brightness)),
+                    borderSide: BorderSide(
+                      color: MaterialTheme.borderColor(brightness),
+                    ),
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(24),
-                    borderSide: const BorderSide(color: MaterialTheme.primaryColor, width: 1.6),
+                    borderSide: const BorderSide(
+                      color: MaterialTheme.primaryColor,
+                      width: 1.6,
+                    ),
                   ),
                 ),
                 onSubmitted: (_) => onSubmit(),
@@ -486,7 +672,11 @@ class _InputBar extends StatelessWidget {
                     onTap: busy ? null : onSubmit,
                     child: const Padding(
                       padding: EdgeInsets.all(12),
-                      child: Icon(LucideIcons.send, size: 20, color: Colors.white),
+                      child: Icon(
+                        LucideIcons.send,
+                        size: 20,
+                        color: Colors.white,
+                      ),
                     ),
                   ),
                 ),
@@ -517,17 +707,23 @@ class _MessageBubble extends StatelessWidget {
       constraints: BoxConstraints(maxWidth: maxW),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: isUser ? MaterialTheme.primaryColor : MaterialTheme.cardBg(brightness),
+        color: isUser
+            ? MaterialTheme.primaryColor
+            : MaterialTheme.cardBg(brightness),
         borderRadius: BorderRadius.only(
           topLeft: const Radius.circular(18),
           topRight: const Radius.circular(18),
           bottomLeft: Radius.circular(isUser ? 18 : 5),
           bottomRight: Radius.circular(isUser ? 5 : 18),
         ),
-        border: isUser ? null : Border.all(color: MaterialTheme.borderColor(brightness)),
+        border: isUser
+            ? null
+            : Border.all(color: MaterialTheme.borderColor(brightness)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: brightness == Brightness.dark ? 0.22 : 0.05),
+            color: Colors.black.withValues(
+              alpha: brightness == Brightness.dark ? 0.22 : 0.05,
+            ),
             blurRadius: 8,
             offset: const Offset(0, 3),
           ),
@@ -540,23 +736,19 @@ class _MessageBubble extends StatelessWidget {
     );
 
     final row = Row(
-      mainAxisAlignment: isUser ? MainAxisAlignment.end : MainAxisAlignment.start,
+      mainAxisAlignment: isUser
+          ? MainAxisAlignment.end
+          : MainAxisAlignment.start,
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
-        if (!isUser) ...[
-          const _BotAvatar(size: 24),
-          const SizedBox(width: 8),
-        ],
+        if (!isUser) ...[const _BotAvatar(size: 24), const SizedBox(width: 8)],
         Flexible(child: bubble),
       ],
     );
 
     return _MessageEntrance(
       fromRight: isUser,
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 12),
-        child: row,
-      ),
+      child: Padding(padding: const EdgeInsets.only(bottom: 12), child: row),
     );
   }
 }
@@ -580,7 +772,10 @@ class _MessageEntranceState extends State<_MessageEntrance>
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 280));
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 280),
+    );
     _t = CurvedAnimation(parent: _c, curve: Curves.easeOutCubic);
     _c.forward();
   }
@@ -602,7 +797,10 @@ class _MessageEntranceState extends State<_MessageEntrance>
         return Opacity(
           opacity: v,
           child: Transform.translate(
-            offset: Offset((widget.fromRight ? 18 : -18) * (1 - v), 10 * (1 - v)),
+            offset: Offset(
+              (widget.fromRight ? 18 : -18) * (1 - v),
+              10 * (1 - v),
+            ),
             child: child,
           ),
         );
@@ -630,8 +828,10 @@ class _TypingBubbleState extends State<_TypingBubble>
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 1100))
-      ..repeat();
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1100),
+    )..repeat();
   }
 
   @override
@@ -662,7 +862,9 @@ class _TypingBubbleState extends State<_TypingBubble>
                   bottomLeft: Radius.circular(5),
                   bottomRight: Radius.circular(18),
                 ),
-                border: Border.all(color: MaterialTheme.borderColor(widget.brightness)),
+                border: Border.all(
+                  color: MaterialTheme.borderColor(widget.brightness),
+                ),
               ),
               child: reduce
                   ? Text(
@@ -768,46 +970,59 @@ class _MarkdownText extends StatelessWidget {
       final bulletMatch = _bullet.firstMatch(trimmed);
       if (bulletMatch != null) {
         final indent = (line.length - trimmed.length).clamp(0, 8).toDouble();
-        children.add(Padding(
-          padding: EdgeInsets.only(left: indent * 1.5, top: 2, bottom: 2),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Padding(
-                padding: const EdgeInsets.only(top: 6.5, right: 8),
-                child: Container(
-                  width: 5,
-                  height: 5,
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.55),
-                    shape: BoxShape.circle,
+        children.add(
+          Padding(
+            padding: EdgeInsets.only(left: indent * 1.5, top: 2, bottom: 2),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 6.5, right: 8),
+                  child: Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.55),
+                      shape: BoxShape.circle,
+                    ),
                   ),
                 ),
-              ),
-              Expanded(child: Text.rich(_inline(bulletMatch.group(2)!), style: base)),
-            ],
+                Expanded(
+                  child: Text.rich(_inline(bulletMatch.group(2)!), style: base),
+                ),
+              ],
+            ),
           ),
-        ));
+        );
       } else {
-        children.add(Padding(
-          padding: const EdgeInsets.symmetric(vertical: 1),
-          child: Text.rich(_inline(trimmed), style: base),
-        ));
+        children.add(
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 1),
+            child: Text.rich(_inline(trimmed), style: base),
+          ),
+        );
       }
     }
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    );
   }
 
   InlineSpan _inline(String source) {
     final spans = <InlineSpan>[];
     var last = 0;
     for (final m in _bold.allMatches(source)) {
-      if (m.start > last) spans.add(TextSpan(text: source.substring(last, m.start)));
-      spans.add(TextSpan(
-        text: m.group(1),
-        style: const TextStyle(fontWeight: FontWeight.w800),
-      ));
+      if (m.start > last) {
+        spans.add(TextSpan(text: source.substring(last, m.start)));
+      }
+      spans.add(
+        TextSpan(
+          text: m.group(1),
+          style: const TextStyle(fontWeight: FontWeight.w800),
+        ),
+      );
       last = m.end;
     }
     if (last < source.length) spans.add(TextSpan(text: source.substring(last)));
@@ -884,14 +1099,20 @@ class _EmptyConversations extends StatelessWidget {
             Text(
               'Crea una nueva para empezar a chatear con ULimaBot.',
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 14, color: MaterialTheme.textMuted(brightness)),
+              style: TextStyle(
+                fontSize: 14,
+                color: MaterialTheme.textMuted(brightness),
+              ),
             ),
             const SizedBox(height: 22),
             FilledButton.icon(
               onPressed: onCreate,
               style: FilledButton.styleFrom(
                 backgroundColor: MaterialTheme.primaryColor,
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 13),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 13,
+                ),
               ),
               icon: const Icon(LucideIcons.plus, size: 18),
               label: const Text('Nueva conversación'),
@@ -918,8 +1139,10 @@ class _FloatingBotState extends State<_FloatingBot>
   @override
   void initState() {
     super.initState();
-    _c = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))
-      ..repeat(reverse: true);
+    _c = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 2600),
+    )..repeat(reverse: true);
   }
 
   @override

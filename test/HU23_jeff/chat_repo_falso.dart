@@ -3,10 +3,12 @@
 // Apoyo de las pruebas de widget de ChatPage (HU23), sin pruebas propias.
 // El repositorio de chat falso implementa ChatRepositoryContract sin
 // FlutterFire, controla la sesión, los errores y los mensajes, y guarda lo que
-// ChatPage envía o borra. Lo comparten chat_page_test, chat_identidad_test y
-// chat_moderacion_test.
+// ChatPage envía o borra. Lo comparten chat_page_test, chat_identidad_test,
+// chat_moderacion_test y chat_seccion_seis_siete_test (truco del 67).
 //
 // Todos los datos son inventados; el repo es público.
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -25,6 +27,7 @@ class ChatRepoFalso implements ChatRepositoryContract {
     this.sendError,
     this.fetchCardError,
     this.deleteError,
+    this.enVivo,
   });
 
   /// Sesión que devuelve el token; con [error] el token falla.
@@ -44,6 +47,14 @@ class ChatRepoFalso implements ChatRepositoryContract {
   /// Si no es nulo, borrar un mensaje falla con este error.
   final Object? deleteError;
 
+  /// Si no es nulo, `getMessages` devuelve su stream, para empujar listas en
+  /// vivo. No es broadcast, como el de Firebase (RF-67-6, «Un solo oyente»),
+  /// así que una segunda suscripción falla también aquí.
+  final StreamController<List<ChatMessage>>? enVivo;
+
+  /// Veces que ChatPage pidió el stream de mensajes.
+  int llamadasAGetMessages = 0;
+
   final List<String> sent = [];
   final List<String> sentNetworking = [];
   final List<String> deleted = [];
@@ -55,8 +66,11 @@ class ChatRepoFalso implements ChatRepositoryContract {
   }
 
   @override
-  Stream<List<ChatMessage>> getMessages(String sectionId) =>
-      streamError != null ? Stream.error(streamError!) : Stream.value(messages);
+  Stream<List<ChatMessage>> getMessages(String sectionId) {
+    llamadasAGetMessages++;
+    if (streamError != null) return Stream.error(streamError!);
+    return enVivo?.stream ?? Stream.value(messages);
+  }
 
   @override
   Future<void> sendMessage(String sectionId, String text, ChatSession s) async {

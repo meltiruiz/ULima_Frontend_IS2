@@ -13,6 +13,17 @@ targets:
 
 Pantalla de chat con IA (ULimaBot) accesible mediante un FAB flotante visible en toda la app para alumnos autenticados. Soporta multiples sesiones de conversacion, historial persistente en backend, y envio de notas locales para consultas de calificaciones.
 
+> Ajustada el 2026-09-25 por la spec del truco del 67 (`specs/features/six-seven/six-seven.spec.md`,
+> RF-67-5). Un mensaje que es un 67 no llega al backend. La pantalla agrega en local la burbuja del
+> alumno y la de Ulises con «SIX SEVEN!!!» e inclina toda la pantalla del chat unos 2 s, también el
+> AppBar con su título, sin gastar el límite de preguntas ni guardar nada en el historial. En
+> pantalla ancha, con conversaciones, la barra superior se parte en dos tramos del mismo alto y
+> color, el de la lista con la flecha de volver y el del chat con Ulises, su título y el botón
+> «Nueva conversación», y solo se inclina el panel del chat con su tramo (D4 de esa spec).
+> `ChatbotController` acepta además un `ChatbotService` inyectable para pruebas. Aprobada por el
+> dueño el 2026-09-25, junto con la spec del truco del 67, con la elección de «toda la pantalla» en
+> D4, e implementada el 2026-09-25. El resto de esta spec no cambia.
+
 ## Requirements
 
 - HU-CHATBOT-01: El alumno puede hacer preguntas en lenguaje natural sobre sus notas, horario, examenes, malla curricular, anuncios, companeros, alertas academicas y conversaciones del chat de su seccion.
@@ -83,6 +94,11 @@ Diseno de dos paneles en desktop/tablet, o navegacion apilada en movil:
   3. Se llama a `POST /chatbot/sessions/:id/ask` con `{ question, localGrades }`.
   4. Al recibir respuesta, se reemplaza el indicador con el mensaje `assistant`.
   5. Si es error, se muestra snackbar y se mantiene el mensaje del usuario.
+- Si la pregunta es un 67 (RF-67-1 de `specs/features/six-seven/six-seven.spec.md`), se da solo
+  el paso 1, con la burbuja local del alumno, y no se dan los pasos 2 a 5. Rige RF-67-5 de esa
+  spec, que suma en el mismo instante la burbuja local de Ulises con «SIX SEVEN!!!».
+
+`[@test] ../../../test/six_seven/chatbot_seis_siete_test.dart`
 
 ### Logica de notas locales
 

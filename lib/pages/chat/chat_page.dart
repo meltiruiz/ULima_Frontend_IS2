@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:ulima_plus/pages/chat/chat_linea_tiempo.dart';
+import 'package:ulima_plus/pages/chat/chat_seis_siete.dart';
 import 'package:ulima_plus/pages/chat/curso_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../components/networking/networking_card_preview.dart';
+import '../../components/seis_siete/tambaleo_seis_siete.dart';
 import '../../configs/course_colors.dart';
 import '../../configs/themes.dart';
 import '../../models/networking_model.dart';
@@ -53,6 +55,19 @@ class _ChatPageState extends State<ChatPage> {
   String? _loadError;
   bool _isLoading = true;
 
+  /// Stream de mensajes de la página. Se crea una sola vez, cuando la sesión
+  /// queda lista, y el `StreamBuilder` recibe siempre esta misma instancia,
+  /// así que una reconstrucción no vuelve a suscribirse (RF-CHAT-2). Trae
+  /// dentro la revisión del 67, porque el stream de Firebase admite un solo
+  /// oyente (RF-67-6).
+  Stream<List<ChatMessage>>? _mensajes;
+
+  /// Ids ya vistos por la página y regla del 67 en vivo (RF-67-6).
+  final DetectorSeisSiete _detectorSeisSiete = DetectorSeisSiete();
+
+  /// Contador de disparos del tambaleo. Solo sube (RF-67-2).
+  final ValueNotifier<int> _disparosSeisSiete = ValueNotifier<int>(0);
+
   Brightness get _brillo => Theme.of(context).brightness;
 
   @override
@@ -92,7 +107,12 @@ class _ChatPageState extends State<ChatPage> {
           .signInWithCustomToken(widget.sectionId)
           .timeout(const Duration(seconds: 8));
       if (mounted) {
-        setState(() => _session = session);
+        setState(() {
+          _session = session;
+          _mensajes = _chatRepository
+              .getMessages(widget.sectionId)
+              .map(_revisarSeisSiete);
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -103,6 +123,26 @@ class _ChatPageState extends State<ChatPage> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
+  /// Revisa cada lista una sola vez, al llegar del stream, y la devuelve sin
+  /// cambios. Con la app en segundo plano marca los ids como vistos pero no
+  /// dispara (RF-67-6).
+  List<ChatMessage> _revisarSeisSiete(List<ChatMessage> mensajes) {
+    final dispara = _detectorSeisSiete.revisar(mensajes);
+    if (dispara && mounted && _enPrimerPlano()) {
+      _disparosSeisSiete.value++;
+    }
+    return mensajes;
+  }
+
+  /// Con el estado nulo, `inactive` o `resumed` la app cuenta como visible.
+  static bool _enPrimerPlano() =>
+      switch (WidgetsBinding.instance.lifecycleState) {
+        null || AppLifecycleState.resumed || AppLifecycleState.inactive => true,
+        AppLifecycleState.paused ||
+        AppLifecycleState.hidden ||
+        AppLifecycleState.detached => false,
+      };
 
   Future<void> _sendMessage() async {
     final session = _session;
@@ -306,6 +346,7 @@ class _ChatPageState extends State<ChatPage> {
   void dispose() {
     _textController.dispose();
     _scrollController.dispose();
+    _disparosSeisSiete.dispose();
     super.dispose();
   }
 
@@ -316,7 +357,7 @@ class _ChatPageState extends State<ChatPage> {
         widget.courseColor ??
         courseAccentColor(int.tryParse(widget.sectionId) ?? 0);
 
-    return Scaffold(
+    final pantalla = Scaffold(
       backgroundColor: MaterialTheme.pageBg(brillo),
       appBar: AppBar(
         backgroundColor: MaterialTheme.headerColor(brillo),
@@ -363,7 +404,7 @@ class _ChatPageState extends State<ChatPage> {
           ? _buildUnavailableState(brillo)
           : Column(
               children: [
-                Expanded(child: _buildMessages(_session!, brillo)),
+                Expanded(child: _buildMessages(_session!, _mensajes!, brillo)),
                 _BarraDeEscritura(
                   brillo: brillo,
                   controller: _textController,
@@ -373,11 +414,28 @@ class _ChatPageState extends State<ChatPage> {
               ],
             ),
     );
+
+    // El truco del 67 inclina toda la pantalla, AppBar incluido, y pinta el
+    // rótulo encima (RF-67-2 y RF-67-7). La pantalla se arma fuera del
+    // builder, así que un disparo solo reconstruye el envoltorio.
+    return ValueListenableBuilder<int>(
+      valueListenable: _disparosSeisSiete,
+      builder: (context, disparos, pantalla) => TambaleoSeisSiete(
+        disparos: disparos,
+        conRotulo: true,
+        child: pantalla!,
+      ),
+      child: pantalla,
+    );
   }
 
-  Widget _buildMessages(ChatSession session, Brightness brillo) {
+  Widget _buildMessages(
+    ChatSession session,
+    Stream<List<ChatMessage>> mensajes,
+    Brightness brillo,
+  ) {
     return StreamBuilder<List<ChatMessage>>(
-      stream: _chatRepository.getMessages(widget.sectionId),
+      stream: mensajes,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());

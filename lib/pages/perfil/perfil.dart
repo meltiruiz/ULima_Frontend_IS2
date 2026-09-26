@@ -6,12 +6,16 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import '../../components/networking/networking_profile_entry_card.dart';
 import '../../configs/themes.dart';
 import '../academic_record/record_profile_card.dart';
+import '../specialty_test/specialty_test_logic.dart';
+import '../specialty_test/specialty_test_profile_card.dart';
+import '../specialty_test/widgets/test_buttons.dart';
 import '../../models/malla_models.dart';
 import '../../services/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/malla_service.dart';
 import '../../services/password_reset_service.dart';
 import '../../services/session_navigation.dart';
+import '../../services/specialty_test_service.dart';
 
 class ProfilePage extends StatelessWidget {
   const ProfilePage({super.key});
@@ -37,7 +41,7 @@ class ProfilePage extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                           NetworkingProfileEntryCard(
+                          NetworkingProfileEntryCard(
                             onTap: () => Get.toNamed('/networking'),
                           ),
                           const SizedBox(height: 16),
@@ -329,6 +333,10 @@ class _ConfigAcademicaSection extends StatelessWidget {
           ),
         ),
         const _EspecialidadCard(),
+        // RF-TEST-10, con la guarda de `logout()`, para que las pruebas que
+        // montan el Perfil sin este service sigan pasando sin HTTP real.
+        if (Get.isRegistered<SpecialtyTestService>())
+          const SpecialtyTestProfileCard(),
       ],
     );
   }
@@ -391,7 +399,10 @@ class _EspecialidadCard extends StatelessWidget {
                 ),
               ),
               GestureDetector(
-                onTap: () => _openSheet(context),
+                // Con el catálogo fallido la hoja no se abre (RF-TEST-14).
+                onTap: () {
+                  if (!auth.catalogsFailed) _openSheet(context);
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 10,
@@ -430,14 +441,26 @@ class _EspecialidadCard extends StatelessWidget {
           const SizedBox(height: 14),
           Obx(() {
             final user = auth.currentUser;
-            final principal = user?.especialidadPrincipal;
-            final interes = user?.especialidadesInteres ?? [];
+            // Con el catálogo fallido no se sabe qué es oficial (RF-TEST-14).
+            if (auth.catalogsFailed) {
+              return _CatalogoFallido(onRetry: auth.reloadCatalogs);
+            }
+            // Solo los ids oficiales, así que un id antiguo nunca pinta un
+            // chip vacío.
+            final seleccion = seleccionOficial(
+              principal: user?.especialidadPrincipal,
+              intereses: user?.especialidadesInteres ?? const <int>[],
+              oficiales: auth.officialSpecialtyIds,
+            );
+            final principal = seleccion.principal;
+            final interes = seleccion.intereses;
 
             if (principal == null && interes.isEmpty) {
               return Text(
                 'Sin especialización seleccionada',
                 style: TextStyle(
-                  color: MaterialTheme.placeholderText(brightness),
+                  // `placeholderText` daba 2,32:1 (RF-TEST-14).
+                  color: MaterialTheme.textSecondary(brightness),
                   fontSize: 13,
                   fontWeight: FontWeight.w500,
                 ),
@@ -483,6 +506,33 @@ class _EspecialidadCard extends StatelessWidget {
           }),
         ],
       ),
+    );
+  }
+}
+
+/// «No se pudieron cargar tus especialidades.» con «Reintentar», que vuelve
+/// a pedir los catálogos (RF-TEST-14).
+class _CatalogoFallido extends StatelessWidget {
+  const _CatalogoFallido({required this.onRetry});
+
+  final Future<bool> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final brightness = Theme.of(context).brightness;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'No se pudieron cargar tus especialidades.',
+          style: TextStyle(
+            color: MaterialTheme.textPrimary(brightness),
+            fontSize: 13,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        TestSecondaryButton(label: 'Reintentar', onPressed: onRetry),
+      ],
     );
   }
 }
@@ -881,11 +931,17 @@ class _EspecialidadSheetState extends State<_EspecialidadSheet> {
   void initState() {
     super.initState();
     final user = AuthService.to.currentUser;
-    _principal = user?.especialidadPrincipal;
-    _interes = Set.of(user?.especialidadesInteres ?? []);
-    // Sanear estado heredado inconsistente (principal duplicada como interés
-    // por datos antiguos): el backend lo rechaza con 409 DUPLICATE_PRIMARY.
-    if (_principal != null) _interes.remove(_principal);
+    // Arranca con la selección oficial (RF-TEST-14), así que un id antiguo
+    // nunca viaja en el PUT, que con BR-AP-07 daría 404 SPECIALTY_NOT_FOUND.
+    // La función saca además la principal de los intereses, que el backend
+    // rechaza con 409 DUPLICATE_PRIMARY.
+    final seleccion = seleccionOficial(
+      principal: user?.especialidadPrincipal,
+      intereses: user?.especialidadesInteres ?? const <int>[],
+      oficiales: AuthService.to.officialSpecialtyIds,
+    );
+    _principal = seleccion.principal;
+    _interes = Set.of(seleccion.intereses);
   }
 
   List<Map<String, dynamic>> get _opciones {

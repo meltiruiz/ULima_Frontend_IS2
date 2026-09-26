@@ -13,10 +13,15 @@ import 'courses_service.dart';
 import 'evaluations_service.dart';
 import 'malla_service.dart';
 import 'official_grades_service.dart';
+import 'specialty_test_service.dart';
 import 'storage_service.dart';
 import 'time_blocks_service.dart';
 
 class AuthService extends GetxService {
+  /// [apiClient] solo lo pasan las pruebas; la app usa el `ApiClient` de
+  /// siempre.
+  AuthService({ApiClient? apiClient}) : _api = apiClient ?? ApiClient();
+
   static AuthService get to => Get.find();
   static const String invalidCredentialsMessage =
       'Código o contraseña incorrectos.';
@@ -35,12 +40,17 @@ class AuthService extends GetxService {
     return backendMessage;
   }
 
-  final ApiClient _api = ApiClient();
+  final ApiClient _api;
   final Rx<UserModel?> _currentUser = Rx<UserModel?>(null);
   final RxList<Map<String, dynamic>> _carreras = <Map<String, dynamic>>[].obs;
   final RxList<Map<String, dynamic>> _especialidades =
       <Map<String, dynamic>>[].obs;
   final RxBool _loading = false.obs;
+
+  /// El último intento de cargar los catálogos falló. Distingue un catálogo
+  /// que no carga de uno que carga vacío, como el de una carrera sin
+  /// especialidades (RF-TEST-14).
+  final RxBool _catalogsFailed = false.obs;
 
   // Instancia única de Google Sign-In.
   // - Web: requiere `clientId` (el client web) para el botón oficial (GIS).
@@ -92,6 +102,34 @@ class AuthService extends GetxService {
   String getEspecialidadName(int id) {
     final match = _especialidades.firstWhereOrNull((e) => e['id'] == id);
     return match != null ? match['name']?.toString() ?? '' : '';
+  }
+
+  bool get catalogsFailed => _catalogsFailed.value;
+
+  /// Los ids del catálogo cargado que están activos. Con BR-AP-07 el catálogo
+  /// trae solo los cuatro oficiales, y el filtro `is_active` queda como
+  /// defensa, igual que en el asistente y en el Perfil.
+  Set<int> get officialSpecialtyIds => {
+    for (final e in _especialidades)
+      if (e['is_active'] == true) ?_parseInt(e['id']),
+  };
+
+  /// Si [id] está en el catálogo oficial cargado (RF-TEST-14).
+  bool isOfficialSpecialty(int id) => officialSpecialtyIds.contains(id);
+
+  /// El mismo `_loadCatalogs` expuesto para «Reintentar» (RF-TEST-1 y
+  /// RF-TEST-14). Devuelve si cargó y nunca lanza.
+  Future<bool> reloadCatalogs() async {
+    final user = _currentUser.value;
+    if (user == null || user.isTeacher) return false;
+    try {
+      final token = await _requiredToken();
+      await _loadCatalogs(token: token, careerId: user.careerId);
+      return true;
+    } catch (_) {
+      _catalogsFailed.value = true;
+      return false;
+    }
   }
 
   /// Recarga el usuario actual desde `/auth/me` SIN cerrar la sesión si falla.
@@ -327,16 +365,22 @@ class AuthService extends GetxService {
     } catch (_) {}
   }
 
+  /// [timeout] lo pasa solo el test de especialidad (RF-TEST-2 y decisión
+  /// abierta 24). Al vencer lanza `TimeoutException` antes de tocar el
+  /// usuario y las preferencias, así que una respuesta tardía no cambia nada
+  /// en la app. La hoja «Editar» del Perfil y la selección manual siguen sin
+  /// plazo.
   Future<void> completeSetup({
     required int careerId,
     int? especialidadPrincipal,
     required List<int> especialidadesInteres,
+    Duration? timeout,
   }) async {
     final user = _currentUser.value;
     if (user == null) return;
 
     final token = await _requiredToken();
-    final response = await _api.putJson(
+    final put = _api.putJson(
       '/academic-profile/me/specialties',
       token: token,
       body: {
@@ -347,6 +391,7 @@ class AuthService extends GetxService {
             .toList(),
       },
     );
+    final response = timeout == null ? await put : await put.timeout(timeout);
 
     final savedSpecialties = _listFrom(response, 'specialties');
     final savedPrincipal = savedSpecialties
@@ -395,11 +440,18 @@ class AuthService extends GetxService {
     EvaluationSyllabusService().clear();
     // Con guarda porque, a diferencia de los tres de arriba, hay pruebas que
     // llaman a logout() sin registrar AcademicRecordService (test/HU02_jeff/).
-    if (Get.isRegistered<AcademicRecordService>()) AcademicRecordService.to.clear();
+    if (Get.isRegistered<AcademicRecordService>()) {
+      AcademicRecordService.to.clear();
+    }
     // Los bloques de horario propios (RF-BLQ-7) son horarios de trabajo o de
     // prácticas que el backend protege a propósito (RS-BE-35): se vacían
     // igual que el récord. Con guarda por lo mismo que la línea de arriba.
     if (Get.isRegistered<TimeBlocksService>()) TimeBlocksService.to.clear();
+    // El contenido, el test en pausa y el último resultado del test de
+    // especialidad (RF-TEST-2). Con guarda por lo mismo que las dos de arriba.
+    if (Get.isRegistered<SpecialtyTestService>()) {
+      SpecialtyTestService.to.clear();
+    }
     _profesorSectionIds.clear();
     _currentUser.value = null;
     await _storage.clearSession();
@@ -432,20 +484,26 @@ class AuthService extends GetxService {
     int? careerId,
     bool suppressSessionExpiry = false,
   }) async {
-    final careersResponse = await _api.getJson(
-      '/academic-profile/careers',
-      token: token,
-      suppressSessionExpiry: suppressSessionExpiry,
-    );
-    _carreras.assignAll(_listFrom(careersResponse, 'careers'));
+    try {
+      final careersResponse = await _api.getJson(
+        '/academic-profile/careers',
+        token: token,
+        suppressSessionExpiry: suppressSessionExpiry,
+      );
+      _carreras.assignAll(_listFrom(careersResponse, 'careers'));
 
-    final specialtiesResponse = await _api.getJson(
-      '/academic-profile/specialties',
-      token: token,
-      query: {'careerId': careerId?.toString()},
-      suppressSessionExpiry: suppressSessionExpiry,
-    );
-    _especialidades.assignAll(_listFrom(specialtiesResponse, 'specialties'));
+      final specialtiesResponse = await _api.getJson(
+        '/academic-profile/specialties',
+        token: token,
+        query: {'careerId': careerId?.toString()},
+        suppressSessionExpiry: suppressSessionExpiry,
+      );
+      _especialidades.assignAll(_listFrom(specialtiesResponse, 'specialties'));
+      _catalogsFailed.value = false;
+    } catch (_) {
+      _catalogsFailed.value = true;
+      rethrow;
+    }
   }
 
   Future<String> _requiredToken() async {

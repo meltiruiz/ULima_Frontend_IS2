@@ -160,6 +160,8 @@ Perfil completo del estudiante autenticado.
     ]
   }
   ```
+- **Campos que la app lee.** El backend manda además `carrera_id`, `is_active` y `display_order` (`findSpecialtiesByCareerId` del backend), y la app lee `id`, `carrera_id`, `name`, `description`, `is_active` y `display_order` (`setup_carrera_controller.dart` y `perfil.dart`).
+- **Solo lo oficial** *(aprobado el 2026-09-25 con la spec del test de especialidad, BR-AP-07 de la spec de Academic Profile del backend, pendiente de implementar)*. Con `careerId` y sin él, la lista trae solo las especialidades con `is_active = true`, que en Ingeniería de Sistemas son los cuatro diplomas oficiales. `is_active` sigue en cada elemento, ahora siempre `true`, y `display_order` se numera después del filtro. La app conserva su filtro `is_active == true` como defensa (RF-TEST-14 de `specs/features/specialty-test/specialty-test.spec.md`).
 
 ### PUT /academic-profile/me/specialties
 
@@ -184,6 +186,7 @@ Reemplaza las especialidades activas del estudiante autenticado. Escribe en `stu
   }
   ```
 - **Errors**: `400` `INVALID_BODY`, `404` `SPECIALTY_NOT_FOUND`, `409` `DUPLICATE_PRIMARY`
+- **Solo lo oficial y reemplazo atómico** *(aprobado el 2026-09-25 con la spec del test de especialidad, BR-AP-07 y BR-AP-08 del backend, pendiente de implementar)*. `404 SPECIALTY_NOT_FOUND` también para una especialidad que existe pero tiene `is_active = false`, con el mismo mensaje que una de otra carrera. El desactivado, los `upsert` y la marca de `specialty_setup_completed` corren en una sola transacción. La forma de la ruta no cambia. La app nunca manda un id que no esté en el catálogo oficial (RF-TEST-14) y usa esta ruta para «Elegir como principal» y para los corazones del resultado del test (RF-TEST-9).
 
 Notas:
 
@@ -598,3 +601,122 @@ Alumno (`requireRole(student|delegate|subdelegate)`); el alumno sale del token y
 - Errores: `404 TIME_BLOCK_NOT_FOUND`; `400 INVALID_REQUEST_BODY` (body inválido en `POST`, `PATCH` y `PUT`); `400 INVALID_QUERY_PARAMS` (falta `from` o `to`, alguna no es una fecha válida, o `to` es anterior a `from`); `400 TIME_BLOCK_OUT_OF_GRID` (alguna hora fuera de 07:00–22:00, el rango que la grilla puede pintar); `400 TIME_BLOCK_LIMIT_REACHED` (máximo 20 bloques **guardados**, vencidos incluidos: el tope acota lo que el servidor expande en una ventana, y un bloque vencido se sigue expandiendo en una ventana pasada; su mensaje lo dice y sugiere borrar uno viejo); `400 TIME_BLOCK_OCCURRENCE_NOT_IN_PATTERN` (la fecha no cae en el patrón del bloque); `400 TIME_BLOCK_WINDOW_TOO_WIDE` (más de 120 días); `400 INVALID_ROUTE_PARAMS` (un `:id` o un `:date` mal formados); `400 INVALID_JSON_BODY` (un cuerpo que no es JSON, en `POST`, `PATCH` y `PUT`); más los 401/403 del middleware.
 
 En la app, `TimeBlocksService` es el único que llama a estas siete rutas. El mensaje de un error del servidor se muestra tal cual llega (RF-BLQ-2); un fallo sin mensaje —red caída o plazo vencido— se muestra como "No se pudo guardar tu bloque. Inténtalo de nuevo.", y en ese caso la app vuelve a pedir su ventana, porque la escritura pudo quedar guardada. Los ejemplos usan datos inventados.
+
+## Specialty Test (test de especialidad), aprobado el 2026-09-25 e implementado en la app en la rama `feat/test-especialidad-fe`
+
+Test que conduce Ulises y que recomienda uno de los cuatro diplomas oficiales. El backend sirve el contenido versionado, calcula el puntaje con la fórmula del contenido, decide los desempates, pide a Cohere el motivo con respaldo de plantillas y guarda solo el último resultado del alumno. Ver `specs/features/specialty-test/specialty-test.spec.md` (RF-TEST-1 a RF-TEST-14) y, en el backend, RS-BE-37 a RS-BE-47 de `ULima_Backend_IS2/specs/features/specialty-test/specialty-test.spec.md` (rama `feat/test-especialidad`). El dueño aprueba las dos specs el 2026-09-25, con los íconos de Lucide por tarea de la versión `2026-09-25.4` del contenido. El resultado vive en `student_specialty_test_result`, la tabla de la migración `0014` del backend, un cambio de BD que el dueño aprueba con las specs. Aplicar la `0014` en producción pide además, en el momento del despliegue, el respaldo y el permiso explícito del dueño.
+
+Las tres rutas comparten estas reglas.
+
+- **Auth**: Bearer token, roles `student`, `delegate`, `subdelegate`. Un token docente recibe `403 FORBIDDEN`; la app nunca abre el test para un docente. El alumno sale solo del token y ningún cuerpo lleva datos del alumno.
+- **Disponibilidad**: el servidor traduce las claves `sw`, `ti`, `si` y `vj` a los `specialtyId` de las especialidades activas de la carrera del alumno. Si alguna no aparece, responde `404 SPECIALTY_TEST_NOT_AVAILABLE`, y la app pasa a la elección manual en el asistente y oculta la tarjeta del test en el Perfil.
+- **Tipos**: `affinity` es un entero de 0 a 100. El servidor decide el orden, los desempates y el empate; la app no calcula nada del resultado. Las fechas van en ISO-8601 UTC con milisegundos.
+- **Mensajes** (`error.message` de cada código nuevo): `SPECIALTY_TEST_NOT_AVAILABLE` "El test de especialidad no está disponible para tu carrera.", `SPECIALTY_TEST_VERSION_OUTDATED` "El test se actualizó. Vuelve a empezarlo.", `SPECIALTY_TEST_INVALID_ANSWERS` "Las respuestas no corresponden a esta versión del test.", `SPECIALTY_TEST_TIEBREAK_MISMATCH` "Los desempates enviados no son los que corresponden a estas respuestas.", `PAYLOAD_TOO_LARGE` "La petición es demasiado grande." y `RATE_LIMITED` "Hiciste demasiados intentos del test. Intenta de nuevo en N minuto(s).".
+- **Errors comunes**: `401` `MISSING_TOKEN`, `401` `INVALID_TOKEN`, `403` `FORBIDDEN`, `404` `USER_NOT_FOUND`, `404` `SPECIALTY_TEST_NOT_AVAILABLE`.
+- Todos los valores de los ejemplos son inventados, y los `specialtyId` son ilustrativos.
+
+### GET /specialty-test/content
+
+Contenido de la versión vigente, con lo necesario para conducir el test sin red entre pregunta y pregunta.
+
+- **Response** `200 OK` (recortado):
+  ```json
+  {
+    "version": "2026-09-25.4",
+    "specialties": [
+      {
+        "key": "sw", "specialtyId": 1, "name": "Ingeniería de Software",
+        "tagline": "Diseña y programa aplicaciones que funcionan bien y se pueden seguir mejorando.",
+        "color": { "light": "#1E3A8A", "dark": "#A5C0F7" }, "icon": "code-xml", "totalCredits": 21,
+        "electives": [
+          { "code": "650070", "name": "Paradigmas de Programación", "shortName": "Paradigmas de Programación",
+            "credits": 3, "prerequisite": "Haber culminado el V ciclo" }
+        ]
+      }
+    ],
+    "ulises": {
+      "welcome": ["¡Hola! Soy Ulises. …"], "startButton": "Vamos",
+      "duelHelp": "Toca la tarea que harías con más ganas.",
+      "scaleHelp": "Elige cuánto te gustaría hacer esta tarea.",
+      "reactions": { "pick": ["Anotado."], "both": ["…"], "none": ["…"], "scale": ["…"] },
+      "loading": "Dame un toque que junto tus respuestas."
+    },
+    "duelOptions": [
+      { "id": "top", "label": "(tarea de arriba)" }, { "id": "bottom", "label": "(tarea de abajo)" },
+      { "id": "both", "label": "Me gustan las dos" }, { "id": "none", "label": "Ninguna me llama" }
+    ],
+    "scaleOptions": [
+      { "id": "nada", "label": "Nada" }, { "id": "un_poco", "label": "Un poco" },
+      { "id": "bastante", "label": "Bastante" }, { "id": "me_encantaria", "label": "Me encantaría" }
+    ],
+    "questions": [
+      { "id": "q01", "n": 1, "type": "duel", "prompt": "¿Cuál harías con más ganas?",
+        "top": { "id": "q01.top", "specialty": "sw", "text": "…", "illustration": "…", "icon": "shopping-cart" },
+        "bottom": { "id": "q01.bottom", "specialty": "si", "text": "…", "illustration": "…", "icon": "shelving-unit" },
+        "reaction": "…" },
+      { "id": "q04", "n": 4, "type": "scale", "prompt": "¿Cuánto te gustaría hacer esto?",
+        "task": { "id": "q04.task", "specialty": "ti", "text": "…", "illustration": "…", "icon": "drumstick" },
+        "blockClose": "Primer tramo listo. Van 4 de 14." }
+    ]
+  }
+  ```
+- **Qué no viaja**: el nombre del ícono en Flutter (`icon.flutter`) de cada especialidad y de cada tarea, resúmenes y electivos de cada tarea, pesos, umbral, plantillas del motivo, líneas de Ulises del resultado salvo la de espera (`ulises.loading`), líneas del desempate, desempates, ejemplos, balance y fuentes. Son del cálculo y del motivo, que hace el servidor.
+- **En la app**: `SpecialtyTestService.fetchContent()` lo pide una vez por cada apertura de `/test-especialidad`, y en la primera apertura desde el asistente ese pedido es la precarga del paso de carrera. «Rehacer el test» sigue con la misma copia, que queda en memoria durante la sesión (RF-TEST-2). La app usa `specialty` de cada tarea solo para encender la tarjeta tocada; antes del toque las tarjetas son neutras. `illustration` no se muestra. El `icon` de cada especialidad y de cada tarea es la cadena de `icon.lucide` del contenido, y la app lo traduce con un mapa cerrado de nombres a `LucideIcons` (`lucide_icons_flutter` 3.1.15), con `LucideIcons.sparkles` para un nombre fuera del mapa o ausente. El ícono de la tarea va en color neutro hasta que el alumno toca su tarjeta del duelo, y en la escala nunca toma el color de su especialidad (RF-TEST-5 y RF-TEST-6). Un contenido que no pasa la validación del modelo cuenta como error de carga.
+
+### POST /specialty-test/me/evaluate
+
+Evaluación sin estado. Recibe todas las respuestas dadas hasta ese momento y devuelve el siguiente desempate o el resultado final. Solo el resultado final se guarda.
+
+- **Body** (hasta 4 KiB):
+  ```json
+  {
+    "version": "2026-09-25.4",
+    "answers": {
+      "q01": "bottom", "q02": "bottom", "q03": "both", "q04": "nada", "q05": "top",
+      "q06": "top", "q07": "top", "q08": "bastante", "q09": "top", "q10": "top",
+      "q11": "bottom", "q12": "me_encantaria", "q13": "bottom", "q14": "un_poco"
+    },
+    "tiebreakAnswers": [ { "id": "tb-si-vj-1", "answer": "bottom" } ]
+  }
+  ```
+- **Response** `200 OK` cuando toca un desempate: `{ "status": "tiebreak", "tiebreak": { "id", "order", "prompt", "top", "bottom" }, "ulisesLine": "…" }`, con `top` y `bottom` en la misma forma que las tareas del contenido, `icon` incluido.
+- **Response** `200 OK` con el resultado final:
+  ```json
+  {
+    "status": "result",
+    "result": {
+      "version": "2026-09-25.4",
+      "completedAt": "2026-09-25T20:15:00.000Z",
+      "tie": false,
+      "ranking": [
+        { "key": "vj", "specialtyId": 7, "name": "Desarrollo de Videojuegos", "affinity": 75 },
+        { "key": "si", "specialtyId": 6, "name": "Sistemas de Información", "affinity": 65 },
+        { "key": "ti", "specialtyId": 5, "name": "Tecnologías de la Información", "affinity": 28 },
+        { "key": "sw", "specialtyId": 1, "name": "Ingeniería de Software", "affinity": 24 }
+      ],
+      "reason": "…",
+      "reasonSource": "templates",
+      "ulises": {
+        "intro": "Ya tengo tu resultado.",
+        "headline": "Lo tuyo apunta a Desarrollo de Videojuegos, con 75 % de afinidad.",
+        "tiebreakOutcome": "Ahí está, ya se inclinó la balanza.",
+        "closing": "…",
+        "retake": "Si más adelante cambias de idea, puedes volver a hacer el test."
+      }
+    }
+  }
+  ```
+- `reasonSource` es `"ai"` si el motivo lo redacta Cohere o `"templates"` si sale de las plantillas; un fallo o una demora de Cohere nunca es un error para la app. `tiebreakOutcome` es `null` sin desempate. Con empate, `tie` es `true` y las dos primeras del ranking son las ganadoras.
+- `Cache-Control: no-store`. Límite de 30 evaluaciones por alumno por hora.
+- **Errors**: `400` `INVALID_JSON_BODY`, `400` `INVALID_REQUEST_BODY`, `400` `SPECIALTY_TEST_INVALID_ANSWERS` (`details.missing`, `details.unexpected`, `details.invalid`), `400` `SPECIALTY_TEST_TIEBREAK_MISMATCH` (`details.expected`), `409` `SPECIALTY_TEST_VERSION_OUTDATED` (`details.currentVersion`), `413` `PAYLOAD_TOO_LARGE`, `429` `RATE_LIMITED` (`details.retryAfterMinutes`), `500` `INTERNAL_SERVER_ERROR` si falla el guardado del resultado, que va antes de la llamada a Cohere, y los comunes.
+- **En la app**: `SpecialtyTestService.evaluate()` la llama con un plazo de 20 s. Las respuestas viven solo en memoria y un reintento manda el mismo cuerpo. Un `409` o un `400 SPECIALTY_TEST_INVALID_ANSWERS` vuelven a pedir el contenido y empiezan de nuevo; un `400 SPECIALTY_TEST_TIEBREAK_MISMATCH` se reintenta una vez sin desempates; un `429` muestra el mensaje del servidor. Detalle en RF-TEST-7 y RF-TEST-11.
+
+### GET /specialty-test/me/result
+
+Último resultado guardado del alumno, para el Perfil.
+
+- **Response** `200 OK`: `{ "result": { "version", "isCurrentVersion", "completedAt", "tie", "ranking" } }`, con el `ranking` en la misma forma que el de la evaluación, o `{ "result": null }` si el alumno no tiene ningún test terminado.
+- No trae el motivo, que no se guarda. `name` sale de la versión vigente del contenido por la clave.
+- `Cache-Control: no-store`.
+- **Errors**: los comunes, y `500` `INTERNAL_SERVER_ERROR` si la fila guardada no tiene la forma esperada.
+- **En la app**: la tarjeta del Perfil (RF-TEST-10) lo pide al montarse y otra vez al volver de un test terminado. Un error muestra «No se pudo cargar tu último test.» con «Reintentar», y el `404 SPECIALTY_TEST_NOT_AVAILABLE` oculta la tarjeta.

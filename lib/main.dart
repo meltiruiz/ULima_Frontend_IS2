@@ -12,6 +12,7 @@ import '/services/auth_service.dart';
 import '/services/alert_service.dart';
 import '/services/malla_service.dart';
 import '/services/academic_record_service.dart';
+import '/services/specialty_test_service.dart';
 import '/services/time_blocks_service.dart';
 import '/services/post_login_route.dart';
 import '/services/storage_service.dart';
@@ -44,7 +45,10 @@ import 'pages/password_reset/forgot_password_controller.dart';
 import 'pages/password_reset/reset_password_controller.dart';
 import 'pages/password_reset/forgot_password_page.dart';
 import 'pages/password_reset/reset_password_page.dart';
+import 'pages/setup_carrera/setup_carrera_binding.dart';
 import 'pages/setup_carrera/setup_carrera_page.dart';
+import 'pages/specialty_test/specialty_test_binding.dart';
+import 'pages/specialty_test/specialty_test_page.dart';
 import 'pages/silabo/silabo_viewer_controller.dart';
 import 'pages/silabo/silabo_viewer_page.dart';
 import 'pages/chatbot/chatbot_page.dart';
@@ -79,6 +83,10 @@ void main() async {
   // formulario de /bloque escribe sobre este mismo estado. Tampoco carga nada
   // al arrancar: el horario pide su ventana al montarse.
   Get.put<TimeBlocksService>(TimeBlocksService(), permanent: true);
+  // Capa de datos del test de especialidad (RF-TEST-2). Permanente porque
+  // guarda en memoria la copia del contenido de la sesión, un test en pausa
+  // y el último resultado. Tampoco carga nada al arrancar.
+  Get.put<SpecialtyTestService>(SpecialtyTestService(), permanent: true);
 
   // Intentar restaurar sesión guardada.
   final restored = await AuthService.to.tryRestoreSession();
@@ -156,7 +164,22 @@ class MyApp extends StatelessWidget {
           page: () => const RegistroPage(),
           binding: RegistroBinding(),
         ),
-        GetPage(name: '/setup-carrera', page: () => const SetupCarreraPage()),
+        // Asistente del alumno nuevo (RF-TEST-1). Binding por ruta, en lugar
+        // del Get.put que tenía dentro de build.
+        GetPage(
+          name: '/setup-carrera',
+          page: () => const SetupCarreraPage(),
+          binding: SetupCarreraBinding(),
+        ),
+        // Test de especialidad (RF-TEST-1), con el argumento
+        // {'origen': 'asistente'} o {'origen': 'perfil'}. Binding por ruta,
+        // como el resto, así que el controlador muere al cerrar la ruta y
+        // deja el avance en pausa.
+        GetPage(
+          name: SpecialtyTestPage.ruta,
+          page: () => const SpecialtyTestPage(),
+          binding: SpecialtyTestBinding(),
+        ),
         GetPage(
           name: '/home',
           page: () => const HomePage(),

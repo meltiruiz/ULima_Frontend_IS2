@@ -9,6 +9,11 @@ targets:
 
 # Academic Profile
 
+> **Enmienda del 2026-09-25 por `specs/features/specialty-test/specialty-test.spec.md`,
+> aprobada por el dueño ese día junto con esa spec e implementada en la rama
+> `feat/test-especialidad-fe`.** Cambia el asistente de configuración y el Perfil (ver «Enmienda
+> por el test de especialidad» al final). El código de esa rama sigue el texto enmendado.
+
 ## User Stories
 
 | ID | Description |
@@ -140,6 +145,27 @@ The following files are no longer referenced by the academic profile feature:
 | --- | --- | --- |
 | `assets/data/` | 🗑️ Eliminado | El directorio `assets/data/` no existe en el proyecto. |
 | `lib/services/user_service.dart` | 🗑️ Legacy | Servicio que llama a `GET /academic-profile/users` — endpoint no implementado en backend. |
+
+## Enmienda por el test de especialidad
+
+Del 2026-09-25, aprobada por el dueño ese día junto con la spec del test e implementada en la
+rama `feat/test-especialidad-fe`. El detalle está en `specs/features/specialty-test/specialty-test.spec.md`.
+
+- **Asistente (RF-TEST-1).** Los pasos pasan a ser carrera, test de especialidad y selección
+  manual. Sale el paso «Decisión» con sus tres opciones. El test vive en la ruta
+  `/test-especialidad`, con «Saltar y elegir por mi cuenta» hacia la selección manual, y un
+  `404 SPECIALTY_TEST_NOT_AVAILABLE` lleva a la selección manual sin aviso. El asistente suma
+  modo oscuro, estados de catálogo vacío o fallido con «Reintentar», binding por ruta y el botón
+  inferior a lo ancho con texto en tinta sobre naranja.
+- **Perfil (RF-TEST-10 y RF-TEST-14).** «Configuración académica» suma la tarjeta del último
+  resultado del test, con «Rehacer el test». La tarjeta «Especialización» deja de pintar un chip
+  vacío para un id que no está en el catálogo, muestra «No se pudieron cargar tus
+  especialidades.» con «Reintentar» si el catálogo no carga, y su hoja nunca manda un id
+  antiguo en el `PUT`.
+- **Solo lo oficial (BR-AP-07 del backend).** `GET /academic-profile/specialties` trae solo las
+  especialidades activas y `PUT /academic-profile/me/specialties` responde
+  `404 SPECIALTY_NOT_FOUND` para una inactiva. `getEspecialidadName()` sigue devolviendo una
+  cadena vacía para un id desconocido, y la malla ya descarta esos nombres.
 
 ## Verification
 

@@ -173,6 +173,80 @@ class MaterialTheme {
   static Color iconoNaranja(Brightness b) =>
       b == Brightness.light ? primaryDark : primaryColor;
 
+  // ── Test de especialidad (HU36, RF-TEST-12) ──────────────────────────────
+  // Paleta de la maqueta `ulises-v2.html`, que ya llega al contraste pedido.
+  // Las cifras de cada par están en la tabla de RF-TEST-12.
+
+  /// Texto de la tarjeta apagada y de las opciones.
+  static Color testInk2(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF334155) : const Color(0xFFCFCFDB);
+
+  /// Texto secundario del test y de la tarjeta del Perfil.
+  static Color testMuted(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF556070) : const Color(0xFFA5A5B5);
+
+  /// Bordes de tarjetas y botones.
+  static Color testLine(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFE2E8F0) : const Color(0xFF30303A);
+
+  /// Pastilla del historial.
+  static Color testChipBg(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFEEF2F7) : const Color(0xFF24242C);
+
+  /// Fondo del botón principal y de la opción elegida.
+  static Color testAccent(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFFF6600) : const Color(0xFFFF8C42);
+
+  /// Tope del degradado del botón principal.
+  static Color testAccentHi(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFFF7F24) : const Color(0xFFFF9D5C);
+
+  /// Texto sobre `testAccent`.
+  static Color testAccentInk(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF1A0E05) : const Color(0xFF16161C);
+
+  /// Rótulos, botones secundarios y «Reintentar».
+  static Color testAccentText(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFB84A00) : const Color(0xFFFF9A57);
+
+  /// Texto sobre `testAccentSoft`.
+  static Color testAccentDeep(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF7A3300) : const Color(0xFFFFC49A);
+
+  /// Pastillas, sello y opción elegida.
+  static Color testAccentSoft(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFFFF1E6) : const Color(0xFF3A2A22);
+
+  /// Corazón sin marcar.
+  static Color testHeartOff(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF64748B) : const Color(0xFF9A9AAC);
+
+  /// Pista de las barras.
+  static Color testTrack(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFE8EDF3) : const Color(0xFF2C2C36);
+
+  /// Plumas llenas. En claro va en `#D45500` y no en el `#FF6600` de la
+  /// maqueta, que da 2,81:1 (decisión abierta 15).
+  static Color testFeatherOn(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFD45500) : const Color(0xFFFF8C42);
+
+  /// Plumas vacías.
+  static Color testFeatherOff(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFCBD5E1) : const Color(0xFF3A3A46);
+
+  /// Baldosa del ícono de la tarea.
+  static Color testTaskTileBg(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFF1F5F9) : const Color(0xFF25252D);
+
+  /// Ícono de la tarea antes del toque y en la escala, y el ícono neutro.
+  static Color testTaskIconInk(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF64748B) : const Color(0xFF8A8A9C);
+
+  /// Fondo de la insignia «IA» de la tarjeta del resultado, que es `#140A50`
+  /// al 38 % en claro, sobre el color de la ganadora, y `#16161C` en oscuro.
+  static Color testAiBadgeBg(Brightness b) =>
+      b == Brightness.light ? const Color(0x61140A50) : const Color(0xFF16161C);
+
   // LIGHT SCHEME
   static ColorScheme lightScheme() {
     return const ColorScheme(

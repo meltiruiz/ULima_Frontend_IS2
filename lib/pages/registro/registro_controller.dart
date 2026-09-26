@@ -1,3 +1,4 @@
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
 
@@ -97,9 +98,12 @@ class RegistroController extends GetxController {
   final AdoptarSesionFn _adoptar;
   final IniciarSesionFn _login;
 
-  // Los cinco campos viven SOLO acá. Ninguno entra en un Rx observable, se
-  // guarda o se imprime. Moverse entre pasos nunca los borra: lo único que se
-  // borra es el passcode, y solo cuando un envío falló (BR-REG-F-05).
+  // Los cinco campos viven solo acá. Las dos contraseñas, la repetición y el
+  // código del authenticator nunca entran en un Rx, en el historial, en un
+  // registro ni en el disco. El código de alumno es la excepción, porque su
+  // burbuja lo muestra en la conversación (RF-BIEN-9). Moverse entre pasos
+  // nunca los borra. Solo se borra el passcode, y solo cuando un envío falló
+  // (BR-REG-F-05).
   final codigoCtrl = TextEditingController();
   final passwordCtrl = TextEditingController();
   final confirmacionCtrl = TextEditingController();
@@ -108,12 +112,13 @@ class RegistroController extends GetxController {
 
   final paso = RegistroPaso.datos.obs;
 
-  /// True cuando el alumno ya tocó «Acepto» en ESTA visita a `/registro`.
+  /// True cuando el alumno ya tocó «Acepto» en ESTE registro.
   ///
-  /// No se guarda en ningún lado (RF-REC-6, «Qué NO entra»): `RegistroBinding`
-  /// usa `lazyPut` sin `fenix`, así que salir de la ruta destruye el controller
-  /// y volver a entrar pide la aceptación de nuevo. Un fallo que devuelve a
-  /// `datos` sí la conserva: el alumno no se movió de la pantalla.
+  /// No se guarda en ningún lado (RF-REC-6, «Qué NO entra»). La bienvenida
+  /// crea un RegistroController nuevo en cada registro y lo cierra al salir,
+  /// así que volver a empezar pide la aceptación de nuevo. Un fallo que
+  /// devuelve a `datos` sí la conserva, porque el alumno sigue en el mismo
+  /// registro.
   final consentimientoAceptado = false.obs;
 
   final errorMessage = RxnString();
@@ -145,20 +150,44 @@ class RegistroController extends GetxController {
 
   bool get enviando => paso.value == RegistroPaso.enviando;
 
+  bool _cerrado = false;
+
+  /// Si el tramo del registro ya se cerró.
+  bool get cerrado => _cerrado;
+
+  /// Cierra el registro sin GetX, como lo hace la bienvenida (B-20). Borra
+  /// los cinco campos enseguida y los desecha después del cuadro en que el
+  /// campo del compositor ya no está en el árbol, para no reabrir el error de
+  /// un TextEditingController usado después de su dispose.
+  void cerrar() {
+    if (_cerrado) return;
+    _cerrado = true;
+    final campos = _campos;
+    for (final c in campos) {
+      c.clear();
+    }
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      for (final c in campos) {
+        c.dispose();
+      }
+    });
+    SchedulerBinding.instance.scheduleFrame();
+  }
+
+  List<TextEditingController> get _campos => <TextEditingController>[
+    codigoCtrl,
+    passwordCtrl,
+    confirmacionCtrl,
+    portalPasswordCtrl,
+    passcodeCtrl,
+  ];
+
   @override
   void onClose() {
-    // `clear()` antes de `dispose()`: el texto no queda en el buffer del campo
-    // cuando la pantalla se destruye.
-    for (final c in [
-      codigoCtrl,
-      passwordCtrl,
-      confirmacionCtrl,
-      portalPasswordCtrl,
-      passcodeCtrl,
-    ]) {
-      c.clear();
-      c.dispose();
-    }
+    // Desde que /registro sale (B-23), ninguna ruta lo registra en GetX, y
+    // la bienvenida lo cierra con cerrar(). Si alguien lo registrara, su
+    // cierre hace lo mismo.
+    cerrar();
     super.onClose();
   }
 
@@ -177,7 +206,7 @@ class RegistroController extends GetxController {
     errorMessage.value = null;
     // RF-REC-6: el consentimiento va ANTES del formulario del portal, nunca
     // entre el código del authenticator y el botón que envía (BR-REG-F-01).
-    // Aceptado una vez, dura lo que dura la visita a /registro.
+    // Aceptado una vez, dura lo que dura este registro.
     paso.value = consentimientoAceptado.value
         ? RegistroPaso.verificar
         : RegistroPaso.consentimiento;
@@ -241,6 +270,10 @@ class RegistroController extends GetxController {
       return;
     }
 
+    // Una respuesta tardía no toca campos ya borrados ni adopta la sesión de
+    // un tramo cerrado.
+    if (_cerrado) return;
+
     // Apenas se usaron, se borran.
     portalPasswordCtrl.clear();
     passcodeCtrl.clear();
@@ -257,12 +290,15 @@ class RegistroController extends GetxController {
       ));
       return;
     }
+    if (_cerrado) return;
 
     resultado.value = r;
     paso.value = RegistroPaso.listo;
   }
 
   void _manejarFallo(RegistroFailure e) {
+    // Con el tramo ya cerrado, un fallo tardío no toca los campos borrados.
+    if (_cerrado) return;
     passcodeCtrl.clear();
     errorMessage.value = e.message;
     // Se fija ANTES que `paso`: la pantalla se repinta observando `paso`, así
@@ -303,6 +339,8 @@ class RegistroController extends GetxController {
         password: passwordCtrl.text,
       );
     } catch (_) {
+      // Con el tramo ya cerrado, el intento se descarta sin escribir nada.
+      if (_cerrado) return false;
       // `AuthService.login` solo atrapa `ApiException`: un socket caído o un
       // `ClientException` salen crudos. Y a `incierto` se llega casi siempre
       // POR una red mala —el plazo venció—, así que la red sigue mal cuando se
@@ -316,11 +354,14 @@ class RegistroController extends GetxController {
     } finally {
       iniciandoSesion.value = false;
     }
+    // «Ya tengo cuenta» pudo cerrar el tramo mientras el login seguía en
+    // vuelo, y entonces el intento se descarta (RF-BIEN-9).
+    if (_cerrado) return false;
     if (error == null) return true;
     errorMessage.value =
         'Seguimos sin poder confirmarlo. Puedes volver a intentar el registro: '
         'si te dice que ya existe una cuenta con ese código, es que sí se creó '
-        'y puedes recuperar la contraseña desde el login.';
+        'y puedes recuperar la contraseña con “Ya tengo cuenta”.';
     return false;
   }
 

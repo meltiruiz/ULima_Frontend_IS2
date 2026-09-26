@@ -24,6 +24,12 @@ Pantalla de chat con IA (ULimaBot) accesible mediante un FAB flotante visible en
 > dueño el 2026-09-25, junto con la spec del truco del 67, con la elección de «toda la pantalla» en
 > D4, e implementada el 2026-09-25. El resto de esta spec no cambia.
 
+> Nota del 2026-09-25 por la bienvenida con Ulises (`specs/features/bienvenida/bienvenida.spec.md`),
+> **aprobada por el dueño el 2026-09-26** junto con esa spec e implementada el 2026-09-26. En el paso
+> al horario que cierra la bienvenida, Ulises vuela a la burbuja flotante del home, que lo espera
+> solo en ese paso (ver «Nota de la bienvenida con Ulises» al final). El resto de esta spec no
+> cambia.
+
 ## Requirements
 
 - HU-CHATBOT-01: El alumno puede hacer preguntas en lenguaje natural sobre sus notas, horario, examenes, malla curricular, anuncios, companeros, alertas academicas y conversaciones del chat de su seccion.
@@ -169,6 +175,25 @@ class ChatbotMessage {
 El `HomePage` (scaffold principal) debe incluir el `ChatbotFab` en su `floatingActionButton`. Las paginas hijas que se muestran dentro del shell del `HomePage` **no** necesitan su propio FAB individual; el FAB del chatbot vive en el `Scaffold` del `HomePage` y es visible en todos los tabs.
 
 Las paginas independientes (fuera del home shell) que tienen su propio `Scaffold` deben incluir el `ChatbotFab` manualmente.
+
+## Nota de la bienvenida con Ulises (2026-09-25, aprobada el 2026-09-26)
+
+Nace con `specs/features/bienvenida/bienvenida.spec.md` (RF-BIEN-11), y el dueño la aprueba con
+ella el 2026-09-26, con la decisión B-16 de la bienvenida junto con S-28 del splash. No cambia
+ningún requisito de esta spec.
+
+- **La burbuja de Ulises en el paso al horario.** `ChatbotBubble`
+  (`lib/components/chatbot_bubble.dart`) informa su lugar una vez que se dibuja, y queda oculta
+  hasta que Ulises aterriza solo cuando la capa del arranque se lo pide en el paso al horario de
+  la bienvenida (decisión B-16). En ese paso, Ulises vuela desde su último avatar de la
+  conversación hasta la esquina de la burbuja, y en el cuadro en que se posa aparece la burbuja
+  real, con su latido.
+- **Las demás llegadas a `/home`.** La burbuja aparece con la página, como hoy, también tras el
+  splash con sesión (decisión S-28). Si la burbuja no se puede medir, aparece con la página y
+  Ulises se desvanece con la conversación. El docente no tiene burbuja, así que Ulises se
+  desvanece.
+- **Targets.** No cambian. `lib/components/chatbot_bubble.dart` está en los targets de la
+  bienvenida, que hace el cambio.
 
 ## Verificacion
 

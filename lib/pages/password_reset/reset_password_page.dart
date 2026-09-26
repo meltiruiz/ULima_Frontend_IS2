@@ -21,6 +21,7 @@ class ResetPasswordPage extends StatelessWidget {
 
     return PasswordResetScaffold(
       palette: palette,
+      conSello: true,
       child: Obx(
         () => AnimatedSwitcher(
           duration: const Duration(milliseconds: 250),

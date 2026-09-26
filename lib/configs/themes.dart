@@ -262,6 +262,72 @@ class MaterialTheme {
   static Color testAiBadgeBg(Brightness b) =>
       b == Brightness.light ? const Color(0x61140A50) : const Color(0xFF16161C);
 
+  // ── Bienvenida con Ulises (RF-BIEN-14) ──────────────────────────────────
+
+  /// La franja del sello y el fondo del recibimiento después del relevo.
+  static Color bienvenidaFranja(Brightness b) =>
+      b == Brightness.light ? primaryColor : const Color(0xFF262626);
+
+  /// Fondo de las respuestas del alumno.
+  static Color bienvenidaPropia(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFFFE7D4) : const Color(0xFF3A2A22);
+
+  /// Texto de las respuestas del alumno.
+  static Color bienvenidaPropiaTinta(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF6B2D00) : const Color(0xFFFFC49A);
+
+  /// Tarjeta del saludo del recibimiento.
+  static Color bienvenidaSaludo(Brightness b) =>
+      b == Brightness.light ? Colors.white : const Color(0xFF33333B);
+
+  /// «¿Ya usas ULima++?».
+  static Color bienvenidaSaludoTinta(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF1A0E05) : const Color(0xFFF5F5F7);
+
+  /// «¡Craa! Hola, soy Ulises 👋» en la tarjeta.
+  static Color bienvenidaSaludoSub(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF7A3300) : const Color(0xFFFFC49A);
+
+  /// Botón «Sí, entrar».
+  static Color bienvenidaEntrarFondo(Brightness b) =>
+      b == Brightness.light ? Colors.white : const Color(0xFFFF8C42);
+
+  static Color bienvenidaEntrarTinta(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF1A0E05) : const Color(0xFF16161C);
+
+  /// Botón «Soy nuevo», naranja oscuro en claro (B-3) y transparente en
+  /// oscuro.
+  static Color bienvenidaNuevoFondo(Brightness b) =>
+      b == Brightness.light ? const Color(0xFFB84A00) : const Color(0x00000000);
+
+  /// Borde de 1,5 dp de «Soy nuevo».
+  static Color bienvenidaNuevoBorde(Brightness b) =>
+      b == Brightness.light ? Colors.white : const Color(0xFF5A5A66);
+
+  static Color bienvenidaNuevoTinta(Brightness b) =>
+      b == Brightness.light ? Colors.white : const Color(0xFFEDEDF3);
+
+  /// Píldora «Creando tu cuenta…».
+  static Color bienvenidaPildora(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF0F172A) : const Color(0xFF33333B);
+
+  /// Píldora «Cuenta creada».
+  static Color bienvenidaPildoraLista(Brightness b) => const Color(0xFF15803D);
+
+  /// Botón «Continuar con Google», con los colores de la marca de Google.
+  static Color bienvenidaGoogleFondo(Brightness b) =>
+      b == Brightness.light ? Colors.white : const Color(0xFF131314);
+
+  static Color bienvenidaGoogleBorde(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF747775) : const Color(0xFF8E918F);
+
+  static Color bienvenidaGoogleTinta(Brightness b) =>
+      b == Brightness.light ? const Color(0xFF1F1F1F) : const Color(0xFFE3E3E3);
+
+  /// Borde del campo con foco y anillo de foco del teclado.
+  static Color bienvenidaFoco(Brightness b) =>
+      b == Brightness.light ? primaryDark : const Color(0xFFFF8C42);
+
   // LIGHT SCHEME
   static ColorScheme lightScheme() {
     return const ColorScheme(

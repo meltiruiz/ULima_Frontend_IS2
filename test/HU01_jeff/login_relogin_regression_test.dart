@@ -1,45 +1,39 @@
-// test/login_relogin_regression_test.dart
+// test/HU01_jeff/login_relogin_regression_test.dart
 // Regresión del "tipeo fantasma" tras cerrar sesión (US02 -> US01).
 //
-// Mecanismo del bug: al cerrar sesión con un token ya invalidado, el POST
+// El mecanismo del bug. Al cerrar sesión con un token ya invalidado, el POST
 // /auth/logout responde 401 y el interceptor del ApiClient navega a /login
-// (Get.currentRoute aún es /perfil, así que su guarda no aplica); acto
-// seguido el handler del botón "Cerrar sesión" navega OTRA vez a /login.
-// La segunda offAllNamed apila una segunda ruta /login cuyo binding NO
-// re-registra el LoginController (la instancia de la primera ruta sigue
-// viva), así que la página visible toma ese mismo controller; al desecharse
-// la primera ruta /login, GetX elimina el controller y dispone sus
-// TextEditingControllers MIENTRAS la página visible los sigue usando. En
-// release un ChangeNotifier disposed ya no notifica: el TextField recibe
-// cada tecla pero no repinta (tipeo fantasma) hasta que otro evento (perder
-// el foco) fuerza el rebuild. En debug/test revienta con "A
-// TextEditingController was used after being disposed".
+// (Get.currentRoute aún es /perfil, así que su guarda no aplica). Acto
+// seguido el handler del botón "Cerrar sesión" navega otra vez a /login. La
+// segunda offAllNamed apilaba una segunda ruta /login que tomaba el mismo
+// controller, y al desecharse la primera GetX disponía sus
+// TextEditingController mientras la página visible los usaba. En debug y en
+// test revienta con "A TextEditingController was used after being disposed".
 //
-// Fix: todos los caminos que cierran sesión navegan con offAllToLogin()
-// (lib/services/session_navigation.dart), que es idempotente: la segunda
-// llamada, con /login ya como ruta actual, no navega. Estos tests reproducen
-// la secuencia del bug con las rutas reales de main.dart a través del helper;
-// con Get.offAllNamed('/login') directo en ambos pasos (el código previo al
-// fix) el primer test falla con "A TextEditingController was used after
-// being disposed".
+// El fix. Todos los caminos que cierran sesión navegan con offAllToLogin()
+// (lib/services/session_navigation.dart), que es idempotente. Desde la
+// bienvenida, /login muestra la conversación con Ulises y el campo vive en el
+// compositor de E1, así que cada prueba llega a E1 con «Sí, entrar».
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:ulima_plus/pages/bienvenida/bienvenida_page.dart';
 import 'package:ulima_plus/pages/login/login_binding.dart';
 import 'package:ulima_plus/pages/login/login_controller.dart';
-import 'package:ulima_plus/pages/login/login_page.dart';
 import 'package:ulima_plus/services/session_navigation.dart';
 
-/// App mínima con la ruta /login REAL (misma page y el LoginBinding real que
-/// main.dart) y un /perfil de prueba desde donde se cierra sesión.
+import '../bienvenida/apoyo_bienvenida.dart';
+
+/// App mínima con la ruta /login real (la bienvenida y el LoginBinding real
+/// que main.dart) y un /perfil de prueba desde donde se cierra sesión.
 Widget _buildApp() {
   return GetMaterialApp(
     initialRoute: '/perfil',
     getPages: [
       GetPage(
         name: '/login',
-        page: () => const LoginPage(),
+        page: () => const BienvenidaPage(),
         binding: LoginBinding(),
       ),
       GetPage(
@@ -51,6 +45,7 @@ Widget _buildApp() {
 }
 
 void main() {
+  setUp(registrarLosServiciosDeLaBienvenida);
   tearDown(Get.reset);
 
   testWidgets(
@@ -58,29 +53,28 @@ void main() {
     'los campos siguen repintando por tecla',
     (tester) async {
       await tester.pumpWidget(_buildApp());
-      await tester.pumpAndSettle();
+      await avanzar(tester, 500);
 
-      // 1ª navegación: un 401 en vuelo durante el logout lleva al login (lo
-      // que hacía el interceptor del ApiClient).
+      // 1ª navegación. Un 401 en vuelo durante el logout lleva al login.
       expect(offAllToLogin(), isTrue);
-      // La primera /login llega a construirse (crea el LoginController) antes
-      // de que el handler del logout retome el control.
+      // La primera /login llega a construirse antes de que el handler del
+      // logout retome el control.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 50));
 
-      // 2ª navegación: el handler del botón "Cerrar sesión" del Perfil. Debe
-      // ser un no-op: /login ya es la ruta actual.
+      // 2ª navegación. El handler del botón "Cerrar sesión" del Perfil es un
+      // no-op, porque /login ya es la ruta actual.
       expect(offAllToLogin(), isFalse);
-      await tester.pumpAndSettle();
+      await avanzar(tester, 500);
 
-      // Solo debe quedar una LoginPage visible.
-      expect(find.byType(LoginPage), findsOneWidget);
+      // Solo queda una bienvenida visible.
+      expect(find.byType(BienvenidaPage), findsOneWidget);
 
-      // El usuario teclea su código: el texto debe verse SIN quitar el foco
-      // (el EditableText repinta con cada tecla).
-      await tester.enterText(find.byType(TextField).first, '20235218');
+      // El usuario teclea su código y el texto se ve sin quitar el foco.
+      await llegarAE1(tester);
+      await tester.enterText(find.byType(TextField).first, '20230001');
       await tester.pump();
-      expect(find.text('20235218'), findsOneWidget);
+      expect(find.text('20230001'), findsOneWidget);
     },
   );
 
@@ -89,17 +83,18 @@ void main() {
     'el campo sigue mostrando lo tecleado',
     (tester) async {
       await tester.pumpWidget(_buildApp());
-      await tester.pumpAndSettle();
+      await avanzar(tester, 500);
 
       Get.offAllNamed('/login');
-      await tester.pumpAndSettle();
+      await avanzar(tester, 500);
+      await llegarAE1(tester);
+      await llegarAE2(tester);
 
       final controller = Get.find<LoginController>();
 
-      // Teclear en el campo de contraseña (envuelto en Obx por
-      // passwordVisible), provocar un rebuild cambiando el Rx y seguir
-      // tecleando: todo debe permanecer visible sin perder el foco.
-      final passwordField = find.byType(TextField).at(1);
+      // Teclea en la contraseña de E2, envuelta en Obx por passwordVisible,
+      // provoca un rebuild cambiando el Rx y sigue tecleando.
+      final passwordField = find.byType(TextField).first;
       await tester.enterText(passwordField, 'secreta');
       await tester.pump();
 

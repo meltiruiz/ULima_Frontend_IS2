@@ -826,6 +826,7 @@ class _ResetPasswordCardState extends State<_ResetPasswordCard> {
         maskedEmail.isEmpty
             ? result.message
             : 'Enviamos un código de verificación a $maskedEmail.',
+        snackPosition: SnackPosition.BOTTOM,
       );
     } on ApiException catch (e) {
       Get.snackbar('Error', e.message);

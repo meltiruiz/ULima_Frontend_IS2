@@ -14,8 +14,10 @@ import '../../services/auth_service.dart';
 import '../../services/specialty_test_service.dart';
 import 'specialty_test_logic.dart';
 
-/// De dónde se abre `/test-especialidad`.
-enum OrigenDelTest { asistente, perfil }
+/// De dónde se abre el test. Con `bienvenida`, el test corre dentro de la
+/// conversación con Ulises, sin la ruta /test-especialidad (enmienda de la
+/// spec de la bienvenida a RF-TEST-1).
+enum OrigenDelTest { asistente, perfil, bienvenida }
 
 /// La pantalla que muestra la ruta.
 enum FaseDelTest { bienvenida, pregunta, espera, resultado }
@@ -69,6 +71,10 @@ class TextosDelTest {
       'nuevo.';
   static const String guardadoTitulo = 'Especialidades actualizadas';
   static const String guardadoMensaje = 'Tu selección se guardó correctamente.';
+
+  /// Sin `careerId`, en la conversación, como el asistente de hoy
+  /// (`setup_carrera_controller.dart:123-126` y RF-BIEN-10).
+  static const String sinCarrera = 'No se pudo determinar tu carrera.';
 }
 
 class SpecialtyTestController extends GetxController {
@@ -115,6 +121,12 @@ class SpecialtyTestController extends GetxController {
 
   bool get enAsistente => origen == OrigenDelTest.asistente;
 
+  bool get enBienvenida => origen == OrigenDelTest.bienvenida;
+
+  /// El asistente y la bienvenida terminan en el home y pasan a la
+  /// selección manual. El Perfil cierra su ruta.
+  bool get terminaEnElHome => origen != OrigenDelTest.perfil;
+
   /// Hay respuestas en memoria, de esta ruta o de un test en pausa.
   bool get hayAvance => respuestas.isNotEmpty || desempates.isNotEmpty;
 
@@ -149,7 +161,7 @@ class SpecialtyTestController extends GetxController {
   @override
   void onInit() {
     super.onInit();
-    final pausado = _service.paused;
+    final pausado = enBienvenida ? null : _service.paused;
     if (pausado != null) {
       contenido.value = pausado.content;
       // Una copia, porque `RxMap.assignAll` adopta el mapa que recibe, y el
@@ -168,7 +180,7 @@ class SpecialtyTestController extends GetxController {
     // pausa, el atrás del sistema en la bienvenida o «Ahora no». Saltar y
     // terminar ya borraron las respuestas.
     final c = contenido.value;
-    if (hayAvance && c != null) {
+    if (hayAvance && c != null && !enBienvenida) {
       _service.pause(
         PausedSpecialtyTest(
           content: c,
@@ -220,10 +232,12 @@ class SpecialtyTestController extends GetxController {
   }
 
   /// «Empezar el test», o «Seguir el test» con avance en memoria, que vuelve
-  /// al primer paso sin responder con la copia de ese test.
+  /// al primer paso sin responder con la copia de ese test. En la
+  /// conversación no hay «Seguir el test», así que «Empezar el test» abre
+  /// siempre la pregunta 1 sin respuestas (enmienda a RF-TEST-3).
   void empezar() {
     if (carga.value != EstadoDeCarga.lista) return;
-    if (!hayAvance) {
+    if (!hayAvance || enBienvenida) {
       _abrirPreguntaUno(_vigente!);
       return;
     }
@@ -259,7 +273,7 @@ class SpecialtyTestController extends GetxController {
   void _borrarRespuestas() {
     respuestas.clear();
     desempates.clear();
-    _service.discardPaused();
+    if (!enBienvenida) _service.discardPaused();
   }
 
   /// «Saltar y elegir por mi cuenta» borra las respuestas, y el asistente
@@ -280,12 +294,12 @@ class SpecialtyTestController extends GetxController {
   /// con el mensaje del servidor y cierra la ruta.
   void _noDisponible(String? mensaje, {bool avisarSiempre = false}) {
     _borrarRespuestas();
-    if (!enAsistente || avisarSiempre) {
+    if (!terminaEnElHome || avisarSiempre) {
       _ui.avisar(
         AvisoDelTest(TipoDeAviso.info, mensaje ?? TextosDelTest.noDisponible),
       );
     }
-    _ui.cerrar(enAsistente ? SalidaDelTest.seleccionManual : null);
+    _ui.cerrar(terminaEnElHome ? SalidaDelTest.seleccionManual : null);
   }
 
   // ── Preguntas y desempates (RF-TEST-4 a RF-TEST-6) ─────────────────────────
@@ -558,7 +572,7 @@ class SpecialtyTestController extends GetxController {
       otraGanadora: otra,
     );
     if (!await _guardarBotones(seleccion)) return;
-    if (enAsistente) {
+    if (terminaEnElHome) {
       _ui.irAlHome();
       return;
     }
@@ -625,7 +639,7 @@ class SpecialtyTestController extends GetxController {
   Future<void> decidirDespues() async {
     final r = resultado.value;
     if (r == null || !botonesActivos) return;
-    if (!enAsistente) {
+    if (!terminaEnElHome) {
       _ui.cerrar(SalidaDelTest.terminado);
       return;
     }
@@ -649,7 +663,7 @@ class SpecialtyTestController extends GetxController {
   /// El atrás del sistema en el resultado. En el asistente no hace nada; en
   /// el Perfil es «Decidir después» (decisión abierta 12).
   void atrasEnResultado() {
-    if (enAsistente) return;
+    if (terminaEnElHome) return;
     unawaited(decidirDespues());
   }
 
@@ -670,7 +684,10 @@ class SpecialtyTestController extends GetxController {
   Future<AvisoDelTest?> _guardar(SeleccionDeEspecialidades seleccion) async {
     final careerId = _auth.currentUser?.careerId;
     if (careerId == null) {
-      return const AvisoDelTest(TipoDeAviso.error, TextosDelTest.noSeGuardo);
+      return AvisoDelTest(
+        TipoDeAviso.error,
+        enBienvenida ? TextosDelTest.sinCarrera : TextosDelTest.noSeGuardo,
+      );
     }
     try {
       await _auth.completeSetup(

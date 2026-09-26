@@ -1,6 +1,7 @@
 // lib/components/portal_consent/portal_consent_view.dart
 // Pantalla de consentimiento previa a pedirle al alumno la contraseña de
-// miUlima. La montan Portal Sync (/portal-sync) y Registro (/registro).
+// miUlima. La monta Portal Sync (/portal-sync), y la bienvenida (/login) usa
+// sus textos en la tarjeta del consentimiento de la conversación.
 
 import 'package:flutter/material.dart';
 
@@ -9,11 +10,10 @@ import '../../pages/password_reset/password_reset_ui.dart';
 /// Contenido de la única pantalla de consentimiento de la app (RF-REC-6).
 ///
 /// La Ley 29733 pide decirle al alumno qué datos se llevan, para qué y qué
-/// pasa con su contraseña **antes** de que la escriba. Los dos lugares donde
-/// ULima++ se la pide —Portal Sync y Registro— montan este mismo widget, y los
-/// textos viven aquí como constantes para que las dos pantallas digan
-/// exactamente lo mismo: si el alumno acepta en una, aceptó lo mismo que en la
-/// otra.
+/// pasa con su contraseña **antes** de que la escriba. Portal Sync monta este
+/// widget y la bienvenida dibuja su tarjeta con estas mismas constantes, así
+/// que los dos lugares donde ULima++ se la pide dicen exactamente lo mismo, y
+/// si el alumno acepta en uno, aceptó lo mismo que en el otro.
 ///
 /// Es solo el contenido de la tarjeta: quien lo usa lo pasa como `child` de su
 /// propio [PasswordResetScaffold], igual que `portal_sync_page.dart` hace con
@@ -34,8 +34,7 @@ class PortalConsentView extends StatelessWidget {
   final VoidCallback onAccept;
   final VoidCallback onExit;
 
-  /// Texto del enlace para salir: 'Ahora no' en Portal Sync, 'Volver' en
-  /// Registro, donde salir es retroceder un paso y no abandonar la pantalla.
+  /// Texto del enlace para salir, «Ahora no» en Portal Sync.
   final String exitLabel;
 
   static const String titulo = 'Antes de entrar a miUlima';

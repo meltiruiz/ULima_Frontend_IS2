@@ -158,10 +158,12 @@ class ResetPasswordController extends GetxController {
       // navegado (ver services/session_navigation.dart).
       await StorageService.to.clearToken();
       await AuthService.to.logout();
-      offAllToLogin();
+      offAllToLogin(motivo: MotivoDeLlegada.restablecida);
+      // Abajo, para no tapar el sello de la bienvenida (B-29).
       Get.snackbar(
         'Contraseña actualizada',
         'Inicia sesión con tu nueva contraseña.',
+        snackPosition: SnackPosition.BOTTOM,
       );
     } on ApiException catch (e) {
       errorMessage.value = e.message;
@@ -193,7 +195,12 @@ class ResetPasswordController extends GetxController {
     try {
       final message = await _service.request(identifier);
       _startCooldown();
-      Get.snackbar('Código reenviado', message);
+      // Abajo, para no tapar el sello de la cabecera (RF-BIEN-20).
+      Get.snackbar(
+        'Código reenviado',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } on ApiException catch (e) {
       errorMessage.value = e.message;
     } catch (_) {

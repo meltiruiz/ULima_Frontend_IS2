@@ -5,8 +5,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'
-    show FilteringTextInputFormatter, TextInputFormatter;
+    show FilteringTextInputFormatter, SystemUiOverlayStyle, TextInputFormatter;
 
+import '../../components/logo/sello_del_logo.dart';
 import '../../configs/themes.dart';
 import 'password_reset_validators.dart';
 
@@ -96,63 +97,96 @@ class PasswordResetPalette {
   final Color backIcon;
 }
 
-/// Scaffold común del flujo: fondo, flecha de retorno y card centrada.
+/// Scaffold común del flujo: fondo, flecha de retorno y card centrada. Con
+/// [conSello], la cabecera lleva el sello del logo en el mismo lugar que la
+/// franja de la bienvenida, y la tarjeta queda bajo ella (RF-BIEN-20).
 class PasswordResetScaffold extends StatelessWidget {
   const PasswordResetScaffold({
     super.key,
     required this.palette,
     required this.child,
+    this.conSello = false,
   });
 
   final PasswordResetPalette palette;
   final Widget child;
 
+  /// Lo encienden solo `/forgot-password` y `/reset-password`. Portal Sync
+  /// no lo enciende y no cambia.
+  final bool conSello;
+
+  Widget _tarjeta() => SingleChildScrollView(
+    keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+    child: ConstrainedBox(
+      constraints: const BoxConstraints(maxWidth: 340),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: palette.card,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: palette.cardBorder),
+          boxShadow: [
+            BoxShadow(
+              color: palette.cardShadow,
+              blurRadius: 32,
+              offset: const Offset(0, 18),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(32, 36, 32, 32),
+          child: child,
+        ),
+      ),
+    ),
+  );
+
+  Widget _flecha(BuildContext context) => IconButton(
+    icon: Icon(Icons.arrow_back, color: palette.backIcon),
+    tooltip: 'Volver',
+    onPressed: () => Navigator.of(context).maybePop(),
+  );
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: palette.background,
-      resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: Stack(
+    if (!conSello) {
+      return Scaffold(
+        backgroundColor: palette.background,
+        resizeToAvoidBottomInset: true,
+        body: SafeArea(
+          child: Stack(
+            children: [
+              Center(child: _tarjeta()),
+              Positioned(top: 4, left: 4, child: _flecha(context)),
+            ],
+          ),
+        ),
+      );
+    }
+    // Íconos claros, porque arriba siempre hay #FF6600 o #262626.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: palette.background,
+        resizeToAvoidBottomInset: true,
+        body: Stack(
           children: [
-            Center(
-              child: SingleChildScrollView(
-                keyboardDismissBehavior:
-                    ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 24,
+            Column(
+              children: [
+                // Sin color propio, porque el fondo ya es el de la franja.
+                const CabeceraConSello(),
+                Expanded(
+                  child: SafeArea(top: false, child: Center(child: _tarjeta())),
                 ),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 340),
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: palette.card,
-                      borderRadius: BorderRadius.circular(18),
-                      border: Border.all(color: palette.cardBorder),
-                      boxShadow: [
-                        BoxShadow(
-                          color: palette.cardShadow,
-                          blurRadius: 32,
-                          offset: const Offset(0, 18),
-                        ),
-                      ],
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(32, 36, 32, 32),
-                      child: child,
-                    ),
-                  ),
-                ),
-              ),
+              ],
             ),
-            Positioned(
-              top: 4,
-              left: 4,
-              child: IconButton(
-                icon: Icon(Icons.arrow_back, color: palette.backIcon),
-                tooltip: 'Volver',
-                onPressed: () => Navigator.of(context).maybePop(),
+            SafeArea(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: Padding(
+                  padding: const EdgeInsets.all(4),
+                  child: _flecha(context),
+                ),
               ),
             ),
           ],
@@ -273,6 +307,7 @@ class PasswordResetOtpField extends StatefulWidget {
     this.boxFill,
     this.idleBorderColor = Colors.transparent,
     this.readOnly = false,
+    this.autofocus = false,
   });
 
   final TextEditingController controller;
@@ -291,6 +326,9 @@ class PasswordResetOtpField extends StatefulWidget {
 
   /// Durante la espera de la recarga, las casillas no se enfocan ni se editan.
   final bool readOnly;
+
+  /// Toma el foco al montarse, como los campos de la bienvenida (RF-BIEN-5).
+  final bool autofocus;
 
   @override
   State<PasswordResetOtpField> createState() => _PasswordResetOtpFieldState();
@@ -390,6 +428,7 @@ class _PasswordResetOtpFieldState extends State<PasswordResetOtpField> {
           child: TextField(
             controller: widget.controller,
             focusNode: _focusNode,
+            autofocus: widget.autofocus && !widget.readOnly,
             readOnly: widget.readOnly,
             canRequestFocus: !widget.readOnly,
             keyboardType: TextInputType.number,

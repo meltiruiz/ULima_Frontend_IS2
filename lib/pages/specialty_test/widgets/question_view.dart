@@ -19,10 +19,10 @@ import 'test_buttons.dart';
 import 'ulises_bubble.dart';
 
 /// Los emojis decorativos de la escala, uno por opción y en su orden.
-const List<String> _emojis = <String>['😴', '🙂', '😃', '🤩'];
+const List<String> emojisDeLaEscala = <String>['😴', '🙂', '😃', '🤩'];
 
 /// Si la escala de texto pide la versión apilada (RF-TEST-6 y RF-TEST-13).
-bool _textoGrande(BuildContext context) =>
+bool textoGrande(BuildContext context) =>
     MediaQuery.textScalerOf(context).scale(1) >= 1.3;
 
 class QuestionView extends GetView<SpecialtyTestController> {
@@ -223,7 +223,7 @@ class _PasoState extends State<_Paso> {
           UlisesTurnView(turno: d.turno),
           const SizedBox(height: 12),
           if (esEscala)
-            _Escala(
+            EscalaDelTest(
               pregunta: pregunta,
               opciones: d.contenido.scaleOptions,
               respuesta: d.respuesta,
@@ -237,7 +237,7 @@ class _PasoState extends State<_Paso> {
               foco: _enunciado,
             ),
             const SizedBox(height: 12),
-            _Duelo(
+            DueloDelTest(
               tareas:
                   pregunta?.tasks ??
                   [d.desempate!.tiebreak.top, d.desempate!.tiebreak.bottom],
@@ -247,7 +247,7 @@ class _PasoState extends State<_Paso> {
               onTap: _responder,
             ),
             const SizedBox(height: 14),
-            _LasDosONinguna(
+            LasDosONinguna(
               contenido: d.contenido,
               respuesta: d.respuesta,
               onTap: _responder,
@@ -641,16 +641,18 @@ class _Encabezado extends StatelessWidget {
   }
 }
 
-enum _EstadoTarjeta { neutra, encendida, apagada }
+enum EstadoDeTarjeta { neutra, encendida, apagada }
 
 /// Las dos tarjetas del duelo, neutras hasta el toque (RF-TEST-5).
-class _Duelo extends StatelessWidget {
-  const _Duelo({
+class DueloDelTest extends StatelessWidget {
+  const DueloDelTest({
+    super.key,
     required this.tareas,
     required this.contenido,
     required this.respuesta,
     required this.ayuda,
     required this.onTap,
+    this.compacto = false,
   });
 
   final List<TestTask> tareas;
@@ -659,25 +661,29 @@ class _Duelo extends StatelessWidget {
   final String? ayuda;
   final ValueChanged<String> onTap;
 
-  _EstadoTarjeta _estado(String valor) {
+  /// En el compositor de la conversación, las tarjetas son las compactas de
+  /// la maqueta (B-13).
+  final bool compacto;
+
+  EstadoDeTarjeta _estado(String valor) {
     switch (respuesta) {
       case null:
-        return _EstadoTarjeta.neutra;
+        return EstadoDeTarjeta.neutra;
       case 'both':
-        return _EstadoTarjeta.encendida;
+        return EstadoDeTarjeta.encendida;
       case 'none':
-        return _EstadoTarjeta.apagada;
+        return EstadoDeTarjeta.apagada;
       default:
         return respuesta == valor
-            ? _EstadoTarjeta.encendida
-            : _EstadoTarjeta.apagada;
+            ? EstadoDeTarjeta.encendida
+            : EstadoDeTarjeta.apagada;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final b = Theme.of(context).brightness;
-    Widget tarjeta(TestTask tarea, String valor) => _TarjetaDeTarea(
+    Widget tarjeta(TestTask tarea, String valor) => TarjetaDeTarea(
       key: QuestionView.tarjetaKey(valor),
       tarea: tarea,
       estado: _estado(valor),
@@ -686,6 +692,7 @@ class _Duelo extends StatelessWidget {
           MaterialTheme.testTaskIconInk(b),
       ayuda: ayuda,
       onTap: () => onTap(valor),
+      compacto: compacto,
     );
     return Stack(
       alignment: Alignment.center,
@@ -695,14 +702,14 @@ class _Duelo extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             tarjeta(tareas.first, 'top'),
-            const SizedBox(height: 12),
+            SizedBox(height: compacto ? 8 : 12),
             tarjeta(tareas.last, 'bottom'),
           ],
         ),
         ExcludeSemantics(
           child: Container(
-            width: 30,
-            height: 30,
+            width: compacto ? 26 : 30,
+            height: compacto ? 26 : 30,
             alignment: Alignment.center,
             decoration: BoxDecoration(
               color: MaterialTheme.pageBg(b),
@@ -713,7 +720,7 @@ class _Duelo extends StatelessWidget {
               'o',
               style: TextStyle(
                 color: MaterialTheme.testMuted(b),
-                fontSize: 13,
+                fontSize: compacto ? 12 : 13,
                 fontWeight: FontWeight.w800,
                 fontStyle: FontStyle.italic,
               ),
@@ -725,18 +732,23 @@ class _Duelo extends StatelessWidget {
   }
 }
 
-class _TarjetaDeTarea extends StatelessWidget {
-  const _TarjetaDeTarea({
+class TarjetaDeTarea extends StatelessWidget {
+  const TarjetaDeTarea({
     super.key,
     required this.tarea,
     required this.estado,
     required this.color,
     required this.ayuda,
     required this.onTap,
+    this.compacto = false,
   });
 
+  /// En el compositor de la conversación, las tarjetas son las compactas de
+  /// la maqueta (B-13).
+  final bool compacto;
+
   final TestTask tarea;
-  final _EstadoTarjeta estado;
+  final EstadoDeTarjeta estado;
 
   /// El color de su especialidad en el tema, que solo se ve encendida.
   final Color color;
@@ -746,9 +758,15 @@ class _TarjetaDeTarea extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final b = Theme.of(context).brightness;
-    final encendida = estado == _EstadoTarjeta.encendida;
-    final apagada = estado == _EstadoTarjeta.apagada;
+    final encendida = estado == EstadoDeTarjeta.encendida;
+    final apagada = estado == EstadoDeTarjeta.apagada;
     final tarjeta = MaterialTheme.cardBg(b);
+    // La compacta es la `.cb-card` de la maqueta, con el borde de 1,5 dp
+    // siempre. Su relleno de 8 × 10 dp se cuenta desde el borde exterior, así
+    // que mide los 56 dp de B-13 con la baldosa de 40 dp.
+    final borde = compacto || encendida ? 1.5 : 1.0;
+    final radio = compacto ? 16.0 : 20.0;
+    final insignia = compacto ? 24.0 : 28.0;
     return Semantics(
       button: true,
       selected: encendida,
@@ -761,21 +779,21 @@ class _TarjetaDeTarea extends StatelessWidget {
         children: [
           AnimatedContainer(
             duration: const Duration(milliseconds: 150),
-            constraints: const BoxConstraints(minHeight: 104),
+            constraints: BoxConstraints(minHeight: compacto ? 56 : 104),
             decoration: BoxDecoration(
               color: encendida ? tinte(color, tarjeta, 0.12) : tarjeta,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(radio),
               border: Border.all(
                 color: encendida ? color : MaterialTheme.testLine(b),
                 // El borde más grueso de la encendida acompaña al color
                 // (RF-TEST-13).
-                width: encendida ? 1.5 : 1,
+                width: borde,
               ),
               boxShadow: encendida
                   ? [
                       BoxShadow(
                         color: color.withValues(alpha: 0.2),
-                        spreadRadius: 4,
+                        spreadRadius: compacto ? 3 : 4,
                       ),
                     ]
                   : null,
@@ -784,17 +802,26 @@ class _TarjetaDeTarea extends StatelessWidget {
               type: MaterialType.transparency,
               child: InkWell(
                 onTap: onTap,
-                borderRadius: BorderRadius.circular(20),
+                borderRadius: BorderRadius.circular(radio),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 10, 12, 10),
+                  padding: compacto
+                      ? EdgeInsets.symmetric(
+                          horizontal: 10 - borde,
+                          vertical: 8 - borde,
+                        )
+                      : const EdgeInsets.fromLTRB(10, 10, 12, 10),
                   child: Row(
                     children: [
                       TaskIconTile(
                         icono: tarea.icon,
                         color: encendida ? color : null,
                         apagada: apagada,
+                        width: compacto ? 40 : 80,
+                        height: compacto ? 40 : 80,
+                        iconSize: compacto ? 22 : 40,
+                        borderRadius: BorderRadius.circular(compacto ? 11 : 16),
                       ),
-                      const SizedBox(width: 12),
+                      SizedBox(width: compacto ? 10 : 12),
                       Expanded(
                         child: Text(
                           tarea.text,
@@ -802,11 +829,11 @@ class _TarjetaDeTarea extends StatelessWidget {
                             color: apagada
                                 ? MaterialTheme.testInk2(b)
                                 : MaterialTheme.textPrimary(b),
-                            fontSize: 14,
+                            fontSize: compacto ? 12.5 : 14,
                             fontWeight: apagada
                                 ? FontWeight.w600
                                 : FontWeight.w700,
-                            height: 1.32,
+                            height: compacto ? 1.3 : 1.32,
                           ),
                         ),
                       ),
@@ -818,8 +845,8 @@ class _TarjetaDeTarea extends StatelessWidget {
           ),
           if (encendida)
             Positioned(
-              top: -9,
-              right: -7,
+              top: compacto ? -8 : -9,
+              right: compacto ? -6 : -7,
               child: ExcludeSemantics(
                 // El salto de la insignia, que no ocurre con menos
                 // movimiento.
@@ -833,8 +860,8 @@ class _TarjetaDeTarea extends StatelessWidget {
                   builder: (context, escala, hijo) =>
                       Transform.scale(scale: escala, child: hijo),
                   child: Container(
-                    width: 28,
-                    height: 28,
+                    width: insignia,
+                    height: insignia,
                     decoration: BoxDecoration(
                       color: color,
                       shape: BoxShape.circle,
@@ -845,7 +872,7 @@ class _TarjetaDeTarea extends StatelessWidget {
                     ),
                     child: Icon(
                       LucideIcons.check,
-                      size: 13,
+                      size: compacto ? 12 : 13,
                       color: MaterialTheme.pageBg(b),
                     ),
                   ),
@@ -860,8 +887,9 @@ class _TarjetaDeTarea extends StatelessWidget {
 
 /// «Me gustan las dos» y «Ninguna me llama», con las etiquetas de
 /// `duelOptions`, en dos columnas o, desde 1,3, una debajo de otra.
-class _LasDosONinguna extends StatelessWidget {
-  const _LasDosONinguna({
+class LasDosONinguna extends StatelessWidget {
+  const LasDosONinguna({
+    super.key,
     required this.contenido,
     required this.respuesta,
     required this.onTap,
@@ -873,12 +901,12 @@ class _LasDosONinguna extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget boton(String id) => _BotonAlterno(
+    Widget boton(String id) => BotonAlterno(
       etiqueta: contenido.optionLabel(id)!,
       elegido: respuesta == id,
       onTap: () => onTap(id),
     );
-    if (_textoGrande(context)) {
+    if (textoGrande(context)) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [boton('both'), const SizedBox(height: 8), boton('none')],
@@ -894,8 +922,9 @@ class _LasDosONinguna extends StatelessWidget {
   }
 }
 
-class _BotonAlterno extends StatelessWidget {
-  const _BotonAlterno({
+class BotonAlterno extends StatelessWidget {
+  const BotonAlterno({
+    super.key,
     required this.etiqueta,
     required this.elegido,
     required this.onTap,
@@ -959,36 +988,62 @@ class _BotonAlterno extends StatelessWidget {
 
 /// La escala de gusto (RF-TEST-6). Nunca se enciende con el color de su
 /// especialidad, porque ese color la delataría.
-class _Escala extends StatelessWidget {
-  const _Escala({
+class EscalaDelTest extends StatelessWidget {
+  const EscalaDelTest({
+    super.key,
     required this.pregunta,
     required this.opciones,
     required this.respuesta,
-    required this.foco,
+    this.foco,
     required this.onTap,
+    this.compacto = false,
   });
 
   final TestQuestion pregunta;
   final List<TestOption> opciones;
   final String? respuesta;
-  final FocusNode foco;
+
+  /// El foco del lector en el enunciado, que no va en el compositor.
+  final FocusNode? foco;
   final ValueChanged<String> onTap;
+
+  /// En el compositor de la conversación, la escala trae solo sus cuatro
+  /// opciones, sin el ícono decorativo, porque la tarea y el prompt van en la
+  /// burbuja de Ulises y el rótulo en el compositor (RF-BIEN-10 y enmienda a
+  /// RF-TEST-6).
+  final bool compacto;
 
   @override
   Widget build(BuildContext context) {
     final b = Theme.of(context).brightness;
     final dosPorDos =
-        _textoGrande(context) || MediaQuery.sizeOf(context).width < 340;
+        textoGrande(context) || MediaQuery.sizeOf(context).width < 340;
     final botones = [
       for (var i = 0; i < opciones.length; i++)
-        _OpcionDeEscala(
+        OpcionDeEscala(
           key: QuestionView.opcionKey(opciones[i].id),
-          emoji: _emojis[i],
+          emoji: emojisDeLaEscala[i],
           etiqueta: opciones[i].label,
           elegida: respuesta == opciones[i].id,
           onTap: () => onTap(opciones[i].id),
         ),
     ];
+    final grupo = Semantics(
+      container: true,
+      explicitChildNodes: true,
+      label: pregunta.prompt,
+      child: dosPorDos
+          ? Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                FilaDeOpciones(opciones: botones.sublist(0, 2)),
+                const SizedBox(height: 6),
+                FilaDeOpciones(opciones: botones.sublist(2)),
+              ],
+            )
+          : FilaDeOpciones(opciones: botones),
+    );
+    if (compacto) return grupo;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -1054,21 +1109,7 @@ class _Escala extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        Semantics(
-          container: true,
-          explicitChildNodes: true,
-          label: pregunta.prompt,
-          child: dosPorDos
-              ? Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _FilaDeOpciones(opciones: botones.sublist(0, 2)),
-                    const SizedBox(height: 6),
-                    _FilaDeOpciones(opciones: botones.sublist(2)),
-                  ],
-                )
-              : _FilaDeOpciones(opciones: botones),
-        ),
+        grupo,
       ],
     );
   }
@@ -1076,8 +1117,8 @@ class _Escala extends StatelessWidget {
 
 /// Una fila de opciones del mismo alto, aunque una etiqueta ocupe dos
 /// líneas.
-class _FilaDeOpciones extends StatelessWidget {
-  const _FilaDeOpciones({required this.opciones});
+class FilaDeOpciones extends StatelessWidget {
+  const FilaDeOpciones({super.key, required this.opciones});
 
   final List<Widget> opciones;
 
@@ -1097,8 +1138,8 @@ class _FilaDeOpciones extends StatelessWidget {
   }
 }
 
-class _OpcionDeEscala extends StatelessWidget {
-  const _OpcionDeEscala({
+class OpcionDeEscala extends StatelessWidget {
+  const OpcionDeEscala({
     super.key,
     required this.emoji,
     required this.etiqueta,

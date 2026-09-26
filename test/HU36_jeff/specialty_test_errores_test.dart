@@ -260,10 +260,10 @@ void _espera() {
         final c = await _hastaLaEspera(origen: origen, ui: ui);
         expect(ui.avisos.single.mensaje, _noDisponible);
         expect(ui.avisos.single.tipo, TipoDeAviso.info);
+        // El asistente y la bienvenida terminan en la selección manual, y
+        // el Perfil cierra su ruta (enmienda de la bienvenida a RF-TEST-1).
         expect(ui.cierres, [
-          origen == OrigenDelTest.asistente
-              ? SalidaDelTest.seleccionManual
-              : null,
+          origen == OrigenDelTest.perfil ? null : SalidaDelTest.seleccionManual,
         ]);
         expect(c.respuestas, isEmpty);
         expect(c.errorDeEspera.value, isNull);

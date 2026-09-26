@@ -1,0 +1,1516 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Splash de ULima++, tres conceptos</title>
+<!--
+  Copia de referencia de la página que el dueño vio el 2026-09-25 en el compañero de
+  brainstorming. El contenido es el mismo; solo cambian la captura, que va recortada al centro
+  y sin la barra de estado del teléfono, y este marco mínimo, que reemplaza al del compañero
+  para que la página se abra sola en un navegador. La spec es
+  specs/features/splash/splash.spec.md y, donde difiere de estas maquetas, manda la spec.
+-->
+<style>
+:root{--bg-primary:#f5f5f7;--bg-secondary:#fff;--bg-tertiary:#e5e5e7;--border:#d1d1d6;--text-primary:#1d1d1f;--text-secondary:#86868b;--text-tertiary:#aeaeb2;--accent:#0071e3;--selected-bg:#e8f4fd;--selected-border:#0071e3}
+@media (prefers-color-scheme:dark){:root{--bg-primary:#1d1d1f;--bg-secondary:#2d2d2f;--bg-tertiary:#3d3d3f;--border:#424245;--text-primary:#f5f5f7;--text-secondary:#86868b;--text-tertiary:#636366;--accent:#0a84ff;--selected-bg:rgba(10,132,255,.15);--selected-border:#0a84ff}}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg-primary);color:var(--text-primary);line-height:1.5}
+#frame-content{padding:2rem 16px;max-width:1212px;margin:0 auto}
+h2{font-size:1.5rem;font-weight:600;margin:0 0 .5rem}
+h3{font-size:1.1rem;font-weight:600;margin:0 0 .25rem}
+.subtitle{color:var(--text-secondary);margin:0 0 1.5rem}
+.option{background:var(--bg-secondary);border:2px solid var(--border);border-radius:12px;cursor:pointer}
+.option.selected{background:var(--selected-bg);border-color:var(--selected-border)}
+</style>
+</head>
+<body>
+<main id="frame-content">
+<style>
+.sp-page{max-width:1180px;margin:0 auto}
+.sp-page h2 .sp-page-i,.sp-page p .sp-page-i{font-style:italic}
+.sp-page .subtitle{max-width:760px}
+.sp-page-diag{display:flex;flex-wrap:wrap;align-items:flex-start;gap:16px 20px;margin:0 0 28px;padding:16px;border:1px solid var(--border);border-radius:12px;background:var(--bg-secondary)}
+.sp-page-shot{flex:none;width:160px;margin:0}
+.sp-page-shot-crop{position:relative;width:160px;height:170px;overflow:hidden;border-radius:12px;border:1px solid var(--border);background:#E77330}
+.sp-page-shot-crop img{position:absolute;display:block;width:160px;max-width:none;height:auto;left:0;top:0}
+.sp-page-shot figcaption{margin-top:6px;font-size:11.5px;line-height:1.35;color:var(--text-secondary)}
+.sp-page-diag-txt{flex:1 1 240px;min-width:0}
+.sp-page-diag-txt h3{margin:0 0 6px}
+.sp-page-diag-txt p{margin:0 0 8px;font-size:14px;color:var(--text-secondary)}
+.sp-page-diag-txt p:last-child{margin-bottom:0}
+.sp-page-grid.options{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:16px;align-items:stretch}
+.sp-page-grid.options>.option{display:block;min-width:0;padding:18px 14px 16px}
+.sp-page-note{margin:12px 0 0;font-size:13px;color:var(--text-secondary);max-width:760px}
+.sp-page-mejoras{margin-top:32px;max-width:760px}
+.sp-page-mejoras h3{margin:0 0 10px}
+.sp-page-mejoras ul{margin:0 0 16px;padding:0 0 0 20px}
+.sp-page-mejoras li{margin:0 0 7px;font-size:14px;color:var(--text-secondary)}
+.sp-page-mejoras li b{color:var(--text-primary);font-weight:600}
+.sp-page-cierre{margin:0;padding:12px 14px;border-radius:10px;background:var(--bg-tertiary);font-size:14px;color:var(--text-primary)}
+@media (max-width:480px){
+  #frame-content .sp-page-grid.options>.option{padding:14px 10px}
+  .sp-page-diag{padding:12px}
+}
+</style>
+
+<div class="sp-page">
+<h2>Un <span class="sp-page-i">splash</span> animado para ULima++</h2>
+<p class="subtitle">Tres conceptos para el arranque en Android y en iOS. Cada teléfono se reproduce solo, el botón Repetir lo vuelve a mostrar y un toque en la tarjeta la marca como favorita.</p>
+
+<div class="sp-page-diag">
+  <figure class="sp-page-shot">
+    <div class="sp-page-shot-crop"><img src="splash-actual-recorte.jpg" alt="Centro de la captura del splash actual en Android, con las puntas de la estrella y los signos más recortados" width="160" height="170"></div>
+    <figcaption>Captura actual, ampliada al centro de la pantalla</figcaption>
+  </figure>
+  <div class="sp-page-diag-txt">
+    <h3>Por qué se corta hoy</h3>
+    <p>El <span class="sp-page-i">splash</span> usa la misma imagen del ícono de la aplicación, con el logo casi hasta el borde. Android 12 y las versiones siguientes solo muestran la parte central de esa imagen, un círculo de dos tercios del cuadro, así que se pierden las puntas de la estrella y los «++».</p>
+    <p>Además, el naranja con textura del ícono no coincide con el fondo plano y se nota un cuadrado detrás del logo. Hoy esa pantalla queda quieta mientras cargan Firebase, la sesión y las alertas.</p>
+  </div>
+</div>
+
+<div class="options sp-page-grid">
+<div class="option" data-choice="ensamble" onclick="toggleSelect(this)">
+<div class="sp-ensamble" id="sp-ensamble-root">
+<style>
+.sp-ensamble{max-width:340px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--text-primary,#1d1d1f);line-height:1.45;text-align:left}
+.sp-ensamble *,.sp-ensamble *::before,.sp-ensamble *::after{box-sizing:border-box}
+.sp-ensamble p,.sp-ensamble h3{margin:0;padding:0}
+.sp-ensamble-phone{width:100%;max-width:300px;margin:0 auto;padding:8px;border-radius:42px;background:#101012;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 18px 40px -18px rgba(0,0,0,.55)}
+.sp-ensamble-glass{border-radius:34px;overflow:hidden;background:#E77330;transform:translateZ(0)}
+.sp-ensamble-screen{display:block;width:100%;height:auto;aspect-ratio:300/620}
+.sp-ensamble-screen text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.sp-ensamble-controls{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:center;margin-top:14px}
+.sp-ensamble-btn{-webkit-appearance:none;appearance:none;border:0;margin:0;border-radius:999px;padding:7px 15px 7px 12px;font-family:inherit;font-size:13px;font-weight:600;line-height:1.2;background:var(--text-primary,#1d1d1f);color:var(--bg-secondary,#fff);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.sp-ensamble-btn svg{display:block;width:14px;height:14px}
+.sp-ensamble-btn:focus-visible,.sp-ensamble-toggle input:focus-visible{outline:2px solid #FF6600;outline-offset:2px}
+.sp-ensamble-toggle{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-secondary,#6e6e73);cursor:pointer;-webkit-user-select:none;user-select:none}
+.sp-ensamble-toggle input{accent-color:#FF6600;width:15px;height:15px;margin:0}
+.sp-ensamble .sp-ensamble-phase{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:10px;min-height:1.45em;font-size:12px;color:var(--text-secondary,#86868b)}
+.sp-ensamble-dot{width:7px;height:7px;border-radius:50%;background:#8e8e93;flex:none;transition:background .2s}
+.sp-ensamble-dot[data-f="flutter"]{background:#FF6600}
+.sp-ensamble-dot[data-f="app"]{background:#34c759}
+.sp-ensamble-copy{margin-top:18px;padding-top:14px;border-top:1px solid var(--border,#d1d1d6)}
+.sp-ensamble-kicker{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-secondary,#86868b)}
+.sp-ensamble .sp-ensamble-title{font-size:18px;font-weight:700;line-height:1.25;margin:2px 0 6px;color:var(--text-primary,#1d1d1f)}
+.sp-ensamble .sp-ensamble-text{font-size:13.5px;margin:0 0 8px}
+.sp-ensamble .sp-ensamble-flutter{font-size:12.5px;color:var(--text-secondary,#86868b);margin:10px 0 0}
+.sp-ensamble-chip{display:inline-block;margin-right:6px;padding:1px 7px;border-radius:999px;border:1px solid var(--border,#d1d1d6);font-size:11px;font-weight:600;color:var(--text-primary,#1d1d1f);vertical-align:1px}
+.sp-ensamble code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+</style>
+
+<div class="sp-ensamble-phone" id="sp-ensamble-phone">
+<div class="sp-ensamble-glass">
+<svg class="sp-ensamble-screen" id="sp-ensamble-screen" viewBox="0 0 300 620" role="img" aria-label="Maqueta animada del concepto Ensamble, de la estrella del splash nativo a la pantalla de la aplicación">
+  <defs>
+    <filter id="sp-ensamble-blur" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="14"/></filter>
+    <linearGradient id="sp-ensamble-bandgrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="sp-ensamble-sweepgrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="sp-ensamble-bandmask" maskUnits="userSpaceOnUse" x="0" y="-150" width="1200" height="1100">
+      <rect id="sp-ensamble-band" x="-80" y="-700" width="160" height="1400" fill="url(#sp-ensamble-bandgrad)"/>
+    </mask>
+    <clipPath id="sp-ensamble-brandclip"><rect id="sp-ensamble-brandrect" x="40" y="34" width="0" height="40"/></clipPath>
+    <path id="sp-ensamble-cross" d="M-8.7-36.3H8.7V-8.7H36.3V8.7H8.7V36.3H-8.7V8.7H-36.3V-8.7H-8.7Z"/>
+  </defs>
+
+  <!-- App (destino final) -->
+  <g id="sp-ensamble-app">
+    <rect x="0" y="0" width="300" height="620" fill="#F5F5F7"/>
+    <g id="sp-ensamble-c0">
+      <text x="16" y="113" font-size="14" font-weight="700" fill="#1c1c1e">Esta semana</text>
+      <text x="16" y="128" font-size="9.5" fill="#6e6e73">2 clases hoy y un parcial el jueves</text>
+    </g>
+    <g id="sp-ensamble-c1">
+      <rect x="14" y="140" width="272" height="68" rx="12" fill="#fff" stroke="#e9e9ee"/>
+      <text x="28" y="160" font-size="8" font-weight="700" letter-spacing=".5" fill="#C24E00">HOY · 10:00</text>
+      <text x="28" y="177" font-size="12" font-weight="700" fill="#1c1c1e">Ingeniería de Software I</text>
+      <text x="28" y="194" font-size="9.5" fill="#6e6e73">Aula E-305 · Sección 715</text>
+      <path d="M268 170l5 5-5 5" fill="none" stroke="#c7c7cc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="sp-ensamble-c2">
+      <rect x="14" y="218" width="272" height="68" rx="12" fill="#fff" stroke="#e9e9ee"/>
+      <text x="28" y="238" font-size="8" font-weight="700" letter-spacing=".5" fill="#C24E00">JUE 2 OCT</text>
+      <text x="28" y="255" font-size="12" font-weight="700" fill="#1c1c1e">Parcial de Estadística</text>
+      <text x="28" y="272" font-size="9.5" fill="#6e6e73">Pesa 25 % del promedio</text>
+      <path d="M268 248l5 5-5 5" fill="none" stroke="#c7c7cc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="sp-ensamble-c3">
+      <rect x="14" y="296" width="272" height="68" rx="12" fill="#fff" stroke="#e9e9ee"/>
+      <text x="28" y="316" font-size="8" font-weight="700" letter-spacing=".5" fill="#C24E00">ANUNCIO</text>
+      <text x="28" y="333" font-size="12" font-weight="700" fill="#1c1c1e">Cambio de aula del laboratorio</text>
+      <text x="28" y="350" font-size="9.5" fill="#6e6e73">Delegado de aula</text>
+      <path d="M268 326l5 5-5 5" fill="none" stroke="#c7c7cc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="sp-ensamble-c4">
+      <rect x="14" y="374" width="272" height="68" rx="12" fill="#fff" stroke="#e9e9ee"/>
+      <rect x="28" y="390" width="54" height="7" rx="3.5" fill="#ececf0"/>
+      <rect x="28" y="405" width="170" height="10" rx="5" fill="#ececf0"/>
+      <rect x="28" y="422" width="110" height="7" rx="3.5" fill="#ececf0"/>
+    </g>
+    <g id="sp-ensamble-c5">
+      <rect x="14" y="452" width="272" height="68" rx="12" fill="#fff" stroke="#e9e9ee"/>
+      <rect x="28" y="468" width="46" height="7" rx="3.5" fill="#ececf0"/>
+      <rect x="28" y="483" width="150" height="10" rx="5" fill="#ececf0"/>
+      <rect x="28" y="500" width="90" height="7" rx="3.5" fill="#ececf0"/>
+    </g>
+    <g id="sp-ensamble-nav">
+      <rect x="0" y="560" width="300" height="60" fill="#1E1E24"/>
+      <g fill="none" stroke="#fff" stroke-opacity=".68" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <g transform="translate(30 580)"><circle cx="0" cy="-5" r="2.3"/><circle cx="-5.5" cy="4.5" r="2.3"/><circle cx="5.5" cy="4.5" r="2.3"/><path d="M-1.2-3 -4.3 2.6M1.2-3 4.3 2.6"/></g>
+        <g transform="translate(90 580)"><rect x="-5.5" y="-7" width="11" height="14" rx="2"/><path d="M-3-4H3M-3 0h.01M0 0h.01M3 0h.01M-3 3.5h.01M0 3.5h.01M3 3.5h.01"/></g>
+        <g transform="translate(150 580)" stroke="#FF6600" stroke-opacity="1"><rect x="-6.5" y="-5.5" width="13" height="12" rx="2"/><path d="M-6.5-1.5H6.5M-3-7.5v3M3-7.5v3"/></g>
+        <g transform="translate(210 580)"><path d="M-6.5-6.5H6.5V3H-1.5L-5 6.5V3H-6.5Z"/></g>
+        <g transform="translate(270 580)"><circle cx="0" cy="0" r="7"/><circle cx="0" cy="-1.8" r="2.4"/><path d="M-4.4 5.2C-3.4 3.3-1.8 2.6 0 2.6S3.4 3.3 4.4 5.2"/></g>
+      </g>
+      <g font-size="7.5" fill="#fff" fill-opacity=".68" text-anchor="middle">
+        <text x="30" y="600">Malla</text><text x="90" y="600">Notas</text><text x="150" y="600" fill="#FF6600" fill-opacity="1" font-weight="600">Horario</text><text x="210" y="600">Chats</text><text x="270" y="600">Perfil</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Fondo naranja que termina siendo la cabecera -->
+  <path id="sp-ensamble-panel" d="M0 0H300V620H0Z" fill="#E77330"/>
+  <rect id="sp-ensamble-sweep" x="-55" y="-700" width="110" height="1400" fill="url(#sp-ensamble-sweepgrad)" display="none"/>
+
+  <!-- Logo en unidades del SVG institucional (centro de la estrella 590.2, 394.3) -->
+  <g id="sp-ensamble-logo" transform="translate(150 310) scale(0.25) translate(-590.2 -394.3)">
+    <circle id="sp-ensamble-ring" cx="590.2" cy="394.3" r="370" fill="none" stroke="#fff" stroke-width="16" opacity="0" display="none"/>
+    <g id="sp-ensamble-glow" mask="url(#sp-ensamble-bandmask)" display="none">
+      <g filter="url(#sp-ensamble-blur)" fill="#fff">
+        <polygon points="501.1 179.2 590.2 290.9 679.3 179.2 663.3 321.2 805.3 305.2 693.6 394.3 805.3 483.3 663.3 467.3 679.3 609.3 590.2 497.6 501.1 609.3 517.2 467.3 375.1 483.3 486.8 394.3 375.1 305.2 517.2 321.2"/>
+        <polygon points="590.2 279.7 679.7 167.4 590.2 45.4 500.7 167.4"/>
+        <polygon points="671.3 313.2 813.9 297.1 836.9 147.6 687.4 170.6"/>
+        <polygon points="817.1 304.8 704.8 394.3 817.1 483.7 939.1 394.3"/>
+        <polygon points="671.3 475.3 687.4 617.9 836.9 641.0 813.9 491.4"/>
+        <polygon points="590.2 508.8 500.7 621.1 590.2 743.2 679.7 621.1"/>
+        <polygon points="509.2 475.3 366.6 491.4 343.5 641.0 493.1 617.9"/>
+        <polygon points="475.6 394.3 363.3 304.8 241.3 394.3 363.3 483.7"/>
+        <polygon points="509.2 313.2 493.1 170.6 343.5 147.6 366.6 297.1"/>
+      </g>
+    </g>
+    <g fill="#fff">
+      <polygon id="sp-ensamble-star" points="501.1 179.2 590.2 290.9 679.3 179.2 663.3 321.2 805.3 305.2 693.6 394.3 805.3 483.3 663.3 467.3 679.3 609.3 590.2 497.6 501.1 609.3 517.2 467.3 375.1 483.3 486.8 394.3 375.1 305.2 517.2 321.2"/>
+      <polygon id="sp-ensamble-r0" opacity="0" points="590.2 279.7 679.7 167.4 590.2 45.4 500.7 167.4"/>
+      <polygon id="sp-ensamble-r1" opacity="0" points="671.3 313.2 813.9 297.1 836.9 147.6 687.4 170.6"/>
+      <polygon id="sp-ensamble-r2" opacity="0" points="817.1 304.8 704.8 394.3 817.1 483.7 939.1 394.3"/>
+      <polygon id="sp-ensamble-r3" opacity="0" points="671.3 475.3 687.4 617.9 836.9 641.0 813.9 491.4"/>
+      <polygon id="sp-ensamble-r4" opacity="0" points="590.2 508.8 500.7 621.1 590.2 743.2 679.7 621.1"/>
+      <polygon id="sp-ensamble-r5" opacity="0" points="509.2 475.3 366.6 491.4 343.5 641.0 493.1 617.9"/>
+      <polygon id="sp-ensamble-r6" opacity="0" points="475.6 394.3 363.3 304.8 241.3 394.3 363.3 483.7"/>
+      <polygon id="sp-ensamble-r7" opacity="0" points="509.2 313.2 493.1 170.6 343.5 147.6 366.6 297.1"/>
+    </g>
+  </g>
+
+  <!-- Los «++» viven fuera del logo porque viajan solos hasta la cabecera -->
+  <circle id="sp-ensamble-pring0" r="6" fill="none" stroke="#fff" opacity="0" display="none"/>
+  <circle id="sp-ensamble-pring1" r="6" fill="none" stroke="#fff" opacity="0" display="none"/>
+  <use id="sp-ensamble-p0" href="#sp-ensamble-cross" fill="#fff" opacity="0"/>
+  <use id="sp-ensamble-p1" href="#sp-ensamble-cross" fill="#fff" opacity="0"/>
+
+  <!-- Cabecera -->
+  <g clip-path="url(#sp-ensamble-brandclip)">
+    <text id="sp-ensamble-brand" x="44" y="62" font-size="17" font-weight="800" font-style="italic" letter-spacing=".2" fill="#fff">ULIMA</text>
+  </g>
+  <g id="sp-ensamble-bell" opacity="0" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M263.5 60.5h13l-1.6-2.2v-5a4.9 4.9 0 0 0-9.8 0v5z"/><path d="M268.3 63.6a1.8 1.8 0 0 0 3.4 0"/>
+  </g>
+
+  <!-- Splash nativo: imagen estática, solo la estrella central. Sin movimiento, el resto del logo aparece aquí por fundido. -->
+  <g id="sp-ensamble-native">
+    <rect x="0" y="0" width="300" height="620" fill="#E77330"/>
+    <g transform="translate(150 310) scale(0.25) translate(-590.2 -394.3)" fill="#fff">
+      <polygon points="501.1 179.2 590.2 290.9 679.3 179.2 663.3 321.2 805.3 305.2 693.6 394.3 805.3 483.3 663.3 467.3 679.3 609.3 590.2 497.6 501.1 609.3 517.2 467.3 375.1 483.3 486.8 394.3 375.1 305.2 517.2 321.2"/>
+      <g id="sp-ensamble-nfull" opacity="0">
+        <polygon points="590.2 279.7 679.7 167.4 590.2 45.4 500.7 167.4"/>
+        <polygon points="671.3 313.2 813.9 297.1 836.9 147.6 687.4 170.6"/>
+        <polygon points="817.1 304.8 704.8 394.3 817.1 483.7 939.1 394.3"/>
+        <polygon points="671.3 475.3 687.4 617.9 836.9 641.0 813.9 491.4"/>
+        <polygon points="590.2 508.8 500.7 621.1 590.2 743.2 679.7 621.1"/>
+        <polygon points="509.2 475.3 366.6 491.4 343.5 641.0 493.1 617.9"/>
+        <polygon points="475.6 394.3 363.3 304.8 241.3 394.3 363.3 483.7"/>
+        <polygon points="509.2 313.2 493.1 170.6 343.5 147.6 366.6 297.1"/>
+        <use href="#sp-ensamble-cross" transform="translate(897 260.8)"/>
+        <use href="#sp-ensamble-cross" transform="translate(991.4 260.8)"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Barra de estado y gesto del sistema -->
+  <g fill="#fff">
+    <text x="20" y="18" font-size="11" font-weight="600">9:41</text>
+    <circle cx="150" cy="14" r="5" fill="#0b0b0c"/>
+    <rect x="235" y="14" width="2.2" height="3.5" rx=".6"/><rect x="238.7" y="12" width="2.2" height="5.5" rx=".6"/><rect x="242.4" y="10" width="2.2" height="7.5" rx=".6"/><rect x="246.1" y="8" width="2.2" height="9.5" rx=".6"/>
+    <path d="M252.5 11.2a8 8 0 0 1 11 0L258 17.2z"/>
+    <rect x="268.5" y="8.5" width="18" height="9" rx="2.5" fill="none" stroke="#fff" stroke-opacity=".85"/>
+    <rect x="270.5" y="10.5" width="12" height="5" rx="1"/>
+    <rect x="287.3" y="11" width="1.6" height="4" rx=".8" fill-opacity=".85"/>
+  </g>
+  <rect id="sp-ensamble-pill" x="105" y="610" width="90" height="3.5" rx="1.75" fill="#fff" fill-opacity=".7"/>
+</svg>
+</div>
+</div>
+
+<div class="sp-ensamble-controls">
+  <button type="button" class="sp-ensamble-btn" id="sp-ensamble-replay"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2.5 2.2v3.6h3.6"/></svg>Repetir</button>
+  <label class="sp-ensamble-toggle"><input type="checkbox" id="sp-ensamble-slow">Carga lenta</label>
+  <label class="sp-ensamble-toggle"><input type="checkbox" id="sp-ensamble-reduce">Sin movimiento</label>
+</div>
+<p class="sp-ensamble-phase"><span class="sp-ensamble-dot" id="sp-ensamble-dot"></span><span id="sp-ensamble-phase">Nativo, imagen fija</span></p>
+
+<div class="sp-ensamble-copy">
+  <p class="sp-ensamble-kicker">Concepto A</p>
+  <h3 class="sp-ensamble-title">Ensamble</h3>
+  <p class="sp-ensamble-text">El <i>splash</i> nativo muestra solo la estrella central, entera dentro del círculo seguro de Android. En Flutter, los ocho rombos entran en espiral en sentido horario y encajan con un rebote leve, un destello cruza el logo y los «++» saltan uno tras otro, como un contador que suma.</p>
+  <p class="sp-ensamble-text">El logo se arma frente al alumno y los «++» viajan hasta la cabecera para volverse los de «ULIMA++», así que el <i>splash</i> y la aplicación se leen como un solo gesto. Si la carga se alarga, los rombos laten en ronda y hacen de indicador de progreso.</p>
+  <p class="sp-ensamble-flutter"><span class="sp-ensamble-chip">Flutter</span>Un <code>AnimationController</code> de 1,25&nbsp;s con intervalos escalonados mueve los polígonos del SVG en un <code>CustomPainter</code> y otro de 0,53&nbsp;s hace la salida, 1,78&nbsp;s en total. La cabecera final replica la real, así que el cambio de ruta va sin transición.</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var P = 'sp-ensamble-';
+  var root = document.getElementById(P + 'root');
+  if (!root || root.getAttribute('data-sp-init') === '1') return;
+  root.setAttribute('data-sp-init', '1');
+  function el(id) { return document.getElementById(P + id); }
+
+  // Geometría (unidades del SVG institucional, viewBox 0 0 1180.4 1080).
+  var CX = 590.2, CY = 394.3;
+  var K0 = 0.25;            // px por unidad en el splash (estrella dentro del círculo seguro)
+  var K1 = 0.0285;          // px por unidad del logo ya en la cabecera
+  var KC = 0.138;           // px por unidad de cada cruz convertida en glifo
+  var SPLASH = [150, 310], HEAD = [28, 56], LOGO_CTRL = [132, 84];
+  var PLUS_POS = [[897.0, 260.8], [991.4, 260.8]];
+  // Rombos en sentido horario desde arriba: centroide y dirección hacia afuera.
+  var RH = [
+    [590.2, 164.9, 0, -1], [752.4, 232.1, 0.7071, -0.7071], [819.5, 394.3, 1, 0], [752.4, 556.4, 0.7071, 0.7071],
+    [590.2, 623.6, 0, 1], [428.1, 556.4, -0.7071, 0.7071], [360.9, 394.3, -1, 0], [428.1, 232.1, -0.7071, -0.7071]
+  ];
+
+  // Línea de tiempo en ms. tau = 0 es el primer cuadro de Flutter (runApp inmediato).
+  // Intro de 1250 ms y salida de 530 ms, 1,78 s en total (tope de 1,8 s).
+  var NATIVE = 700, RH_START = 60, RH_STAG = 50, RH_DUR = 390;
+  var GLINT = 720, GLINT_DUR = 360, RING_DUR = 540, PLUS = [860, 930], PLUS_DUR = 300;
+  var INTRO_END = 1250, TR_DUR = 530, LOAD_FAST = 900, LOAD_SLOW = 3600, FADE = 220;
+
+  var n = {
+    phone: el('phone'), panel: el('panel'), sweep: el('sweep'), logo: el('logo'), ring: el('ring'),
+    glow: el('glow'), band: el('band'), star: el('star'), native: el('native'), nfull: el('nfull'), brand: el('brand'),
+    brandRect: el('brandrect'), bell: el('bell'), pill: el('pill'), nav: el('nav'),
+    phase: el('phase'), dot: el('dot'), replay: el('replay'), slow: el('slow'), reduce: el('reduce')
+  };
+  var rh = [], cards = [], plus = [el('p0'), el('p1')], pring = [el('pring0'), el('pring1')];
+  var i;
+  for (i = 0; i < 8; i++) rh.push(el('r' + i));
+  for (i = 0; i < 6; i++) cards.push(el('c' + i));
+
+  function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function lerp(a, b, x) { return a + (b - a) * x; }
+  function outCubic(x) { return 1 - Math.pow(1 - x, 3); }
+  function inOutCubic(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  function outBack(x, s) { var c = s + 1; return 1 + c * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); }
+  function quad(a, c, b, t) { var u = 1 - t; return u * u * a + 2 * u * t * c + t * t * b; }
+  function f(v) { return (Math.round(v * 100) / 100).toString(); }
+  function mix(c1, c2, t) {
+    return 'rgb(' + Math.round(lerp(c1[0], c2[0], t)) + ',' + Math.round(lerp(c1[1], c2[1], t)) + ',' + Math.round(lerp(c1[2], c2[2], t)) + ')';
+  }
+  function show(node, on) { node.setAttribute('display', on ? 'inline' : 'none'); }
+
+  var brandLen = 50;
+  function measureBrand() {
+    try { var w = n.brand.getComputedTextLength(); if (w > 10) brandLen = w; } catch (e) { /* sin medida, queda el valor por defecto */ }
+  }
+
+  var lastPhase = '';
+  function setPhase(txt, kind) {
+    if (txt === lastPhase) return;
+    lastPhase = txt;
+    n.phase.textContent = txt;
+    n.dot.setAttribute('data-f', kind);
+  }
+
+  // Pose de la intro animada en el instante tau, con la carga lista en loadAt.
+  function pose(tau, loadAt) {
+    var trStart = Math.max(INTRO_END, loadAt);
+    var qRaw = clamp((tau - trStart) / TR_DUR);
+    var q = inOutCubic(qRaw);
+
+    // Espera en bucle: una onda recorre los rombos en sentido horario.
+    var waitAmp = 0, ph = (tau - INTRO_END) / 1100;
+    if (loadAt > INTRO_END && tau > INTRO_END) waitAmp = clamp((tau - INTRO_END) / 300) * (1 - clamp(qRaw * 3));
+
+    var kick = 0;
+    for (var k = 0; k < 8; k++) {
+      var start = RH_START + k * RH_STAG;
+      var p = clamp((tau - start) / RH_DUR);
+      var x = (tau - start - RH_DUR * 0.45) / 190;
+      if (x > 0 && x < 1) kick += Math.sin(Math.PI * x);
+      if (p <= 0) { rh[k].setAttribute('opacity', '0'); continue; }
+      var r = RH[k];
+      var off = 260 * (1 - outBack(p, 1.25));
+      if (waitAmp > 0) { var s = Math.sin(2 * Math.PI * (ph - k / 8)); off += waitAmp * 20 * (s > 0 ? Math.pow(s, 6) : 0); }
+      var ang = -80 * (1 - outCubic(p));
+      var sc = 0.45 + 0.55 * outCubic(p);
+      rh[k].setAttribute('transform',
+        'rotate(' + f(ang) + ' ' + CX + ' ' + CY + ') translate(' + f(r[2] * off) + ' ' + f(r[3] * off) + ') ' +
+        'translate(' + r[0] + ' ' + r[1] + ') scale(' + sc.toFixed(4) + ') translate(' + (-r[0]) + ' ' + (-r[1]) + ')');
+      rh[k].setAttribute('opacity', f(clamp(p / 0.22)));
+    }
+    // La estrella absorbe cada encaje con una compresión mínima.
+    var ss = 1 - 0.022 * Math.min(kick, 1.4);
+    n.star.setAttribute('transform', 'translate(' + CX + ' ' + CY + ') scale(' + ss.toFixed(4) + ') translate(' + (-CX) + ' ' + (-CY) + ')');
+
+    // Destello: halo que cruza el logo en diagonal y se cuela por las rendijas.
+    var g = (tau - GLINT) / GLINT_DUR;
+    if (g > 0 && g < 1) {
+      var m = lerp(-560, 560, g), env = Math.sin(Math.PI * g);
+      show(n.glow, true); show(n.sweep, true);
+      n.glow.setAttribute('opacity', f(env));
+      n.band.setAttribute('transform', 'translate(' + f(CX + m * 0.7071) + ' ' + f(CY - m * 0.7071) + ') rotate(-45)');
+      n.sweep.setAttribute('opacity', f(env));
+      n.sweep.setAttribute('transform', 'translate(' + f(SPLASH[0] + m * K0 * 0.7071) + ' ' + f(SPLASH[1] - m * K0 * 0.7071) + ') rotate(-45)');
+    } else { show(n.glow, false); show(n.sweep, false); }
+    var rg = (tau - GLINT) / RING_DUR;
+    if (rg > 0 && rg < 1) {
+      show(n.ring, true);
+      n.ring.setAttribute('r', f(lerp(370, 640, outCubic(rg))));
+      n.ring.setAttribute('stroke-width', f(lerp(16, 3, rg)));
+      n.ring.setAttribute('opacity', f(0.35 * (1 - rg)));
+    } else show(n.ring, false);
+
+    // Transición: el fondo se recoge en cabecera y el logo vuela a la esquina.
+    var qp = inOutCubic(clamp(qRaw / 0.9));
+    var h = lerp(620, 84, qp), b = 110 * Math.sin(Math.PI * qp);
+    n.panel.setAttribute('d', 'M0 0H300V' + f(h) + 'Q150 ' + f(h + b) + ' 0 ' + f(h) + 'Z');
+    n.panel.setAttribute('fill', mix([231, 115, 48], [255, 102, 0], qp));
+    var lx = quad(SPLASH[0], LOGO_CTRL[0], HEAD[0], q), ly = quad(SPLASH[1], LOGO_CTRL[1], HEAD[1], q);
+    var lk = K0 * Math.pow(K1 / K0, q);
+    n.logo.setAttribute('transform', 'translate(' + f(lx) + ' ' + f(ly) + ') scale(' + lk.toFixed(5) + ') translate(' + (-CX) + ' ' + (-CY) + ')');
+
+    // Los «++» saltan como un contador y después viajan tras «ULIMA».
+    for (var j = 0; j < 2; j++) {
+      var pp = clamp((tau - PLUS[j]) / PLUS_DUR);
+      var sx = SPLASH[0] + (PLUS_POS[j][0] - CX) * K0, sy = SPLASH[1] + (PLUS_POS[j][1] - CY) * K0;
+      var hx = 44 + brandLen + 7 + j * 11, hy = HEAD[1] - 0.5;
+      var qj = inOutCubic(clamp((qRaw - j * 0.04) / 0.96));
+      var px = quad(sx, sx, hx, qj), py = quad(sy, hy, hy, qj);
+      var pop = pp <= 0 ? 0 : outBack(pp, 2.4);
+      var psc = K0 * pop * Math.pow(KC / K0, qj);
+      var rot = -90 * (1 - outCubic(pp));
+      plus[j].setAttribute('opacity', pp <= 0 ? '0' : f(clamp(pp / 0.12)));
+      plus[j].setAttribute('transform', 'translate(' + f(px) + ' ' + f(py) + ') skewX(' + f(-12 * qj) + ') rotate(' + f(rot) + ') scale(' + psc.toFixed(4) + ')');
+      // Onda breve que sale de la cruz cuando el salto ya terminó.
+      var rt = (tau - PLUS[j] - PLUS_DUR * 0.5) / 300;
+      if (rt > 0 && rt < 1 && qRaw < 0.25) {
+        show(pring[j], true);
+        pring[j].setAttribute('cx', f(sx)); pring[j].setAttribute('cy', f(sy));
+        pring[j].setAttribute('r', f(lerp(12, 30, outCubic(rt))));
+        pring[j].setAttribute('stroke-width', f(lerp(1.4, 0.3, rt)));
+        pring[j].setAttribute('opacity', f(0.55 * (1 - rt) * (1 - qRaw * 4)));
+      } else show(pring[j], false);
+    }
+
+    // Cabecera y contenido de la app.
+    var a = outCubic(clamp((qRaw - 0.68) / 0.32));
+    n.brandRect.setAttribute('width', f(a * (brandLen + 10)));
+    n.brand.setAttribute('opacity', f(a));
+    n.bell.setAttribute('opacity', f(clamp((qRaw - 0.6) / 0.4)));
+    for (var c = 0; c < cards.length; c++) {
+      var e = outCubic(clamp((qRaw - 0.3 - c * 0.07) / 0.4));
+      cards[c].setAttribute('opacity', f(e));
+      cards[c].setAttribute('transform', 'translate(0 ' + f(18 * (1 - e)) + ')');
+    }
+    var nv = outCubic(clamp((qRaw - 0.25) / 0.5));
+    n.nav.setAttribute('transform', 'translate(0 ' + f(60 * (1 - nv)) + ')');
+    n.pill.setAttribute('fill-opacity', f(lerp(0.7, 0.45, qp)));
+
+    return { trStart: trStart, qRaw: qRaw };
+  }
+
+  var raf = 0, t0 = 0, reduceMode = false, loadAt = LOAD_FAST;
+
+  function frame(now) {
+    var tau = now - t0 - NATIVE;
+    var done = false;
+    if (reduceMode) {
+      // Sin movimiento: el resto del logo y los «++» aparecen por fundido, nada se desplaza,
+      // y cuando la carga termina la aplicación entra con otro fundido.
+      var o = tau < loadAt ? 1 : 1 - clamp((tau - loadAt) / FADE);
+      n.native.setAttribute('opacity', f(o));
+      n.nfull.setAttribute('opacity', f(clamp(tau / 200)));
+      show(n.native, o > 0);
+      if (tau < 0) setPhase('Nativo, imagen fija', 'native');
+      else if (tau < loadAt) setPhase('Flutter quieto, la carga corre en paralelo', 'flutter');
+      else if (o > 0) setPhase('Fundido a la aplicación', 'flutter');
+      else { setPhase('Aplicación lista', 'app'); done = true; }
+    } else {
+      show(n.native, tau < 0);
+      n.native.setAttribute('opacity', '1');
+      n.nfull.setAttribute('opacity', '0');
+      var st = pose(Math.max(tau, 0), loadAt);
+      if (tau < 0) setPhase('Nativo, imagen fija', 'native');
+      else if (tau < INTRO_END) setPhase('Flutter anima, la carga corre en paralelo', 'flutter');
+      else if (tau < st.trStart) setPhase('La carga sigue, espera en bucle', 'flutter');
+      else if (st.qRaw < 1) setPhase('Salida a la aplicación', 'flutter');
+      else { setPhase('Aplicación lista', 'app'); done = true; }
+    }
+    raf = done ? 0 : requestAnimationFrame(frame);
+  }
+
+  function play() {
+    if (raf) cancelAnimationFrame(raf);
+    reduceMode = n.reduce.checked;
+    loadAt = n.slow.checked ? LOAD_SLOW : LOAD_FAST;
+    measureBrand();
+    if (reduceMode) pose(1e7, 0);
+    t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+    frame(t0);
+  }
+
+  // Vista quieta inicial: el splash nativo, igual al primer cuadro de Flutter.
+  n.reduce.checked = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  show(n.native, true);
+  setPhase('Nativo, imagen fija', 'native');
+
+  // Los controles no deben marcar la opción del companion que envuelve al concepto.
+  n.replay.addEventListener('click', function (ev) { ev.stopPropagation(); play(); });
+  n.replay.parentNode.addEventListener('click', function (ev) { ev.stopPropagation(); });
+  n.slow.addEventListener('change', play);
+  n.reduce.addEventListener('change', play);
+
+  // Para revisar un instante concreto desde la consola (no se usa en la maqueta).
+  root.spSeek = function (ms, slow) {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    reduceMode = false; measureBrand();
+    var la = slow ? LOAD_SLOW : LOAD_FAST;
+    n.native.setAttribute('opacity', '1');
+    n.nfull.setAttribute('opacity', '0');
+    show(n.native, ms < NATIVE);
+    pose(Math.max(ms - NATIVE, 0), la);
+  };
+
+  // Arranca sola la primera vez que la mitad del teléfono está en pantalla.
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      for (var k = 0; k < entries.length; k++) {
+        if (entries[k].isIntersecting) { io.disconnect(); play(); return; }
+      }
+    }, { threshold: 0.5 });
+    io.observe(n.phone);
+  } else {
+    play();
+  }
+})();
+</script>
+</div>
+</div>
+<div class="option" data-choice="incremento" onclick="toggleSelect(this)">
+<section class="sp-incremento-root" id="sp-incremento-root" aria-label="Concepto B, Incremento">
+<style>
+  .sp-incremento-root { width: 100%; max-width: 340px; margin: 0 auto; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text-primary, #1d1d1f); }
+  .sp-incremento-root *, .sp-incremento-root *::before, .sp-incremento-root *::after { box-sizing: border-box; }
+
+  /* Marco del teléfono (300 x 620, se escala si el contenedor es más angosto) */
+  .sp-incremento-box { position: relative; width: 100%; max-width: 300px; height: 620px; margin: 0 auto; }
+  .sp-incremento-phone { position: absolute; left: 0; top: 0; width: 300px; height: 620px; padding: 6px; border-radius: 38px; background: #0e0e10; box-shadow: inset 0 0 0 1px rgba(255,255,255,.09), 0 18px 40px -20px rgba(0,0,0,.6); transform-origin: 0 0; }
+  .sp-incremento-screen { position: relative; width: 288px; height: 608px; border-radius: 32px; overflow: hidden; isolation: isolate; background: #FEFDFC; font-family: Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  /* Pantalla falsa de la app (debajo de todo). La fila de la cabecera va en una capa sobre la cortina. */
+  .sp-incremento-app { position: absolute; inset: 0; z-index: 1; }
+  .sp-incremento-head { position: absolute; left: 0; top: 0; right: 0; height: 80px; background: #FF6600; z-index: 2; }
+  .sp-incremento-headfg { position: absolute; left: 0; top: 0; right: 0; height: 80px; z-index: 4; pointer-events: none; }
+  .sp-incremento-row { position: absolute; left: 16px; right: 16px; top: 40px; height: 24px; display: flex; align-items: center; }
+  .sp-incremento-hstar { width: 20.8px; height: 20.8px; flex: none; margin-right: 8px; overflow: visible; }
+  .sp-incremento-wm { color: #fff; font-size: 16px; line-height: 1; font-weight: 700; font-style: italic; letter-spacing: .2px; white-space: nowrap; }
+  .sp-incremento-bell { position: relative; margin-left: auto; width: 24px; height: 24px; flex: none; }
+  .sp-incremento-bell svg { width: 24px; height: 24px; display: block; }
+  .sp-incremento-bell i { position: absolute; right: 1px; top: 1px; width: 7px; height: 7px; border-radius: 50%; background: #1D6FDB; box-shadow: 0 0 0 1.5px #FF6600; }
+  .sp-incremento-body { position: absolute; left: 0; right: 0; top: 80px; bottom: 0; z-index: 1; will-change: transform; }
+  .sp-incremento-date { height: 38px; background: #FDE6D8; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: #1f1f1f; font-size: 12.8px; font-weight: 700; }
+  .sp-incremento-date svg { width: 16px; height: 16px; }
+  .sp-incremento-week { height: 22px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #6b6b6b; border-bottom: 1px solid #ededed; background: #fff; }
+  .sp-incremento-grid { position: absolute; left: 0; right: 0; top: 60px; bottom: 60px; overflow: hidden; background: #FEFDFC; }
+  .sp-incremento-hour { position: absolute; left: 0; right: 0; height: 1px; background: #efefef; }
+  .sp-incremento-hour span { position: absolute; left: 8px; top: -6px; font-size: 8px; color: #9a9a9a; background: #FEFDFC; padding-right: 3px; }
+  .sp-incremento-blk { position: absolute; left: 46px; right: 10px; border-radius: 10px; color: #fff; text-align: center; padding-top: 9px; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .sp-incremento-blk b { display: block; font-size: 9.6px; letter-spacing: .2px; }
+  .sp-incremento-blk small { display: block; font-size: 8px; opacity: .92; margin-top: 2px; }
+  .sp-incremento-blk em { position: absolute; left: 8px; bottom: 8px; font-style: normal; font-size: 7px; font-weight: 700; color: #1f1f1f; background: #fff; border-radius: 4px; padding: 3px 6px; }
+  .sp-incremento-nav { position: absolute; left: 0; right: 0; bottom: 0; height: 60px; background: #1E1E24; display: flex; justify-content: space-around; padding-top: 9px; }
+  .sp-incremento-nav div { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 8px; color: rgba(255,255,255,.68); width: 20%; }
+  .sp-incremento-nav svg { width: 17px; height: 17px; }
+  .sp-incremento-nav .sp-incremento-on { color: #FF6600; font-weight: 600; }
+  .sp-incremento-pill { position: absolute; left: 50%; bottom: 5px; width: 92px; height: 4px; margin-left: -46px; border-radius: 2px; background: #fff; opacity: .45; }
+
+  /* Capas del splash */
+  .sp-incremento-curtain { position: absolute; left: 0; top: 0; width: 100%; height: 608px; background: #E77330; z-index: 3; will-change: height; }
+  .sp-incremento-fx { position: absolute; left: 0; top: 0; width: 288px; height: 608px; z-index: 5; overflow: visible; pointer-events: none; }
+  .sp-incremento-status { position: absolute; left: 0; right: 0; top: 0; height: 20px; z-index: 6; display: flex; align-items: center; justify-content: space-between; padding: 0 18px 0 20px; color: #fff; font-size: 10.5px; font-weight: 600; pointer-events: none; }
+  .sp-incremento-status svg { width: 42px; height: 10px; }
+
+  /* Controles y fases, con las variables del companion */
+  .sp-incremento-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; max-width: 300px; margin: 12px auto 0; font-size: 12px; color: var(--text-secondary, #86868b); }
+  .sp-incremento-btn { appearance: none; -webkit-appearance: none; display: inline-flex; align-items: center; gap: 5px; margin: 0; padding: 5px 12px; border: 1px solid var(--border, #d1d1d6); border-radius: 999px; background: var(--bg-secondary, #fff); color: var(--text-primary, #1d1d1f); font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1.2; cursor: pointer; }
+  .sp-incremento-btn:hover { border-color: #E77330; }
+  .sp-incremento-btn:focus-visible { outline: 2px solid #E77330; outline-offset: 2px; }
+  .sp-incremento-btn svg { width: 12px; height: 12px; }
+  .sp-incremento-chk { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; -webkit-user-select: none; }
+  .sp-incremento-chk input { margin: 0; accent-color: #E77330; }
+  .sp-incremento-clock { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-tertiary, var(--text-secondary, #86868b)); }
+  .sp-incremento-phases { list-style: none; display: flex; flex-wrap: wrap; gap: 4px; max-width: 300px; margin: 8px auto 0; padding: 0; }
+  .sp-incremento-phases li { margin: 0; padding: 2px 7px; border: 1px solid var(--border, #d1d1d6); border-radius: 999px; font-size: 10.5px; line-height: 1.4; color: var(--text-secondary, #86868b); transition: background-color .15s, color .15s, opacity .15s; }
+  .sp-incremento-phases li.sp-incremento-is-on { background: #E77330; border-color: #E77330; color: #fff; }
+  .sp-incremento-phases li.sp-incremento-is-skip { opacity: .35; text-decoration: line-through; }
+
+  /* Texto del concepto */
+  .sp-incremento-meta { max-width: 300px; margin: 14px auto 0; }
+  .sp-incremento-kicker { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary, #86868b); }
+  .sp-incremento-title { margin: 2px 0 6px; font-size: 18px; font-weight: 700; line-height: 1.25; color: var(--text-primary, #1d1d1f); }
+  .sp-incremento-p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.45; color: var(--text-primary, #1d1d1f); }
+  .sp-incremento-flutter { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--border, #d1d1d6); font-size: 12px; line-height: 1.5; color: var(--text-secondary, #86868b); }
+  .sp-incremento-flutter code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-primary, #1d1d1f); }
+</style>
+
+<div class="sp-incremento-box">
+  <div class="sp-incremento-phone">
+    <div class="sp-incremento-screen" role="img" aria-label="Maqueta animada del concepto Incremento. La estrella gira, late, aparecen los dos signos más y la estrella vuela a la cabecera de la aplicación.">
+
+      <div class="sp-incremento-app">
+        <div class="sp-incremento-head"></div>
+        <div class="sp-incremento-body">
+          <div class="sp-incremento-date">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#E4572E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+            <span>Viernes, 25 de septiembre</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#E4572E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="sp-incremento-week">Semana 7 del ciclo</div>
+          <div class="sp-incremento-grid">
+            <div class="sp-incremento-hour" style="top:12px"><span>7 am</span></div>
+            <div class="sp-incremento-hour" style="top:64px"><span>8 am</span></div>
+            <div class="sp-incremento-hour" style="top:116px"><span>9 am</span></div>
+            <div class="sp-incremento-hour" style="top:168px"><span>10 am</span></div>
+            <div class="sp-incremento-hour" style="top:220px"><span>11 am</span></div>
+            <div class="sp-incremento-hour" style="top:272px"><span>12 pm</span></div>
+            <div class="sp-incremento-hour" style="top:324px"><span>1 pm</span></div>
+            <div class="sp-incremento-hour" style="top:376px"><span>2 pm</span></div>
+            <div class="sp-incremento-blk" style="top:14px;height:98px;background:#E5489B"><b>PROGRAMACIÓN WEB</b><small>C2-104</small></div>
+            <div class="sp-incremento-blk" style="top:170px;height:150px;background:#4A9AE6"><b>ING. DE SOFTWARE II</b><small>L3-402</small><em>PRÁCTICA CALIFICADA 1</em></div>
+            <div class="sp-incremento-blk" style="top:378px;height:80px;background:#F26B1D"><b>GESTIÓN DE PROYECTOS</b><small>W-301</small></div>
+          </div>
+          <div class="sp-incremento-nav">
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5l-5.2 5.4M12 11.5l5.2 5.4"/></svg>Malla</div>
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 18.5h8"/></svg>Notas</div>
+            <div class="sp-incremento-on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Horario</div>
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v12H9l-5 4v-4H3z"/></svg>Chats</div>
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7a6 6 0 0 1 10 0"/></svg>Perfil</div>
+          </div>
+          <div class="sp-incremento-pill"></div>
+        </div>
+      </div>
+
+      <div class="sp-incremento-curtain"></div>
+      <div class="sp-incremento-headfg">
+        <div class="sp-incremento-row">
+          <svg class="sp-incremento-hstar" viewBox="-354.8 -354.8 709.6 709.6" aria-hidden="true"></svg>
+          <span class="sp-incremento-wm"><span class="sp-incremento-wm-a">ULIMA</span><span class="sp-incremento-wm-pp"><span>+</span><span>+</span></span></span>
+          <span class="sp-incremento-bell">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <i></i>
+          </span>
+        </div>
+      </div>
+      <svg class="sp-incremento-fx" viewBox="0 0 288 608" aria-hidden="true"></svg>
+      <div class="sp-incremento-status" aria-hidden="true">
+        <span>9:41</span>
+        <svg viewBox="0 0 42 10" fill="#fff"><rect x="0" y="6" width="2" height="4" rx=".5"/><rect x="3" y="4" width="2" height="6" rx=".5"/><rect x="6" y="2" width="2" height="8" rx=".5"/><rect x="9" y="0" width="2" height="10" rx=".5"/><path d="M19 9.6l-1.6-1.8a2.4 2.4 0 0 1 3.2 0zM15.6 6a5 5 0 0 1 6.8 0l-1 1.1a3.6 3.6 0 0 0-4.8 0zM13.8 4a7.6 7.6 0 0 1 10.4 0l-1 1.1a6.2 6.2 0 0 0-8.4 0z"/><rect x="28" y="1" width="12" height="8" rx="2" fill="none" stroke="#fff" stroke-width="1"/><rect x="29.5" y="2.5" width="8" height="5" rx="1"/><rect x="40.6" y="3.5" width="1.2" height="3" rx=".5"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sp-incremento-controls">
+  <button type="button" class="sp-incremento-btn sp-incremento-replay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Repetir</button>
+  <label class="sp-incremento-chk"><input type="checkbox" class="sp-incremento-slow">Carga lenta</label>
+  <label class="sp-incremento-chk"><input type="checkbox" class="sp-incremento-rm">Sin movimiento</label>
+  <label class="sp-incremento-chk"><input type="checkbox" class="sp-incremento-guides">Círculo seguro</label>
+  <span class="sp-incremento-clock" aria-live="off">nativo</span>
+</div>
+<ol class="sp-incremento-phases" aria-label="Fases de la animación">
+  <li data-sp-phase="nativo">Nativo</li>
+  <li data-sp-phase="giro">Giro 45°</li>
+  <li data-sp-phase="latido">Latido</li>
+  <li data-sp-phase="mas">++</li>
+  <li data-sp-phase="espera">Espera</li>
+  <li data-sp-phase="vuelo">Vuelo</li>
+  <li data-sp-phase="app">Aplicación</li>
+</ol>
+
+<div class="sp-incremento-meta">
+  <p class="sp-incremento-kicker">Concepto B</p>
+  <h3 class="sp-incremento-title">Incremento</h3>
+  <p class="sp-incremento-p">La estrella del <i>splash</i> nativo gira 45° con un resorte y, por su simetría de orden ocho, termina idéntica. Sus rombos laten hacia afuera como un «+1», un «+» sale de detrás de la estrella, el segundo nace de él con rebote y, al final, la estrella vuela a la cabecera mientras el naranja se recoge en ella.</p>
+  <p class="sp-incremento-p">Se siente nuevo porque el logo escenifica su propio nombre, un incremento, y el arranque no tiene ningún corte, ya que el primer cuadro de Flutter repite el <i>splash</i> y el último ya es la aplicación real.</p>
+  <p class="sp-incremento-flutter">En Flutter, la entrada es una capa sobre el <code>Navigator</code> con un <code>CustomPainter</code> de los ocho rombos. Un <code>AnimationController</code> de 1,15&nbsp;s con una <code>SpringSimulation</code> para el giro y otro de 0,62&nbsp;s para el vuelo suman 1,77&nbsp;s, y la capa se retira cuando la estrella aterriza en el logo de <code>AppHeader</code>.</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var script = document.currentScript;
+  var root = (script && script.closest && script.closest('.sp-incremento-root')) || document.getElementById('sp-incremento-root');
+  if (!root || root.getAttribute('data-sp-ready') === '1') return;
+  root.setAttribute('data-sp-ready', '1');
+
+  var NS = 'http://www.w3.org/2000/svg';
+  // Id del clipPath único por instancia sin crear globales.
+  var CLIP_ID = 'sp-incremento-clip-' + document.querySelectorAll('.sp-incremento-root[data-sp-ready]').length;
+
+  // Pantalla de 288 x 608 px, que equivale a 360 dp de ancho (0,8 px por dp).
+  var W = 288, H = 608, CX = 144, CY = 304, R = 354.8;
+  var K0 = 72 / R;          // estrella de 180 dp en el splash, dentro del círculo seguro de 192 dp
+  var KE = 10.4 / R;        // estrella de 26 dp en la cabecera
+  var HX = 26.4, HY = 52;   // centro del logo en la cabecera (20 dp de margen, fila a 50 dp)
+  var HEAD_H = 80;          // alto de la cabecera (50 + 30 + 20 dp)
+  var NATIVE = 700;         // tiempo que la maqueta muestra el splash nativo
+  var SHIFT = -36;          // corrimiento óptico del conjunto cuando aparecen los ++
+  var CROSS_FROM = 190;     // los ++ nacen detrás de la estrella
+  var CROSS_HOME = [[309, -133], [403, -133]];
+  var CLIP_X = 236;
+
+  // Geometría real. Los ocho rombos salen de Universidad_de_Lima_logo.svg, centrados en (590.2, 394.3).
+  var RH = [
+    [0, '226.8,-93.9 109,0 226.8,93.8 354.8,0'],
+    [45, '77.1,77 94,226.7 250.9,250.9 226.8,93.9'],
+    [90, '0,108.9 -93.9,226.7 0,354.8 93.9,226.7'],
+    [135, '-77,77 -226.7,93.9 -250.9,250.9 -93.9,226.7'],
+    [180, '-109,0 -226.8,-93.9 -354.8,0 -226.8,93.8'],
+    [-135, '-77,-77.1 -93.9,-226.8 -250.9,-250.9 -226.7,-94'],
+    [-90, '0,-109 93.9,-226.8 0,-354.8 -93.9,-226.8'],
+    [-45, '77.1,-77.1 226.8,-94 250.9,-250.9 94,-226.8']
+  ];
+  // Hueco central relleno, retraído 8 unidades para dejar la rendija naranja del ícono.
+  var INNER = '96.2,0 200.1,82.8 68,67.9 82.9,200 0,96.1 -82.8,200 -67.9,67.9 -200,82.8 -96.2,0 -200.1,-82.9 -67.9,-68 -82.8,-200.1 0,-96.2 82.9,-200.1 68,-68 200.1,-82.9';
+  // Cruz de los ++ medida en el ícono (117 px de lado y 28 px de trazo sobre 1539 px).
+  var CROSS = '-9,-37 9,-37 9,-9 37,-9 37,9 9,9 9,37 -9,37 -9,9 -37,9 -37,-9 -9,-9';
+
+  function q(sel) { return root.querySelector(sel); }
+  function mk(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  var box = q('.sp-incremento-box');
+  var phone = q('.sp-incremento-phone');
+  var screenEl = q('.sp-incremento-screen');
+  var curtain = q('.sp-incremento-curtain');
+  var fx = q('.sp-incremento-fx');
+  var body = q('.sp-incremento-body');
+  var hstar = q('.sp-incremento-hstar');
+  var wmA = q('.sp-incremento-wm-a');
+  var wmPP = q('.sp-incremento-wm-pp');
+  var bell = q('.sp-incremento-bell');
+  var clock = q('.sp-incremento-clock');
+  var chkSlow = q('.sp-incremento-slow');
+  var chkRM = q('.sp-incremento-rm');
+  var chkGuide = q('.sp-incremento-guides');
+  var chips = Array.prototype.slice.call(root.querySelectorAll('[data-sp-phase]'));
+  var chipVuelo = root.querySelector('[data-sp-phase="vuelo"]');
+
+  // Construcción del SVG animado
+  var defs = mk('defs', {}, fx);
+  var cp = mk('clipPath', { id: CLIP_ID, clipPathUnits: 'userSpaceOnUse' }, defs);
+  mk('rect', { x: CLIP_X, y: -5000, width: 10000, height: 10000 }, cp);
+
+  var guide = mk('g', { opacity: 0 }, fx);
+  mk('rect', { x: CX - 115.2, y: CY - 115.2, width: 230.4, height: 230.4, fill: 'none', stroke: 'rgba(255,255,255,.55)', 'stroke-width': 1, 'stroke-dasharray': '2 4' }, guide);
+  mk('circle', { cx: CX, cy: CY, r: 76.8, fill: 'none', stroke: '#fff', 'stroke-width': 1.3, 'stroke-dasharray': '4 4' }, guide);
+  var gt1 = mk('text', { x: CX, y: CY - 121, 'text-anchor': 'middle', fill: 'rgba(255,255,255,.8)', 'font-size': 8.5, 'font-family': 'system-ui, sans-serif' }, guide);
+  gt1.textContent = 'lienzo del ícono, 288 dp';
+  var gt2 = mk('text', { x: CX, y: CY + 130, 'text-anchor': 'middle', fill: '#fff', 'font-size': 8.5, 'font-family': 'system-ui, sans-serif' }, guide);
+  gt2.textContent = 'círculo seguro, 192 dp';
+
+  var lock = mk('g', {}, fx);
+  var crossG = mk('g', {}, lock);
+  var crosses = [mk('polygon', { points: CROSS, fill: '#fff', opacity: 0 }, crossG), mk('polygon', { points: CROSS, fill: '#fff', opacity: 0 }, crossG)];
+  var star = mk('g', {}, lock);
+  var ring = mk('circle', { cx: 0, cy: 0, r: 250, fill: 'none', stroke: '#fff', opacity: 0 }, star);
+  var inner = mk('polygon', { points: INNER, fill: '#fff' }, star);
+  var rh = RH.map(function (d) {
+    var g = mk('g', {}, star);
+    mk('polygon', { points: d[1], fill: '#fff' }, g);
+    var a = d[0] * Math.PI / 180;
+    return { g: g, ux: Math.cos(a), uy: Math.sin(a) };
+  });
+  // Logo estático de la cabecera, con la misma geometría
+  mk('polygon', { points: INNER, fill: '#fff' }, hstar);
+  RH.forEach(function (d) { mk('polygon', { points: d[1], fill: '#fff' }, hstar); });
+
+  // Curvas
+  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function smooth(a, b, x) { var t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); }
+  function easeOutCubic(p) { var u = 1 - p; return 1 - u * u * u; }
+  function easeInOutCubic(p) { return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; }
+  function easeOutBack(p, s) { var u = p - 1; return 1 + (s + 1) * u * u * u + s * u * u; }
+  // Resorte amortiguado normalizado de 0 a 1 (equivale a SpringSimulation)
+  function spring(t, w0, z) {
+    if (t <= 0) return 0;
+    var wd = w0 * Math.sqrt(1 - z * z);
+    return 1 - Math.exp(-z * w0 * t) * (Math.cos(wd * t) + (z * w0 / wd) * Math.sin(wd * t));
+  }
+  function bezier(x1, y1, x2, y2) {
+    var cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    var cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    function X(t) { return ((ax * t + bx) * t + cx) * t; }
+    function Y(t) { return ((ay * t + by) * t + cy) * t; }
+    function dX(t) { return (3 * ax * t + 2 * bx) * t + cx; }
+    return function (p) {
+      if (p <= 0) return 0;
+      if (p >= 1) return 1;
+      var t = p, i;
+      for (i = 0; i < 8; i++) {
+        var e = X(t) - p, d = dX(t);
+        if (Math.abs(e) < 1e-5 || Math.abs(d) < 1e-6) break;
+        t -= e / d;
+      }
+      if (!(t >= 0 && t <= 1) || Math.abs(X(t) - p) > 1e-3) {
+        var lo = 0, hi = 1; t = p;
+        for (i = 0; i < 40; i++) { var x = X(t); if (Math.abs(x - p) < 1e-5) break; if (x < p) lo = t; else hi = t; t = (lo + hi) / 2; }
+      }
+      return Y(t);
+    };
+  }
+  var EMPH = bezier(0.2, 0, 0, 1); // Easing.emphasized de Material 3, aproximado
+  function quad(a, c, b, t) { var u = 1 - t; return u * u * a + 2 * u * t * c + t * t * b; }
+  var C_SPLASH = [0xE7, 0x73, 0x30], C_HEAD = [0xFF, 0x66, 0x00];
+  function mix(t) {
+    var r = Math.round(C_SPLASH[0] + (C_HEAD[0] - C_SPLASH[0]) * t);
+    var g = Math.round(C_SPLASH[1] + (C_HEAD[1] - C_SPLASH[1]) * t);
+    var b = Math.round(C_SPLASH[2] + (C_HEAD[2] - C_SPLASH[2]) * t);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+  function f(n, d) { return (+n).toFixed(d); }
+
+  // Plan de cada reproducción
+  var S = null, raf = 0, t0 = 0, lastPhase = '';
+  function schedule() {
+    var reduced = chkRM.checked, slow = chkSlow.checked;
+    var loadDone = slow ? 3600 : 900;          // la inicialización real corre en paralelo
+    var introEnd = reduced ? 200 : 1150;
+    var fs = Math.max(introEnd, loadDone);
+    var ticks = [];
+    if (!reduced) {
+      for (var tt = 1400; tt < fs; tt += 1300) {
+        ticks.push(tt);
+        if (fs < tt + 700) fs = tt + 700;       // no despega a mitad de un tic
+      }
+    }
+    return { reduced: reduced, slow: slow, fs: fs, ticks: ticks, end: fs + (reduced ? 260 : 620), targets: null, guide: chkGuide.checked };
+  }
+
+  function measure() {
+    var fallback = [{ x: 101, y: 52, w: 8 }, { x: 111, y: 52, w: 8 }];
+    var sr = screenEl.getBoundingClientRect();
+    var sc = sr.width / W;
+    if (!sc || !isFinite(sc)) return fallback;
+    var spans = wmPP.children, out = [];
+    var ctx = null;
+    try { ctx = document.createElement('canvas').getContext('2d'); } catch (err) { ctx = null; }
+    for (var i = 0; i < 2; i++) {
+      var r = spans[i].getBoundingClientRect();
+      if (!r.width) return fallback;
+      var x = (r.left - sr.left) / sc, y = (r.top - sr.top) / sc;
+      var m = null;
+      if (ctx) {
+        var cs = getComputedStyle(spans[i]);
+        ctx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+        m = ctx.measureText('+');
+      }
+      if (m && m.fontBoundingBoxAscent != null && m.actualBoundingBoxAscent != null) {
+        // Centro de la tinta del glifo, no de su caja de línea
+        out.push({
+          x: x + (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2,
+          y: y + m.fontBoundingBoxAscent - (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2,
+          w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight
+        });
+      } else {
+        out.push({ x: x + r.width / sc / 2, y: y + (r.height / sc) * 0.56, w: (r.width / sc) * 0.86 });
+      }
+    }
+    return out;
+  }
+
+  function phaseOf(F) {
+    if (F < 0) return 'nativo';
+    if (F >= S.end) return 'app';
+    if (F >= S.fs) return 'vuelo';
+    if (S.reduced) return (S.slow && F >= 200) ? 'espera' : 'mas';
+    if (F < 300) return 'giro';
+    if (F < 480) return 'latido';
+    if (F < 1150) return 'mas';
+    return 'espera';
+  }
+
+  function render(tm) {
+    var F = tm - NATIVE;
+    var Lx = CX, Ly = CY, k = K0, th = 0, off = 0, inS = 1;
+    var ringO = 0, ringR = 250, ringW = 10, shift = 0, clipOn = true;
+    var cr = [{ x: CROSS_HOME[0][0], y: CROSS_HOME[0][1], s: 1, o: 0 }, { x: CROSS_HOME[1][0], y: CROSS_HOME[1][1], s: 1, o: 0 }];
+    var curtH = H, curtT = 0, curtR = 0, curtO = 1, fxO = 1, bodyY = 0, headO = 0, ppO = 0, hstarO = 0, lockOn = true;
+    var done = F >= S.end;
+    var i;
+
+    if (F >= 0 && !S.reduced) {
+      // 1. Giro de 45° con resorte
+      th = 45 * spring(F / 1000, 15.708, 0.55);
+      // 2. Latido, los rombos salen como un +1 y la estrella interior se contrae
+      var bp = (F - 180) / 380;
+      if (bp > 0 && bp < 1) {
+        var b = bp < 0.32 ? easeOutCubic(bp / 0.32) : 1 - easeInOutCubic((bp - 0.32) / 0.68);
+        off = 24 * b; inS = 1 - 0.05 * b;
+      }
+      var rp = (F - 230) / 560;
+      if (rp > 0 && rp < 1) { ringR = 250 + 290 * easeOutCubic(rp); ringW = 12 * (1 - rp) + 1.5; ringO = 0.42 * Math.pow(1 - rp, 1.6); }
+      // 3. El primer + sale de detrás de la estrella y el segundo nace del primero, como i++
+      shift = SHIFT * easeInOutCubic(clamp01((F - 480) / 580));
+      var c1 = (F - 480) / 440;
+      if (c1 > 0) {
+        var e1 = easeOutBack(Math.min(c1, 1), 1.6);
+        cr[0].x = CROSS_FROM + (CROSS_HOME[0][0] - CROSS_FROM) * e1;
+        cr[0].s = 0.72 + 0.28 * e1;
+        cr[0].o = 1;
+      }
+      var c2 = (F - 700) / 420;
+      if (c2 > 0) {
+        var e2 = easeOutBack(Math.min(c2, 1), 1.5);
+        cr[1].x = cr[0].x + (CROSS_HOME[1][0] - CROSS_HOME[0][0]) * e2;
+        cr[1].s = cr[0].s * (0.8 + 0.2 * e2);
+        cr[1].o = 1;
+      }
+      clipOn = F < 920;
+      // 4. Espera en bucle si la carga tarda, un tic de 45° y un asentimiento de los ++
+      S.ticks.forEach(function (tt) {
+        if (F <= tt) return;
+        th += 45 * spring((F - tt) / 1000, 12.566, 0.72);
+        var tp = (F - tt) / 420;
+        if (tp < 1) { var sb = Math.sin(Math.PI * tp); off += 8 * sb; inS -= 0.02 * sb; }
+        for (var j = 0; j < 2; j++) {
+          var nq = (F - (tt + 60 + 110 * j)) / 320;
+          if (nq > 0 && nq < 1) cr[j].s *= 1 + 0.14 * Math.sin(Math.PI * nq);
+        }
+      });
+      Lx = CX + shift * K0;
+      // 5. Vuelo compartido hacia la cabecera y el fondo que se recoge
+      if (F >= S.fs) {
+        if (!S.targets) S.targets = measure();
+        var pf = clamp01((F - S.fs) / 600), e = EMPH(pf);
+        var sx = CX + SHIFT * K0, sy = CY;
+        Lx = quad(sx, HX, HX, e);          // arco que entra al hueco del logo desde abajo
+        Ly = quad(sy, HY + 150, HY, e);
+        k = K0 * Math.pow(KE / K0, e);
+        th += 45 * easeInOutCubic(pf);
+        var cq = clamp01((F - S.fs - 150) / 450), eq = easeInOutCubic(cq); // los ++ viajan pegados y se sueltan a mitad del vuelo
+        for (i = 0; i < 2; i++) {
+          var T = S.targets[i];
+          var hx = Lx + k * CROSS_HOME[i][0], hy = Ly + k * CROSS_HOME[i][1];
+          var px = hx + (T.x - hx) * eq, py = hy + (T.y - hy) * eq;
+          var size = 74 * k + (T.w - 74 * k) * eq;
+          cr[i].x = (px - Lx) / k; cr[i].y = (py - Ly) / k; cr[i].s = size / (74 * k);
+          cr[i].o = 1 - smooth(0.75, 1, cq);
+        }
+        ppO = smooth(0.6, 0.95, cq);
+        var ec = EMPH(clamp01((F - S.fs - 20) / 600));
+        curtH = H + (HEAD_H - H) * ec;
+        curtT = ec;
+        curtR = Math.min(60 * Math.sin(Math.PI * ec), curtH / 2);
+        bodyY = 26 * (1 - ec);
+        headO = smooth(0.62, 0.95, pf);    // el texto llega junto con la estrella
+      }
+    } else if (F >= 0) {
+      // Reducir movimiento, nada se desplaza, los ++ aparecen por fundido y se pasa a la app por fundido
+      var o = smooth(0, 200, F);
+      cr[0].o = o; cr[1].o = o; clipOn = false;
+      if (F >= S.fs) {
+        var pr = clamp01((F - S.fs) / 260);
+        curtO = 1 - pr; fxO = 1 - pr; headO = 1; ppO = 1; hstarO = 1;
+      }
+    }
+    if (done) { lockOn = false; hstarO = 1; headO = 1; ppO = 1; curtO = 0; fxO = 1; bodyY = 0; }
+
+    // Aplicar
+    lock.style.display = lockOn ? '' : 'none';
+    lock.setAttribute('transform', 'translate(' + f(Lx, 3) + ' ' + f(Ly, 3) + ') scale(' + f(k, 5) + ')');
+    star.setAttribute('transform', 'rotate(' + f(th, 3) + ')');
+    inner.setAttribute('transform', 'scale(' + f(inS, 4) + ')');
+    for (i = 0; i < rh.length; i++) rh[i].g.setAttribute('transform', 'translate(' + f(rh[i].ux * off, 2) + ' ' + f(rh[i].uy * off, 2) + ')');
+    ring.setAttribute('r', f(ringR, 1));
+    ring.setAttribute('stroke-width', f(ringW, 2));
+    ring.setAttribute('opacity', f(ringO, 3));
+    for (i = 0; i < 2; i++) {
+      crosses[i].setAttribute('transform', 'translate(' + f(cr[i].x, 2) + ' ' + f(cr[i].y, 2) + ') scale(' + f(cr[i].s, 4) + ')');
+      crosses[i].setAttribute('opacity', f(cr[i].o, 3));
+    }
+    if (clipOn) crossG.setAttribute('clip-path', 'url(#' + CLIP_ID + ')'); else crossG.removeAttribute('clip-path');
+    guide.setAttribute('opacity', (S.guide && F < 520 && !done) ? 1 : 0);
+    fx.style.opacity = f(fxO, 3);
+    curtain.style.height = f(curtH, 2) + 'px';
+    curtain.style.backgroundColor = mix(curtT);
+    curtain.style.borderRadius = '0 0 ' + f(curtR, 1) + 'px ' + f(curtR, 1) + 'px';
+    curtain.style.opacity = f(curtO, 3);
+    body.style.transform = bodyY ? 'translateY(' + f(bodyY, 2) + 'px)' : '';
+    wmA.style.opacity = f(headO, 3);
+    bell.style.opacity = f(headO, 3);
+    wmPP.style.opacity = f(ppO, 3);
+    hstar.style.opacity = f(hstarO, 3);
+
+    clock.textContent = F < 0 ? 'nativo' : 'Flutter +' + (Math.min(F, S.end) / 1000).toFixed(2).replace('.', ',') + ' s' + (done ? ' (total)' : '');
+    var ph = phaseOf(F);
+    if (ph !== lastPhase) {
+      lastPhase = ph;
+      chips.forEach(function (c) {
+        var id = c.getAttribute('data-sp-phase');
+        var skip = (S.reduced && (id === 'giro' || id === 'latido')) || (!S.slow && id === 'espera');
+        c.classList.toggle('sp-incremento-is-on', id === ph);
+        c.classList.toggle('sp-incremento-is-skip', skip);
+      });
+    }
+    return done;
+  }
+
+  function loop(now) {
+    var tm = now - t0;
+    var finished = render(tm) && tm > NATIVE + S.end + 40;
+    raf = finished ? 0 : requestAnimationFrame(loop);
+  }
+
+  var startedAt = -1e9;
+  function play() {
+    if (raf) cancelAnimationFrame(raf);
+    S = schedule();
+    lastPhase = '';
+    chipVuelo.textContent = S.reduced ? 'Fundido' : 'Vuelo';
+    render(0);
+    t0 = performance.now();
+    startedAt = t0;
+    raf = requestAnimationFrame(loop);
+  }
+
+  // Escala el teléfono si el contenedor mide menos de 300 px
+  var lastW = -1;
+  function fit() {
+    var w = box.clientWidth || 300;
+    if (w === lastW) return;
+    lastW = w;
+    var s = Math.min(1, w / 300);
+    phone.style.transform = s < 1 ? 'scale(' + s.toFixed(4) + ')' : '';
+    box.style.height = (620 * s).toFixed(1) + 'px';
+  }
+  fit();
+  if (typeof ResizeObserver === 'function') new ResizeObserver(function () { requestAnimationFrame(fit); }).observe(box);
+  else window.addEventListener('resize', fit);
+
+  // Los controles no deben marcar la opción del companion que envuelve al concepto.
+  q('.sp-incremento-replay').addEventListener('click', function (ev) { ev.stopPropagation(); play(); });
+  q('.sp-incremento-controls').addEventListener('click', function (ev) { ev.stopPropagation(); });
+  [chkSlow, chkRM, chkGuide].forEach(function (c) { c.addEventListener('change', play); });
+
+  // Arranca sola al cargar y, si nadie la vio, se repite la primera vez que la mitad del teléfono entra en pantalla
+  play();
+  if (typeof IntersectionObserver === 'function') {
+    var seen = false;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (seen || !en.isIntersecting || en.intersectionRatio < 0.5) return;
+        seen = true;
+        if (performance.now() - startedAt > 450) play();
+        io.disconnect();
+      });
+    }, { threshold: [0, 0.5] });
+    io.observe(box);
+  }
+})();
+</script>
+</section>
+</div>
+<div class="option" data-choice="codigo" onclick="toggleSelect(this)">
+<div class="sp-codigo-root" id="sp-codigo-root">
+<style>
+.sp-codigo-root{width:100%;max-width:320px;margin:0 auto;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--text-primary,#1d1d1f);line-height:1.5;-webkit-font-smoothing:antialiased;}
+.sp-codigo-root *{box-sizing:border-box;}
+.sp-codigo-phone{position:relative;width:300px;max-width:100%;aspect-ratio:300/620;margin:0 auto;padding:7px;border-radius:40px;background:#0e0e10;box-shadow:0 0 0 1px rgba(0,0,0,.32),0 22px 44px -22px rgba(0,0,0,.55);}
+.sp-codigo-scr{width:100%;height:100%;border-radius:33px;overflow:hidden;background:#E77330;isolation:isolate;transform:translateZ(0);}
+.sp-codigo-svg{display:block;width:100%;height:100%;}
+.sp-codigo-stages{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:12px auto 0;max-width:300px;font-size:11.5px;line-height:1.2;color:var(--text-secondary,#86868b);}
+.sp-codigo-st{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:color .15s;}
+.sp-codigo-st::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--border,#d1d1d6);transition:background .15s;}
+.sp-codigo-st.sp-codigo-on{color:var(--text-primary,#1d1d1f);font-weight:600;}
+.sp-codigo-st.sp-codigo-on::before{background:#E77330;}
+.sp-codigo-sep{flex:0 1 14px;height:1px;min-width:6px;background:var(--border,#d1d1d6);}
+.sp-codigo-time{margin-left:auto;font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Roboto Mono",Consolas,monospace;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.sp-codigo-ctrl{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px auto 0;max-width:300px;}
+.sp-codigo-btn{font:inherit;font-size:12.5px;font-weight:600;line-height:1.2;margin:0;padding:6px 12px;border-radius:999px;border:1px solid var(--border,#d1d1d6);background:var(--bg-secondary,#fff);color:var(--text-primary,#1d1d1f);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.sp-codigo-btn:hover{border-color:var(--text-secondary,#86868b);}
+.sp-codigo-btn:focus-visible{outline:2px solid var(--accent,#0071e3);outline-offset:2px;}
+.sp-codigo-play{background:var(--text-primary,#1d1d1f);color:var(--bg-primary,#f5f5f7);border-color:var(--text-primary,#1d1d1f);}
+.sp-codigo-play:hover{border-color:var(--text-primary,#1d1d1f);opacity:.88;}
+.sp-codigo-btn[aria-pressed="true"]{border-color:#E77330;color:#E77330;background:rgba(231,115,48,.1);}
+.sp-codigo-txtblk{max-width:300px;margin:14px auto 0;}
+.sp-codigo-kick{margin:0;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary,#86868b);}
+.sp-codigo-name{margin:2px 0 6px;font-size:18px;font-weight:700;line-height:1.25;color:var(--text-primary,#1d1d1f);}
+.sp-codigo-p{margin:0 0 8px;font-size:13.5px;line-height:1.45;color:var(--text-primary,#1d1d1f);}
+.sp-codigo-p strong{color:var(--text-primary,#1d1d1f);font-weight:600;}
+.sp-codigo-fl{margin:10px 0 0;padding-top:9px;border-top:1px solid var(--border,#d1d1d6);font-size:12.5px;line-height:1.5;color:var(--text-secondary,#86868b);}
+.sp-codigo-fl code{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Roboto Mono",Consolas,monospace;font-size:.95em;color:var(--text-primary,#1d1d1f);}
+</style>
+
+<div class="sp-codigo-phone" role="img" aria-label="Maqueta animada del concepto Código. La estrella del splash sube, se escribe ULima++ en letra monoespaciada, los signos más saltan a la esquina de la estrella y el logo viaja a la cabecera de la aplicación, donde se completa ULIMA++.">
+<div class="sp-codigo-scr">
+<svg class="sp-codigo-svg" viewBox="0 0 286 606" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">
+  <defs>
+    <g id="sp-codigo-starshape">
+      <polygon points="-213.4,-88.5 -72.5,-72.6 -88.4,-213.4 0,-102.6 88.5,-213.5 72.6,-72.6 213.5,-88.5 102.6,0 213.4,88.3 72.6,72.5 88.5,213.4 0,102.5 -88.4,213.3 -72.5,72.5 -213.4,88.3 -102.6,0"/>
+      <polygon points="-83.8,-83.9 -100,-227.7 -250.9,-250.9 -227.6,-100.1"/>
+      <polygon points="83.9,-83.9 227.7,-100.1 250.9,-250.9 100.1,-227.7"/>
+      <polygon points="0,-118.6 90.2,-231.8 0,-354.8 -90.2,-231.8"/>
+      <polygon points="118.6,0 231.8,90.1 354.8,0 231.8,-90.2"/>
+      <polygon points="83.9,83.8 100.1,227.6 250.9,250.9 227.7,100"/>
+      <polygon points="0,118.5 -90.2,231.7 0,354.8 90.2,231.7"/>
+      <polygon points="-118.6,0 -231.8,-90.2 -354.8,0 -231.8,90.1"/>
+      <polygon points="-83.8,83.8 -227.6,100 -250.9,250.9 -100,227.6"/>
+    </g>
+  </defs>
+
+  <!-- App falsa (Horario de hoy) -->
+  <rect x="0" y="0" width="286" height="606" fill="#F5F5F7"/>
+  <g class="sp-codigo-body" opacity="0">
+    <text x="18" y="110" font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="13" font-weight="700" fill="#1A1A1A">Horario de hoy</text>
+    <g font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="10" fill="#8E8E93">
+      <text x="18" y="140">08:00</text>
+      <text x="18" y="212">10:00</text>
+      <text x="18" y="284">14:00</text>
+    </g>
+    <g>
+      <rect x="56" y="126" width="212" height="60" rx="11" fill="#FFD8C2"/>
+      <rect x="56" y="126" width="4" height="60" rx="2" fill="#FF7A1A"/>
+      <rect x="70" y="140" width="118" height="8" rx="4" fill="#1A1A1A" opacity=".78"/>
+      <rect x="70" y="156" width="74" height="6" rx="3" fill="#A55E36" opacity=".55"/>
+      <rect x="70" y="168" width="52" height="6" rx="3" fill="#A55E36" opacity=".4"/>
+      <rect x="56" y="198" width="212" height="60" rx="11" fill="#FFD8C2"/>
+      <rect x="56" y="198" width="4" height="60" rx="2" fill="#FF7A1A"/>
+      <rect x="70" y="212" width="96" height="8" rx="4" fill="#1A1A1A" opacity=".78"/>
+      <rect x="70" y="228" width="84" height="6" rx="3" fill="#A55E36" opacity=".55"/>
+      <rect x="70" y="240" width="46" height="6" rx="3" fill="#A55E36" opacity=".4"/>
+      <rect x="56" y="270" width="212" height="60" rx="11" fill="#FFFFFF" stroke="#E5E5EA"/>
+      <rect x="70" y="284" width="108" height="8" rx="4" fill="#1A1A1A" opacity=".7"/>
+      <rect x="70" y="300" width="62" height="6" rx="3" fill="#8E8E93" opacity=".5"/>
+      <rect x="70" y="312" width="40" height="6" rx="3" fill="#8E8E93" opacity=".35"/>
+    </g>
+    <text x="18" y="362" font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="13" font-weight="700" fill="#1A1A1A">Alertas</text>
+    <rect x="18" y="374" width="250" height="52" rx="11" fill="#FFFFFF" stroke="#E5E5EA"/>
+    <circle cx="40" cy="400" r="9" fill="#FFE3D1"/>
+    <rect x="58" y="392" width="126" height="7" rx="3.5" fill="#1A1A1A" opacity=".7"/>
+    <rect x="58" y="405" width="88" height="6" rx="3" fill="#8E8E93" opacity=".45"/>
+    <!-- barra inferior -->
+    <rect x="0" y="548" width="286" height="58" fill="#1E1E24"/>
+    <g fill="none" stroke="#FFFFFF" stroke-opacity=".68" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <g transform="translate(28.6 566)"><circle cx="0" cy="-4" r="2.4"/><circle cx="-5" cy="5" r="2.4"/><circle cx="5" cy="5" r="2.4"/><path d="M-1.2 -1.9 L-3.8 2.9 M1.2 -1.9 L3.8 2.9"/></g>
+      <g transform="translate(85.8 566)"><rect x="-6" y="-7" width="12" height="14" rx="2"/><path d="M-3 -3.5 H3 M-3 1 H-2 M2 1 H3 M-3 4 H-2 M2 4 H3"/></g>
+      <g transform="translate(143 566)" stroke="#FF6600" stroke-opacity="1"><rect x="-7" y="-6" width="14" height="13" rx="2"/><path d="M-7 -1.5 H7 M-3.5 -8 V-4.5 M3.5 -8 V-4.5"/></g>
+      <g transform="translate(200.2 566)"><path d="M-7 -5.5 Q-7 -7 -5.5 -7 H5.5 Q7 -7 7 -5.5 V2.5 Q7 4 5.5 4 H-1 L-4.5 7 V4 H-5.5 Q-7 4 -7 2.5 Z"/></g>
+      <g transform="translate(257.4 566)"><circle cx="0" cy="-3" r="3.3"/><path d="M-6 7 Q-6 1.5 0 1.5 Q6 1.5 6 7"/></g>
+    </g>
+    <g font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="8.5" text-anchor="middle" fill="#FFFFFF" fill-opacity=".68">
+      <text x="28.6" y="590">Malla</text><text x="85.8" y="590">Notas</text><text x="143" y="590" fill="#FF6600" fill-opacity="1" font-weight="600">Horario</text><text x="200.2" y="590">Chats</text><text x="257.4" y="590">Perfil</text>
+    </g>
+  </g>
+
+  <!-- Fondo naranja, pantalla completa en el splash y cabecera al final -->
+  <rect class="sp-codigo-cover" x="0" y="0" width="286" height="606" fill="#E77330"/>
+
+  <!-- Contenido de la cabecera -->
+  <text class="sp-codigo-wm" x="48" y="59" font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="17" font-style="italic" font-weight="800" fill="#FFFFFF">ULIMA</text>
+  <g class="sp-codigo-bell" opacity="0" transform="translate(257 53)" fill="none" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-7 5 H7 L5.4 3 V-1.6 A5.4 5.4 0 0 0 -5.4 -1.6 V3 Z"/><path d="M-2 7.6 A2 2 0 0 0 2 7.6"/>
+  </g>
+
+  <!-- Anillo del incremento -->
+  <circle class="sp-codigo-ring" cx="143" cy="303" r="70" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0"/>
+
+  <!-- Estrella (misma geometría que el ícono) -->
+  <g class="sp-codigo-star" fill="#FFFFFF" transform="translate(143 303) scale(0.19166)"><use href="#sp-codigo-starshape"/></g>
+
+  <!-- Línea de código -->
+  <text class="sp-codigo-code" x="95" y="358" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,'Roboto Mono','JetBrains Mono',Consolas,'Liberation Mono',monospace" font-size="23" font-weight="600" fill="#FFFFFF" opacity="0"></text>
+  <rect class="sp-codigo-caret" x="95" y="340" width="2.2" height="23" fill="#FFFFFF" opacity="0"/>
+  <rect class="sp-codigo-wait" x="0" y="0" width="2.2" height="17" fill="#FFFFFF" opacity="0"/>
+
+  <!-- Los dos «+» -->
+  <g class="sp-codigo-p0" fill="#FFFFFF" opacity="0"><rect/><rect/></g>
+  <g class="sp-codigo-p1" fill="#FFFFFF" opacity="0"><rect/><rect/></g>
+
+  <!-- Capa estática para «sin movimiento» -->
+  <g class="sp-codigo-snap" opacity="0">
+    <rect x="0" y="0" width="286" height="606" fill="#E77330"/>
+    <g fill="#FFFFFF" transform="translate(143 303) scale(0.19166)"><use href="#sp-codigo-starshape"/></g>
+    <g class="sp-codigo-snapplus" fill="#FFFFFF" opacity="0">
+      <rect x="195.2" y="275.7" width="14" height="3.3"/><rect x="200.5" y="270.4" width="3.3" height="14"/>
+      <rect x="213.2" y="275.7" width="14" height="3.3"/><rect x="218.5" y="270.4" width="3.3" height="14"/>
+    </g>
+  </g>
+
+  <!-- Barra de estado -->
+  <g fill="#FFFFFF">
+    <text x="20" y="19" font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="11" font-weight="600">10:24</text>
+    <path d="M226 18.5 L233.5 11 V18.5 Z" opacity=".95"/>
+    <path d="M238 13.2 A7 7 0 0 1 248 13.2 L243 18.6 Z" opacity=".95"/>
+    <rect x="252.5" y="11" width="15" height="8" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.1"/>
+    <rect x="254" y="12.5" width="9.5" height="5" rx="1"/>
+    <rect x="268.2" y="13.4" width="1.4" height="3.2" rx=".6"/>
+  </g>
+  <circle cx="143" cy="14" r="5.2" fill="#0e0e10"/>
+</svg>
+</div>
+</div>
+
+<div class="sp-codigo-stages" aria-hidden="true">
+  <span class="sp-codigo-st" data-st="nativo">Nativo</span>
+  <span class="sp-codigo-sep"></span>
+  <span class="sp-codigo-st" data-st="flutter">Flutter</span>
+  <span class="sp-codigo-sep"></span>
+  <span class="sp-codigo-st" data-st="app">Aplicación</span>
+  <span class="sp-codigo-time">0,00 s</span>
+</div>
+
+<div class="sp-codigo-ctrl">
+  <button type="button" class="sp-codigo-btn sp-codigo-play" data-sp-act="play">Repetir</button>
+  <button type="button" class="sp-codigo-btn" data-sp-opt="slow" aria-pressed="false">Cámara lenta</button>
+  <button type="button" class="sp-codigo-btn" data-sp-opt="load" aria-pressed="false">Carga lenta</button>
+  <button type="button" class="sp-codigo-btn" data-sp-opt="still" aria-pressed="false">Sin movimiento</button>
+</div>
+
+<div class="sp-codigo-txtblk">
+  <p class="sp-codigo-kick">Concepto C</p>
+  <h3 class="sp-codigo-name">Código</h3>
+  <p class="sp-codigo-p">La estrella sube y debajo se teclea «ULima» con un cursor que parpadea. Los «++» saltan del texto a la esquina de la estrella, se engrosan hasta ser los del logo y el texto se desvanece. Al salir, el logo vuela a la cabecera y los «++» cierran «ULIMA++».</p>
+  <p class="sp-codigo-p">Es un guiño al operador de incremento que reconoce cualquier alumno de Sistemas, y el logo se arma a la vista. Si la carga tarda, el cursor parpadea junto a los «++» como un programa que espera.</p>
+  <p class="sp-codigo-fl">En Flutter, un <code>AnimationController</code> de 1,33&nbsp;s con un <code>Interval</code> por fase guía un <code>CustomPainter</code> que dibuja los ocho rombos del SVG, el texto con <code>TextPainter</code> y cada «+» sobre una curva de Bézier. Otro de 0,42&nbsp;s hace la salida, 1,75&nbsp;s en total, y la ruta cambia sin transición cuando el logo ya ocupa su lugar en la cabecera. La letra monoespaciada entra como fuente del proyecto, sin paquetes nuevos.</p>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById('sp-codigo-root');
+  if (!root || root.getAttribute('data-sp-ready') === '1') return;
+  root.setAttribute('data-sp-ready', '1');
+  function q(s) { return root.querySelector(s); }
+
+  // ---- Geometría (pantalla de 286 x 606, 360 dp) ----
+  var CX = 143, CY = 303;          // centro de la ventana, igual que el splash nativo
+  var R0 = 68;                     // radio de la estrella en el splash (0,89 del círculo seguro)
+  var UNIT = 354.8;                // radio de la estrella en unidades del SVG original
+  var PX = [308.7, 402.5], PY = -133.8, PA = 36.4, PT = 8.7; // «++» del ícono, en unidades del SVG
+  var FS = 23, BASE = 358;         // línea de código
+  var RISE_Y = 258, RISE_R = 56;
+  var HDR = { x: 29, y: 53, r: 12, h: 80 };
+  var WMX = 48, WMY = 59, WMFS = 17;
+
+  // ---- Tiempos (ms desde el primer cuadro de Flutter) ----
+  var NATIVE = 700;
+  var T_CHAR = [250, 318, 386, 454, 522];
+  var T_PLUS = [610, 680];
+  var FLY = [780, 830], FLY_D = 380;
+  var RET0 = 820, RET1 = 1210;
+  var LOGO_DONE = 1330, TR = 420;
+
+  var ORANGE = [231, 115, 48], HEADER = [255, 102, 0], TINT = [255, 231, 163], WHITE = [255, 255, 255];
+
+  var el = {
+    body: q('.sp-codigo-body'), cover: q('.sp-codigo-cover'), bell: q('.sp-codigo-bell'),
+    wm: q('.sp-codigo-wm'), ring: q('.sp-codigo-ring'), star: q('.sp-codigo-star'),
+    code: q('.sp-codigo-code'), caret: q('.sp-codigo-caret'), wait: q('.sp-codigo-wait'),
+    snap: q('.sp-codigo-snap'), snapPlus: q('.sp-codigo-snapplus'), time: q('.sp-codigo-time'),
+    phone: q('.sp-codigo-phone')
+  };
+  var plus = ['.sp-codigo-p0', '.sp-codigo-p1'].map(function (s) {
+    var g = q(s), r = g.querySelectorAll('rect');
+    return { g: g, h: r[0], v: r[1] };
+  });
+  var stages = Array.prototype.slice.call(root.querySelectorAll('.sp-codigo-st'));
+
+  var opt = { slow: false, load: false, still: false };
+  var CW = 0.6 * FS, LEFT = CX - 3.5 * CW, WMEND = WMX + 60;
+  var raf = 0, t0 = 0, playedAt = 0, startedHidden = false, lastCode = null, lastWm = null, lastStage = '';
+
+  // ---- utilidades ----
+  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function seg(t, a, b) { return clamp01((t - a) / (b - a)); }
+  function lerp(a, b, p) { return a + (b - a) * p; }
+  function eOut(x) { return 1 - Math.pow(1 - x, 3); }
+  function eIO(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  function eBack(x) { var c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); }
+  function mix(c1, c2, p) {
+    return 'rgb(' + Math.round(lerp(c1[0], c2[0], p)) + ',' + Math.round(lerp(c1[1], c2[1], p)) + ',' + Math.round(lerp(c1[2], c2[2], p)) + ')';
+  }
+  function bez(p0, c, p1, e) {
+    var a = (1 - e) * (1 - e), b = 2 * (1 - e) * e, d = e * e;
+    return { x: a * p0.x + b * c.x + d * p1.x, y: a * p0.y + b * c.y + d * p1.y };
+  }
+  function f(n) { return (Math.round(n * 100) / 100).toString(); }
+  function attr(node, k, v) { node.setAttribute(k, v); }
+
+  function measure() {
+    var w = 0;
+    try { el.code.textContent = 'ULima'; w = el.code.getComputedTextLength() / 5; } catch (e) { w = 0; }
+    CW = (w > 6 && w < 24) ? w : 0.6 * FS;
+    LEFT = CX - 3.5 * CW;
+    attr(el.code, 'x', f(LEFT));
+    el.code.textContent = '';
+    lastCode = '';
+    var ww = 0;
+    try { el.wm.textContent = 'ULIMA'; ww = el.wm.getComputedTextLength(); } catch (e) { ww = 0; }
+    lastWm = 'ULIMA';
+    WMEND = WMX + ((ww > 25 && ww < 110) ? ww : 0.68 * WMFS * 5);
+  }
+
+  // Posición de la estrella en el tiempo t (sin la salida).
+  function starBase(t) {
+    var p = eOut(seg(t, 0, 320));
+    var y = lerp(CY, RISE_Y, p), r = lerp(R0, RISE_R, p);
+    var b = eIO(seg(t, RET0, RET1));
+    y = lerp(y, CY, b); r = lerp(r, R0, b);
+    var k = seg(t, RET1, LOGO_DONE);
+    if (k > 0 && k < 1) r *= 1 + 0.035 * Math.sin(Math.PI * k);
+    return { x: CX, y: y, r: r };
+  }
+  function starAt(t, tr0) {
+    var s = starBase(t);
+    var u = seg(t, tr0, tr0 + TR);
+    if (u <= 0) return s;
+    var e = eIO(seg(u, 0, 0.9));
+    var p = bez({ x: CX, y: CY }, { x: CX, y: 118 }, { x: HDR.x, y: HDR.y }, e);
+    return { x: p.x, y: p.y, r: lerp(R0, HDR.r, e) };
+  }
+  function attached(k, s) {
+    var sc = s.r / UNIT;
+    return { x: s.x + PX[k] * sc, y: s.y + PY * sc, a: PA * sc, th: PT * sc };
+  }
+
+  function drawCross(c, st) {
+    if (!st || st.op <= 0.002) { attr(c.g, 'opacity', '0'); return; }
+    var a = st.a * st.sc, th = st.th * st.sc;
+    attr(c.g, 'opacity', f(st.op));
+    attr(c.g, 'fill', st.col);
+    attr(c.g, 'transform', 'translate(' + f(st.x) + ' ' + f(st.y) + ') rotate(' + f(st.rot) + ') skewX(' + f(st.sk) + ')');
+    attr(c.h, 'x', f(-a)); attr(c.h, 'y', f(-th)); attr(c.h, 'width', f(2 * a)); attr(c.h, 'height', f(2 * th));
+    attr(c.v, 'x', f(-th)); attr(c.v, 'y', f(-a)); attr(c.v, 'width', f(2 * th)); attr(c.v, 'height', f(2 * a));
+  }
+
+  function setCode(s) { if (s !== lastCode) { el.code.textContent = s; lastCode = s; } }
+  function setWm(s) { if (s !== lastWm) { el.wm.textContent = s; lastWm = s; } }
+
+  // Escena animada completa en el instante t.
+  function scene(t, tr0) {
+    var u = seg(t, tr0, tr0 + TR), eu = eIO(u);
+    var s = starAt(t, tr0);
+
+    // fondo naranja que se recoge en la cabecera
+    attr(el.cover, 'height', f(lerp(606, HDR.h, eu)));
+    attr(el.cover, 'fill', mix(ORANGE, HEADER, eu));
+    var ob = eOut(seg(u, 0.35, 1));
+    attr(el.body, 'opacity', f(ob));
+    attr(el.body, 'transform', 'translate(0 ' + f((1 - ob) * 16) + ')');
+    // la marca de la cabecera se teclea mientras llegan los «++»
+    setWm('ULIMA'.slice(0, u <= 0.55 ? 0 : Math.min(5, 1 + Math.floor((u - 0.55) / 0.07))));
+    attr(el.bell, 'opacity', f(eOut(seg(u, 0.62, 1))));
+
+    // estrella
+    attr(el.star, 'transform', 'translate(' + f(s.x) + ' ' + f(s.y) + ') scale(' + (s.r / UNIT).toFixed(5) + ')');
+
+    // anillo cuando el segundo «+» aterriza
+    var rk = seg(t, RET1 - 20, RET1 + 200);
+    if (rk > 0 && rk < 1) {
+      attr(el.ring, 'cx', f(CX)); attr(el.ring, 'cy', f(CY));
+      attr(el.ring, 'r', f(R0 * lerp(1.02, 1.5, eOut(rk))));
+      attr(el.ring, 'stroke-width', f(lerp(1.8, 0.4, rk)));
+      attr(el.ring, 'opacity', f(0.38 * (1 - rk)));
+    } else attr(el.ring, 'opacity', '0');
+
+    // texto tecleado
+    var n = 0;
+    for (var i = 0; i < T_CHAR.length; i++) if (t >= T_CHAR[i]) n++;
+    setCode('ULima'.slice(0, n));
+    var fade = seg(t, 790, 960);
+    var textOp = t >= T_CHAR[0] ? 1 - fade : 0;
+    attr(el.code, 'opacity', f(textOp));
+    attr(el.code, 'transform', 'translate(0 ' + f(eOut(fade) * 8) + ')');
+
+    // cursor de la línea
+    var np = (t >= T_PLUS[0] ? 1 : 0) + (t >= T_PLUS[1] ? 1 : 0);
+    var cpos = t >= FLY[0] ? 5 : n + np;
+    var cop = seg(t, 160, 240) * (1 - fade);
+    attr(el.caret, 'x', f(LEFT + cpos * CW + 1));
+    attr(el.caret, 'y', f(BASE - 18 + eOut(fade) * 8));
+    attr(el.caret, 'opacity', f(t < 0 ? 0 : cop));
+
+    // los «++»
+    for (var k = 0; k < 2; k++) {
+      var st = null;
+      var p0 = { x: LEFT + (5.5 + k) * CW, y: BASE - 0.34 * FS };
+      var a0 = 0.25 * FS, th0 = 0.052 * FS;
+      if (t >= T_PLUS[k]) {
+        var pop = 0.55 + 0.45 * eBack(seg(t, T_PLUS[k], T_PLUS[k] + 110));
+        st = { x: p0.x, y: p0.y, a: a0, th: th0, rot: 0, sk: 0, sc: pop, op: seg(t, T_PLUS[k], T_PLUS[k] + 50), col: mix(TINT, WHITE, 0) };
+        var fl = seg(t, FLY[k], FLY[k] + FLY_D);
+        if (fl > 0) {
+          var e = eIO(fl), tg = attached(k, starBase(t));
+          var c = { x: tg.x + 26, y: Math.min(p0.y, tg.y) - 62 };
+          var p = bez(p0, c, tg, e);
+          st = { x: p.x, y: p.y, a: lerp(a0, tg.a, e), th: lerp(th0, tg.th, e), rot: 90 * e, sk: 0, sc: 1, op: 1, col: mix(TINT, WHITE, e) };
+        }
+        if (fl >= 1) {
+          var tg2 = attached(k, s);
+          var land = seg(t, FLY[k] + FLY_D, FLY[k] + FLY_D + 150);
+          st = { x: tg2.x, y: tg2.y, a: tg2.a, th: tg2.th, rot: 0, sk: 0, sc: 1 + 0.12 * Math.sin(Math.PI * land), op: 1, col: 'rgb(255,255,255)' };
+          if (u > 0.45) {
+            // se sueltan de la estrella a mitad de la salida y van al final de la marca
+            var d0 = attached(k, starAt(tr0 + 0.45 * TR, tr0));
+            var v = eIO(seg(u, 0.45, 1));
+            var wx = WMEND + (0.36 + 0.62 * k) * WMFS, wy = WMY - 0.34 * WMFS;
+            st.x = lerp(d0.x, wx, v); st.y = lerp(d0.y, wy, v);
+            st.a = lerp(d0.a, 0.26 * WMFS, v); st.th = lerp(d0.th, 0.07 * WMFS, v);
+            st.sk = -10 * v; st.sc = 1;
+          }
+        }
+      }
+      drawCross(plus[k], st);
+    }
+
+    // espera en bucle con el cursor junto a los «++»
+    var w = t - LOGO_DONE;
+    if (w > 0 && tr0 > LOGO_DONE && t < tr0 + 140) {
+      var sc = s.r / UNIT;
+      var wop = w < 200 ? w / 200 : 0.5 + 0.5 * Math.cos(2 * Math.PI * (w - 200) / 1060);
+      wop *= 1 - seg(t, tr0, tr0 + 120);
+      attr(el.wait, 'x', f(s.x + (PX[1] + PA + 22) * sc));
+      attr(el.wait, 'y', f(s.y + PY * sc - PA * sc * 1.2));
+      attr(el.wait, 'height', f(PA * sc * 2.4));
+      attr(el.wait, 'opacity', f(wop));
+    } else attr(el.wait, 'opacity', '0');
+  }
+
+  function stageUI(t, tr0) {
+    var name = t < 0 ? 'nativo' : t < tr0 ? 'flutter' : 'app';
+    if (name !== lastStage) {
+      stages.forEach(function (sp) { sp.classList.toggle('sp-codigo-on', sp.getAttribute('data-st') === name); });
+      lastStage = name;
+    }
+    var shown = t < 0 ? 0 : Math.min(t, tr0 + (opt.still ? 250 : TR));
+    el.time.textContent = (shown / 1000).toFixed(2).replace('.', ',') + ' s';
+  }
+
+  function loadDone() { return opt.load ? 3600 : 900; }
+
+  function render(t) {
+    var tr0;
+    if (opt.still) {
+      tr0 = Math.max(300, loadDone());
+      scene(1e7, LOGO_DONE);                       // app ya lista debajo
+      attr(el.snap, 'opacity', f(t < 0 ? 1 : 1 - seg(t, tr0, tr0 + 250)));
+      attr(el.snapPlus, 'opacity', f(t < 0 ? 0 : seg(t, 0, 200)));
+    } else {
+      tr0 = Math.max(LOGO_DONE, loadDone());
+      attr(el.snap, 'opacity', '0');
+      scene(t, tr0);
+    }
+    stageUI(t, tr0);
+    return tr0 + (opt.still ? 250 : TR);
+  }
+
+  function frame(now) {
+    var speed = opt.slow ? 1 / 3 : 1;
+    var t = (now - t0 - NATIVE) * speed;   // el splash nativo dura lo mismo a cualquier velocidad
+    var end = render(t);
+    raf = t < end + 40 ? requestAnimationFrame(frame) : 0;
+  }
+
+  function play() {
+    if (raf) cancelAnimationFrame(raf);
+    measure();
+    t0 = performance.now();
+    playedAt = t0;
+    startedHidden = !!document.hidden;
+    lastStage = '';
+    render(-NATIVE);
+    raf = requestAnimationFrame(frame);
+  }
+
+  root.addEventListener('click', function (ev) {
+    var b = ev.target.closest('button');
+    if (!b || !root.contains(b)) return;
+    ev.stopPropagation();   // Repetir y las opciones no deben marcar la opción del companion
+    var o = b.getAttribute('data-sp-opt');
+    if (o) {
+      opt[o] = !opt[o];
+      b.setAttribute('aria-pressed', opt[o] ? 'true' : 'false');
+    }
+    play();
+  });
+
+  // Si el teléfono no estaba a la vista al cargar, se repite la primera vez que aparece.
+  if ('IntersectionObserver' in window) {
+    var seen = false;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!seen && en.isIntersecting && en.intersectionRatio >= 0.5) {
+          seen = true;
+          if (performance.now() - playedAt > 400) play();
+          io.disconnect();
+        }
+      });
+    }, { threshold: [0, 0.5] });
+    io.observe(el.phone);
+  }
+
+  // Si la pestaña estaba oculta al arrancar, la animación empieza cuando se muestra.
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && startedHidden) play();
+  });
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', play);
+  else play();
+})();
+</script>
+</div>
+</div>
+</div>
+<p class="sp-page-note">Los tres dejan la estrella junto a «ULIMA++» en la cabecera, donde hoy solo va el texto. Si prefieres no tocar la cabecera, la estrella puede disolverse en el texto al final.</p>
+
+<div class="sp-page-mejoras">
+  <h3>Mejoras que van en cualquier concepto</h3>
+  <ul>
+    <li><b>Encuadre correcto en Android 12 o superior.</b> La imagen nativa lleva solo la estrella, sin «++», dentro del círculo que Android respeta, así que nada se corta.</li>
+    <li><b>El mismo naranja plano.</b> La estrella va sobre fondo transparente y el fondo es #E77330 de borde a borde, sin el cuadrado con textura del ícono.</li>
+    <li><b>Modo oscuro.</b> Con el teléfono en modo oscuro, el naranja se funde con el gris de la cabecera oscura y la aplicación entra sin un destello blanco.</li>
+    <li><b>Casi no suma espera.</b> La animación corre mientras cargan Firebase, la sesión y las alertas, dura como máximo 1,8&nbsp;s y, si la carga tarda más, sigue un bucle sutil en vez de una pantalla congelada.</li>
+    <li><b>Solo en arranque en frío.</b> La animación completa sale al abrir la aplicación desde cero y no se repite al volver desde segundo plano.</li>
+    <li><b>Respeta «reducir movimiento».</b> Si el teléfono tiene las animaciones desactivadas, el logo queda quieto y la aplicación entra con un fundido corto.</li>
+    <li><b>Lo mismo en iOS.</b> La pantalla de lanzamiento de iOS usa la misma estrella y la intro en Flutter es idéntica en los dos sistemas.</li>
+  </ul>
+  <p class="sp-page-cierre">Marca tu favorito tocando su tarjeta y cuéntame en el chat qué te gusta o qué cambiarías.</p>
+</div>
+</div>
+</main>
+<script>
+function toggleSelect(el){var todas=document.querySelectorAll('.option');for(var i=0;i<todas.length;i++){if(todas[i]!==el)todas[i].classList.remove('selected');}el.classList.toggle('selected');}
+</script>
+</body>
+</html>

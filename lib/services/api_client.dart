@@ -29,9 +29,10 @@ class ApiException implements Exception {
 /// `/auth/login` porque un login rechazado es un 401 normal. `/auth/register`
 /// porque su fallo más común —miUlima rechaza la contraseña o el passcode—
 /// también responde 401, y quien se está registrando no tiene ninguna sesión
-/// que caducar: sin la exención se le borraría la sesión inexistente, se le
-/// sacaría de la pantalla de registro con `offAllToLogin()` y leería
-/// "Sesión expirada". Ver BR-REG-F-04 de `specs/features/registro`.
+/// que caducar: sin la exención se le borraría la sesión inexistente. El
+/// registro va en la conversación de /login, donde `offAllToLogin()` no navega
+/// ni se avisa "Sesión expirada", pero la exención no depende de eso. Ver
+/// BR-REG-F-04 de `specs/features/registro`.
 ///
 /// `/auth/logout` NO va acá: su 401 sí limpia la sesión (es lo que se pidió),
 /// solo se salta la navegación. Esa excepción vive dentro del `if`.
@@ -155,8 +156,14 @@ class ApiClient {
       // aunque varias peticiones en vuelo caduquen a la vez, no navega antes
       // de que GetMaterialApp exista (arranque) y devuelve false si /login ya
       // es la ruta actual (el snackbar solo se muestra si de verdad navegó).
-      if (!path.contains('/auth/logout') && offAllToLogin()) {
-        Get.snackbar('Sesión expirada', 'Tu sesión caducó o iniciaste sesión en otro dispositivo.');
+      if (!path.contains('/auth/logout') &&
+          offAllToLogin(motivo: MotivoDeLlegada.expirada)) {
+        // Abajo, para no tapar el sello de la bienvenida (B-29).
+        Get.snackbar(
+          'Sesión expirada',
+          'Tu sesión caducó o iniciaste sesión en otro dispositivo.',
+          snackPosition: SnackPosition.BOTTOM,
+        );
       }
     }
 

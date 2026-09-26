@@ -2,13 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:ulima_plus/components/portal_consent/portal_consent_view.dart';
+import 'package:ulima_plus/domain/bienvenida/bienvenida_turnos.dart';
 import 'package:ulima_plus/models/portal_sync_models.dart';
 import 'package:ulima_plus/models/registro_models.dart';
 import 'package:ulima_plus/models/user_model.dart';
+import 'package:ulima_plus/pages/bienvenida/widgets/compositor.dart';
 import 'package:ulima_plus/pages/registro/registro_controller.dart';
-import 'package:ulima_plus/pages/registro/registro_page.dart';
 import 'package:ulima_plus/services/api_client.dart';
 import 'package:ulima_plus/services/registro_service.dart';
+import 'package:ulima_plus/services/session_navigation.dart';
+
+import '../bienvenida/apoyo_bienvenida.dart';
 
 /// Consentimiento en el alta de cuenta (RF-REC-6).
 ///
@@ -129,14 +133,6 @@ RegistroController _controller({RegistroService? servicio}) {
   return c;
 }
 
-Widget _app() => GetMaterialApp(
-      initialRoute: '/registro',
-      getPages: [
-        GetPage(name: '/registro', page: () => const RegistroPage()),
-        GetPage(name: '/login', page: () => const Scaffold(body: Text('LOGIN'))),
-      ],
-    );
-
 void main() {
   // El archivo mezcla `test` y `testWidgets`; dejar el binding puesto desde el
   // arranque evita depender del orden en que se ejecuten.
@@ -195,8 +191,8 @@ void main() {
 
     test('caso 5: un fallo que vuelve a datos no vuelve a pedir la aceptación',
         () async {
-      // El alumno no se movió de `/registro`: volver a mostrarle la misma
-      // pantalla de consentimiento en el mismo intento es ruido.
+      // El alumno sigue en el mismo registro, y volver a pedirle la
+      // aceptación en el mismo intento es ruido.
       final c = _controller(
         servicio: _ServicioFalso(
           fallo: const RegistroFailure('Ya existe una cuenta.',
@@ -227,8 +223,8 @@ void main() {
     });
 
     test('caso 7: una visita nueva arranca sin aceptación', () {
-      // No se recuerda entre visitas: `RegistroBinding` usa `lazyPut` sin
-      // `fenix`, así que salir y volver a entrar construye otro controller.
+      // No se recuerda entre visitas: la bienvenida crea un
+      // RegistroController nuevo en cada registro y lo cierra al salir.
       final c = _controller();
       c.continuar();
       c.aceptarConsentimiento();
@@ -283,64 +279,72 @@ void main() {
     });
   });
 
-  group('WIDGET · RegistroPage consentimiento (RF-REC-6)', () {
-    setUp(() => Get.testMode = true);
+  group('WIDGET · el consentimiento en la conversación (RF-REC-6 y RF-BIEN-7)',
+      () {
+    setUp(() {
+      Get.testMode = true;
+      Get.reset();
+    });
     tearDown(Get.reset);
 
-    testWidgets('caso 10: continuar muestra el consentimiento antes que miUlima',
-        (tester) async {
-      Get.put<RegistroController>(_controller());
-      await tester.pumpWidget(_app());
+    /// Llega a N3 desde E1 con «Soy nuevo» y datos válidos inventados.
+    Future<Bienvenida> enN3(WidgetTester tester) async {
+      final b = Bienvenida();
+      await montarLaBienvenida(
+        tester,
+        b,
+        argumentos: const {argumentoDeMotivo: MotivoDeLlegada.expirada},
+      );
+      await avanzar(tester, 1500);
+      await tester.tap(find.text(TextosDeLaBienvenida.soyNuevo));
+      await avanzar(tester, 3000);
+      // Un cuadro tras teclear, para que el botón de envío se encienda.
+      await tester.enterText(find.byType(TextField).first, '20230001');
       await tester.pump();
+      await tester.tap(find.byType(BotonDeEnvio));
+      await avanzar(tester, 2500);
+      await tester.enterText(find.byType(TextField).at(0), 'micontrasena');
+      await tester.enterText(find.byType(TextField).at(1), 'micontrasena');
+      await tester.pump();
+      await tester.tap(find.byType(BotonDeEnvio));
+      await avanzar(tester, 3000);
+      return b;
+    }
 
-      await tester.tap(find.text('Continuar'));
-      await tester.pump();
+    testWidgets('caso 10: tras las contraseñas, el consentimiento va antes '
+        'que miUlima', (tester) async {
+      await enN3(tester);
 
       expect(find.text(PortalConsentView.titulo), findsOneWidget);
-      expect(find.text('Verificamos que eres alumno'), findsNothing);
-      expect(find.text('Código del authenticator'), findsNothing,
+      expect(find.text(TextosDeLaBienvenida.rotuloPortal), findsNothing);
+      expect(find.text(TextosDeLaBienvenida.rotuloAuthenticator), findsNothing,
           reason: 'el código vence en 30 s: no puede esperar a que se lea el aviso');
     });
 
-    testWidgets('caso 11: «Acepto» lleva al formulario de miUlima',
-        (tester) async {
-      Get.put<RegistroController>(_controller());
-      await tester.pumpWidget(_app());
-      await tester.pump();
+    testWidgets('caso 11: «Acepto» lleva a la contraseña de miUlima', (
+      tester,
+    ) async {
+      final b = await enN3(tester);
 
-      await tester.tap(find.text('Continuar'));
-      await tester.pump();
+      await tester.tap(find.text(TextosDeLaBienvenida.acepto));
+      await avanzar(tester, 2500);
 
-      // La tarjeta mide 340 de ancho y va dentro de un scroll: el botón puede
-      // quedar fuera de los 800x600 del test.
-      await tester.ensureVisible(find.text(PortalConsentView.botonAceptar));
-      await tester.tap(find.text(PortalConsentView.botonAceptar));
-      await tester.pump();
-
-      expect(find.text('Verificamos que eres alumno'), findsOneWidget);
-      expect(find.text('Código del authenticator'), findsOneWidget);
+      expect(find.text(TextosDeLaBienvenida.rotuloPortal), findsOneWidget);
+      expect(b.controlador.registro!.consentimientoAceptado.value, isTrue);
     });
 
-    testWidgets('caso 12: «Volver» regresa a los datos sin borrarlos',
+    testWidgets('caso 12: «Volver» regresa a las contraseñas sin borrar nada',
         (tester) async {
-      final c = _controller();
-      Get.put<RegistroController>(c);
-      await tester.pumpWidget(_app());
-      await tester.pump();
+      final b = await enN3(tester);
 
-      await tester.tap(find.text('Continuar'));
-      await tester.pump();
-      expect(find.text(PortalConsentView.titulo), findsOneWidget);
+      await tester.tap(find.text(TextosDeLaBienvenida.volver));
+      await avanzar(tester, 2500);
 
-      // El único `Text` con 'Volver' es el enlace de salida de la tarjeta: el
-      // 'Volver' del scaffold es un tooltip, no un Text.
-      await tester.ensureVisible(find.text('Volver'));
-      await tester.tap(find.text('Volver'));
-      await tester.pump();
-
-      expect(find.text('Crea tu cuenta de ULima++'), findsOneWidget);
-      expect(c.codigoCtrl.text, equals('20230001'),
+      final c = b.controlador;
+      expect(c.turno.value, TurnoDeLaBienvenida.n2Contrasena);
+      expect(c.registro!.codigoCtrl.text, equals('20230001'),
           reason: 'salir del consentimiento es retroceder un paso, no empezar de cero');
+      expect(c.registro!.passwordCtrl.text, equals('micontrasena'));
     });
   });
 }

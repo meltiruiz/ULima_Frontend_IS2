@@ -127,22 +127,26 @@ Dart 3 no es decorativo: `UserModel.especialidades` usa la sintaxis de elemento 
 
 ### El arranque — [`lib/main.dart`](lib/main.dart)
 
-`main()` es `async` y hace doce cosas en este orden exacto (`lib/main.dart:48-84`). El orden es load-bearing: la restauración de sesión ocurre **antes** de `runApp`, así que la app nunca parpadea el login para un usuario que ya tenía sesión.
+Desde el splash animado (`specs/features/splash/splash.spec.md`), `main()` llama a `runApp` apenas
+bloquea la vertical, y la carga de hoy corre en paralelo con la intro en
+`lib/pages/splash/carga_del_arranque.dart`. La app se ve antes, porque el primer cuadro ya no espera
+la red, y la intro decide adónde ir cuando terminan su entrada y la carga.
 
-| # | Paso | Línea | Por qué |
+| # | Paso | Dónde | Por qué |
 |---:|:---|:---|:---|
-| 1 | `WidgetsFlutterBinding.ensureInitialized()` | `:49` | Requisito previo a tocar canales de plataforma. |
-| 2 | `SystemChrome.setPreferredOrientations([portraitUp])` | `:50-52` | La app arranca **bloqueada en vertical**. El landscape se habilita pantalla por pantalla. |
-| 3 | `Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform)` | `:53` | Siempre, aunque Firebase solo lo use el chat de sección. |
-| 4 | `LucideIcons.info.codePoint;` | `:54` | Expresión suelta, sin asignación ni llamada. Presumiblemente fuerza la carga del paquete de íconos. **No hay comentario que lo explique.** |
-| 5 | `Get.putAsync<StorageService>(() => StorageService().init(), permanent: true)` | `:57-60` | `init()` resuelve `SharedPreferences.getInstance()`. Primero, porque todos los demás lo necesitan. |
-| 6-8 | `Get.put` de `AuthService`, `AlertService`, `MallaService`, todos `permanent: true` | `:61-63` | Los cuatro únicos `GetxService` de la app. |
-| 9 | `await AuthService.to.tryRestoreSession()` | `:66` | `GET /auth/me` con el JWT del almacén seguro. |
-| 10 | Cálculo de `initialRoute` | `:67-82` | `postLoginRoute(user)` si restauró; `'/login'` si no. |
-| 11 | Precarga de alertas **solo si `!user.isTeacher`** | `:73-79` | `/alerts/me` lleva `requireRole` de alumno; un docente recibiría 403. El `catch` hace `print(...)`. |
-| 12 | `runApp(MyApp(initialRoute: initialRoute))` | `:84` | |
+| 1 | `WidgetsFlutterBinding.ensureInitialized()` | `main()` | Requisito previo a tocar canales de plataforma. |
+| 2 | `SystemChrome.setPreferredOrientations([portraitUp])` | `main()` | La app arranca bloqueada en vertical, y Horario habilita la horizontal. |
+| 3 | `runApp(MyApp(intro: …))` | `main()` | `GetMaterialApp` arranca en `/arranque`, una página `#E77330`, con la capa de la intro en su `builder`. |
+| 4 | `Firebase.initializeApp` y `StorageService` | `cargarElArranque()` | Si fallan, no hay ruta segura y la intro sigue en su bucle, como antes quedaba quieto el splash nativo. |
+| 5 | `registrarLosServicios()` | `cargarElArranque()` | `AuthService`, `AlertService`, `MallaService`, `AcademicRecordService`, `RecargaUlimaService`, `TimeBlocksService` y `SpecialtyTestService`, permanentes. |
+| 6 | `AuthService.tryRestoreSession()` | `cargarElArranque()` | `GET /auth/me` con el JWT. Un 401 borra la sesión sin navegar mientras la ruta es `/arranque`. |
+| 7 | La ruta de destino | `cargarElArranque()` | `postLoginRoute(user)` si restauró y `/login` si no. Las alertas ya no se piden aquí, porque las pide el home al montarse. |
+| 8 | La salida o el relevo | `CapaDeArranque` | Con sesión, la intro navega sin transición a `/home` abierto en Horario y reproduce su salida hasta la cabecera. Sin sesión, o sin especialidad, deja el logo en el centro y la bienvenida con Ulises toma el relevo en `/login`. |
 
-`MyApp` es un `StatelessWidget` que recibe `initialRoute` por constructor y monta el `GetMaterialApp` (`lib/main.dart:87-214`):
+En web no hay intro. `main()` conserva el orden de antes, con la carga y las alertas antes de
+`runApp`, y el único cambio es que el alumno sin especialidad arranca en `/login`.
+
+`MyApp` es un `StatelessWidget` que recibe `initialRoute` y la `intro` por constructor y monta el `GetMaterialApp` (`lib/main.dart:251-280`), con las rutas de `paginasDeLaApp` (`:97-249`):
 
 ```dart
 final materialTheme = MaterialTheme(Theme.of(context).textTheme);
@@ -153,23 +157,25 @@ return GetMaterialApp(
   themeMode: ThemeMode.system,
   debugShowCheckedModeBanner: false,
   scrollBehavior: const AppScrollBehavior(),
-  initialRoute: initialRoute,
-  getPages: [ /* 15 rutas nombradas */ ],
+  initialRoute: initialRoute, // /arranque fuera de web
+  builder: (context, child) =>
+      CapaDeArranque(intro: intro, child: child ?? const SizedBox.shrink()),
+  getPages: paginasDeLaApp,
 );
 ```
 
 | Propiedad | Valor | Detalle |
 |:---|:---|:---|
-| `title` | `'ULIMA++'` | `lib/main.dart:95` |
+| `title` | `'ULIMA++'` | `lib/main.dart:263` |
 | `theme` / `darkTheme` | `MaterialTheme.light()` / `.dark()` | Dos `ColorScheme` escritos a mano, **no** generados con `ColorScheme.fromSeed` ([`lib/configs/themes.dart`](lib/configs/themes.dart)`:157-252`). |
 | `themeMode` | `ThemeMode.system` | El modo lo decide el sistema operativo; no hay toggle en la app. |
-| `scrollBehavior` | `AppScrollBehavior` | `getScrollPhysics => const ClampingScrollPhysics()` (`lib/main.dart:220-226`). Mata el rebote de iOS en **toda** la app. |
+| `scrollBehavior` | `AppScrollBehavior` | `getScrollPhysics => const ClampingScrollPhysics()` (`lib/main.dart:286-292`). Mata el rebote de iOS en **toda** la app. |
 | `initialRoute` | calculado en `main()` | Ver diagrama abajo. |
-| `getPages` | 15 rutas nombradas | `lib/main.dart:105-211`. |
+| `getPages` | 20 rutas nombradas | `paginasDeLaApp` de `lib/main.dart`. |
 
 **Orientaciones.** `main.dart` fija `portraitUp`, y cinco archivos amplían la rotación o la restauran. `_scheduleOrientations` y `_mallaMapOrientations` son la misma lista `[portraitUp, landscapeLeft, landscapeRight]`. Solo dos pantallas la aplican por sí mismas, el shell mientras la pestaña activa es "Horario" ([`lib/pages/home/home_page.dart`](lib/pages/home/home_page.dart)`:24-31` y `:56-60`) y la malla clásica en modo mapa (`malla_page.dart:32-51`). Las dos vuelven a vertical en su `dispose()`, y el shell también al cambiar de pestaña. La campana del header fuerza vertical antes de abrir las alertas y, al volver, devuelve la rotación del horario si la pestaña activa es Horario (`app_header.dart:100-109`). El horario hace lo mismo al abrir la ficha del curso, «Mis bloques», el formulario de un bloque nuevo y, para el docente, la lista de alumnos impedidos y en riesgo (`horario.dart:678-687`, `:1132-1138`, `:1163-1169` y `:1604-1617`). La hoja de acciones de un bloque repite el patrón al abrir su edición (`time_block_actions_sheet.dart:217-221`).
 
-> ⚠️ **Solo Android, iOS y Web arrancan.** `firebase_options.dart:27-45` lanza `UnsupportedError` para macOS, Windows y Linux, y `Firebase.initializeApp` está en el paso 3 de `main()`. Los directorios `macos/`, `windows/` y `linux/` existen en el repo pero la app moriría en el arranque en esas tres plataformas.
+> ⚠️ **Solo Android, iOS y Web arrancan.** `firebase_options.dart:27-45` lanza `UnsupportedError` para macOS, Windows y Linux, y `Firebase.initializeApp` está en el paso 4 del arranque. Los directorios `macos/`, `windows/` y `linux/` existen en el repo pero la app moriría en el arranque en esas tres plataformas.
 
 ---
 
@@ -265,7 +271,7 @@ GetX cubre tres responsabilidades a la vez, y conviene no confundirlas:
 |:---|:---|---:|
 | Estado observable | `Rx`/`.obs` en controllers, `Obx(...)` en las vistas | 33 archivos de UI usan `Obx` |
 | Inyección de dependencias | `Get.put` / `Get.lazyPut` / `Get.putAsync`, `Get.find<T>()` | 22 `Get.find<T>()`; el tipo más buscado es `HorarioController` (4) |
-| Navegación | rutas nombradas en `getPages`, `Get.toNamed` / `Get.offAllNamed` | 15 rutas nombradas + 6 destinos anónimos |
+| Navegación | rutas nombradas en `getPages`, `Get.toNamed` / `Get.offAllNamed` | 20 rutas nombradas + 6 destinos anónimos |
 
 **Controllers.** 25 clases `extends GetxController`, en general una por pantalla. Casi todas exponen la misma tripleta *cargando / error / datos* como campos `Rx` separados, a propósito: sin un flag de error explícito, un fallo de red se veía en pantalla igual que "no hay nada" — el usuario leía "¡Todo al día!" cuando en realidad la petición había reventado. El patrón quedó fijado tras la auditoría documentada en `ULima_Backend_IS2/docs/AUDITORIA_TECNICA.md §6.1` —ese archivo vive en el repo del backend, no en este— y se ve, por ejemplo, en [`lib/services/alert_service.dart`](lib/services/alert_service.dart)`:16-20`.
 
@@ -279,7 +285,7 @@ Las ocho clases `Bindings` en disco y las rutas a las que sirven:
 
 | Binding | Archivo | Ruta / página | Qué registra |
 |:---|:---|:---|:---|
-| `LoginBinding` | [`lib/pages/login/login_binding.dart`](lib/pages/login/login_binding.dart)`:25-39` | `/login` → `LoginPage` | `Get.put(LoginController(), permanent: true)`. Si ya existe, lo reusa y agenda `resetFields()` en `addPostFrameCallback` para no disparar un `setState during build`. **Único binding con instancia permanente.** |
+| `LoginBinding` | [`lib/pages/login/login_binding.dart`](lib/pages/login/login_binding.dart) | `/login` → `BienvenidaPage` | `Get.put(LoginController(), permanent: true)` y después `Get.put(BienvenidaController(), permanent: true)`. Si ya existen, los reusa y agenda `resetFields()` en `addPostFrameCallback` para no disparar un `setState during build`. **Único binding con instancias permanentes.** |
 | `MisNotasBinding` | [`lib/pages/mis_notas/mis_notas_binding.dart`](lib/pages/mis_notas/mis_notas_binding.dart)`:5-10` | `/mis-notas` → `MisNotasPage` | `lazyPut(MisNotasController)` |
 | `NetworkingBinding` | [`lib/pages/networking/networking_binding.dart`](lib/pages/networking/networking_binding.dart)`:7-19` | `/networking` → `NetworkingPage` | `lazyPut<NetworkingGateway>(() => NetworkingService())` **y** el controller con esa abstracción inyectada. Único binding que inyecta una interfaz en vez de una clase concreta: es el punto de entrada de los tests. |
 | `PortalSyncBinding` | [`lib/pages/portal_sync/portal_sync_binding.dart`](lib/pages/portal_sync/portal_sync_binding.dart)`:8-13` | `/portal-sync` → `PortalSyncPage` | `lazyPut<PortalSyncController>(PortalSyncController.new)` |
@@ -298,7 +304,7 @@ Además hay **5 bloques `BindingsBuilder` inline** en `main.dart`, uno por ruta:
 | `/malla-clasica` | `MallaController` | Vista mapa de solo lectura; se rehidrata fresca en cada entrada. `main.dart:147-157` |
 | `/silabo` | `SilaboViewerController` | Recibe `{'url', 'titulo'}` por argumentos. `main.dart:158-168` |
 
-**Dos rutas nombradas no declaran binding**: `/setup-carrera` y `/chatbot` hacen `Get.put` dentro de la página (`setup_carrera_page.dart:17`, `chatbot_page.dart:18`). Y **6 destinos se abren con `Get.to(() => Widget())` anónimo**, sin ruta nombrada ni binding: `AlertasPage`, `DescripCursosPage`, `AtRiskStudentsPage`, `ChatPage`, `CreateAnnouncementPage` y `DelegadoAnunciosPage`. Es exactamente el patrón que la regla anterior prohíbe; no ha explotado ahí, pero es deuda.
+**Dos rutas nombradas no declaran binding**: `/arranque`, que solo sostiene la intro de la capa del arranque, y `/chatbot`, que hace `Get.put` dentro de la página (`chatbot_page.dart:19`). Y **6 destinos se abren con `Get.to(() => Widget())` anónimo**, sin ruta nombrada ni binding: `AlertasPage`, `DescripCursosPage`, `AtRiskStudentsPage`, `ChatPage`, `CreateAnnouncementPage` y `DelegadoAnunciosPage`. Es exactamente el patrón que la regla anterior prohíbe; no ha explotado ahí, pero es deuda.
 
 ---
 
@@ -508,52 +514,40 @@ String postLoginRoute(UserModel user) {
 |:---|:---|:---|
 | `true` | irrelevante | `/home` |
 | `false` | `true` | `/home` |
-| `false` | `false` | `/setup-carrera` |
-| *(sin sesión restaurada)* | — | `/login` (`main.dart:81`) |
+| `false` | `false` | `/setup-carrera`, que la intro y la bienvenida traducen en el test de especialidad dentro de la conversación |
+| *(sin sesión restaurada)* | — | `/login`, la bienvenida con Ulises, por el relevo de la intro |
 | *(fin del onboarding)* | pasa a `true` | `/home` vía `Get.offAllNamed('/home')` |
 
 `isTeacher` es `role == 'teacher' || role == 'docente'`; `setupComplete` se hidrata de `setupComplete` o `specialtySetupCompleted`, con default `false`. **`isDelegate` no afecta la ruta**: un delegado es un alumno y va a `/home` como cualquiera; lo que cambia es el shell, que gana una quinta pestaña.
 
-Los **cuatro llamadores** son los únicos puntos de la app que deciden ruta post-login: el arranque (`main.dart:70`) y los tres caminos del login — código + contraseña, Google en móvil y Google en web (`login_controller.dart:83`, `:103`, `:46`). Que sea una sola función y no tres `if` dispersos es la razón de que el comportamiento sea idéntico en los cuatro.
+Los llamadores son el arranque (`lib/pages/splash/carga_del_arranque.dart`) y la bienvenida, que la consulta después de cada entrada, con código, con Google en Android e iOS y con Google en web. `LoginController` ya no navega. Devuelve un `DesenlaceDelLogin` y la bienvenida decide el turno siguiente (RF-BIEN-6). Con `/home` sigue el paso al horario, que dibuja la capa del arranque, y con `/setup-carrera` el alumno hace el test de especialidad en la conversación, sin ver el asistente de carrera (RF-SPL-12 y RF-BIEN-21). Que sea una sola función es la razón de que el destino sea el mismo en todos los caminos.
 
 ```mermaid
 flowchart TD
-    START(["main async · lib/main.dart L48"]) --> B1["ensureInitialized<br/>y orientacion portraitUp<br/>L49-52"]
-    B1 --> B3["Firebase.initializeApp<br/>DefaultFirebaseOptions.currentPlatform · L53"]
-    B3 --> PLAT{"Plataforma"}
-    PLAT -->|"macOS · Windows · Linux"| STOP(["UnsupportedError<br/>la app no arranca"])
-    PLAT -->|"Android · iOS · Web"| B4["4 GetxService permanentes<br/>Storage via putAsync · Auth · Alert · Malla<br/>L57-63"]
-    B4 --> B5["AuthService.tryRestoreSession · L66"]
-    B5 --> T{"Hay session_token<br/>en el almacen seguro"}
-    T -->|no| RLOGIN["initialRoute igual a /login<br/>L81"]
-    T -->|si| ME["GET /auth/me con Bearer"]
-    ME -->|"ApiException o cualquier error"| CLR["clearSession<br/>auth_service L146-152"]
-    CLR --> RLOGIN
-    ME -->|"200 con el usuario"| ROLE{"user.isTeacher"}
-    ROLE -->|"si · role teacher o docente"| TSEC["GET /official-grades/teacher/sections<br/>llena canGrade"]
-    ROLE -->|no| CAT["GET /academic-profile/careers y specialties<br/>luego GET /alerts/me · solo alumnos"]
-    TSEC --> PLR["postLoginRoute user<br/>post_login_route.dart L11-14"]
-    CAT --> PLR
-
-    PLR --> D1{"isTeacher"}
-    D1 -->|si| RHOME["initialRoute igual a /home"]
-    D1 -->|no| D2{"setupComplete"}
-    D2 -->|si| RHOME
-    D2 -->|no| RSETUP["initialRoute igual a /setup-carrera"]
-
-    RLOGIN --> RUN
-    RHOME --> RUN
-    RSETUP --> RUN
-    RUN["runApp con MyApp initialRoute<br/>GetMaterialApp · theme light y dark · ThemeMode.system<br/>AppScrollBehavior clamped · getPages con 15 rutas"]
-
-    RUN --> SW{"Ruta inicial"}
-    SW -->|"/login"| LP["LoginPage con LoginBinding permanente<br/>codigo y contrasena o Google"]
-    LP --> LOK["Login correcto<br/>Get.offAllNamed postLoginRoute user<br/>login_controller L46 L83 L103"]
-    LOK --> D1
-
-    SW -->|"/setup-carrera"| ONB["SetupCarreraPage<br/>elige carrera y especialidades<br/>PUT /academic-profile/me/specialties<br/>luego Get.offAllNamed /home"]
-    SW -->|"/home"| SHELL["HomeShellConfig.forUser<br/>home_shell_config.dart L22-30"]
-    ONB --> SHELL
+    START(["main async · lib/main.dart"]) --> B1["ensureInitialized<br/>y orientacion portraitUp"]
+    B1 --> WEB{"kIsWeb"}
+    WEB -->|no| RUNI["runApp con la intro<br/>GetMaterialApp en /arranque<br/>CapaDeArranque en el builder"]
+    RUNI --> CARGA["cargarElArranque en paralelo<br/>Firebase · Storage · servicios<br/>tryRestoreSession"]
+    WEB -->|si| CARGAW["cargarElArranque antes de runApp<br/>y alertas del alumno"]
+    CARGA --> T{"Sesion restaurada"}
+    CARGAW --> T
+    T -->|no| RLOGIN["/login"]
+    T -->|si| PLR["postLoginRoute user<br/>post_login_route.dart"]
+    PLR --> D1{"isTeacher o setupComplete"}
+    D1 -->|si| RHOME["/home abierto en Horario"]
+    D1 -->|no| RSETUP["/setup-carrera"]
+    RSETUP -->|"la intro y la bienvenida la traducen"| RLOGIN
+    RHOME --> SAL["Salida de la intro<br/>hasta la cabecera de /home"]
+    RLOGIN --> BIEN["BienvenidaPage con LoginBinding permanente<br/>conversacion con Ulises"]
+    BIEN --> ENT["Si, entrar con codigo o Google<br/>LoginController devuelve el desenlace"]
+    BIEN --> NUEVO["Soy nuevo<br/>el registro en la conversacion"]
+    ENT --> PLR2{"postLoginRoute"}
+    PLR2 -->|"/home"| PASO["E3 y paso al horario<br/>dibujado por la capa"]
+    PLR2 -->|"/setup-carrera"| TEST["Test de especialidad<br/>en la conversacion"]
+    NUEVO --> TEST
+    TEST --> PASO
+    PASO --> SHELL["HomeShellConfig.forUser<br/>home_shell_config.dart"]
+    SAL --> SHELL
 
     SHELL --> R1{"isTeacher"}
     R1 -->|"si · DOCENTE"| TSH["Shell docente<br/>Secciones · Calificar solo si canGrade<br/>Horario · Asesorias · Perfil"]
@@ -565,16 +559,37 @@ flowchart TD
 **La guarda de sesión.** Todo camino que termina una sesión — el botón de logout del Perfil, el interceptor de 401 del `ApiClient` y el éxito del reset de contraseña — pasa obligatoriamente por una sola función:
 
 ```dart
-bool offAllToLogin() {
+bool offAllToLogin({
+  MotivoDeLlegada? motivo,
+  PoseDelLogo? pose,
+  bool desdeLaIntro = false,
+}) {
   if (Get.context == null) return false;
+  if (Get.currentRoute == rutaDelArranque && !desdeLaIntro) return false;
   final alreadyOnLogin =
       Get.currentRoute == '/login' || Get.currentRoute == '/LoginPage';
   if (alreadyOnLogin) return false;
-  Get.offAllNamed('/login');
+  final argumentos = <String, Object>{
+    argumentoDePose: ?pose,
+    argumentoDeMotivo: ?motivo,
+  };
+  if (desdeLaIntro) {
+    return offAllSinTransicion(
+      '/login',
+      arguments: argumentos.isEmpty ? null : argumentos,
+    );
+  }
+  Get.offAllNamed('/login', arguments: argumentos.isEmpty ? null : argumentos);
   return true;
 }
 ```
-([`lib/services/session_navigation.dart`](lib/services/session_navigation.dart)`:32-39`)
+([`lib/services/session_navigation.dart`](lib/services/session_navigation.dart))
+
+Desde la bienvenida, `offAllToLogin` suma el motivo de la llegada, que viaja como argumento de
+ruta. El 401 pasa `expirada` y el restablecimiento de contraseña pasa `restablecida`, y con
+cualquiera de los dos la conversación empieza directo en E1. La intro pasa la pose del logo con
+`desdeLaIntro`, que navega sin transición, y mientras la ruta es `/arranque` ningún otro llamador
+navega (RF-SPL-4 y RF-BIEN-1).
 
 Nadie debe hacer `Get.offAllNamed('/login')` directo. La guarda cubre tres casos: el navegador aún no montado durante el arranque, la ruta `/login` ya activa, y varias peticiones caducando a la vez. Compara contra **dos** cadenas porque `/LoginPage` es el nombre que GetX autogenera para rutas anónimas. No tiene ventana de carrera: `Get.currentRoute` se actualiza síncronamente en el `didPush` del observer.
 
@@ -621,7 +636,7 @@ versionado en git se indica en la nota del final de la sección.
 ```text
 ULima_Frontend_IS2/
 ├── lib/                              151 .dart · todo el código de la app, 30 217 líneas
-│   ├── main.dart                     # 226 L. Bootstrap, GetMaterialApp, tabla de 15 getPages, AppScrollBehavior
+│   ├── main.dart                     # 226 L. Bootstrap, GetMaterialApp, tabla de 20 getPages, AppScrollBehavior
 │   ├── firebase_options.dart         #  76 L. GENERADO por FlutterFire. android/ios/web configurados;
 │   │                                 #   macOS, Windows y Linux lanzan UnsupportedError (:27-45)
 │   ├── components/           (18)    # Widgets reutilizables, sin estado de negocio. Subcarpetas por feature:
@@ -709,15 +724,15 @@ ULima_Frontend_IS2/
 
 ## 🗺 Pantallas y navegación
 
-La app tiene **28 pantallas** y **15 rutas nombradas**. No es una relación 1:1 y conviene entender por qué:
+La app tiene **28 pantallas** y **20 rutas nombradas**. No es una relación 1:1 y conviene entender por qué:
 
 | Forma de montaje | Pantallas | Consecuencia |
 |:---|---:|:---|
-| Ruta nombrada en `getPages` | 15 | Deep-linkable, con `Binding` propio y argumentos tipados |
+| Ruta nombrada en `getPages` | 20 | Deep-linkable, con `Binding` propio y argumentos tipados |
 | Montada dentro del shell `/home` | 7 | No tiene URL; vive como hijo de `IndexedStack` según el rol |
 | Abierta con `Get.to(() => Widget)` | 6 | Sin ruta, sin binding, sin deep link |
 
-Las 15 rutas están declaradas en [`lib/main.dart`](lib/main.dart) (`main.dart:105-211`). Las 7 del shell las
+Las 20 rutas están declaradas en `paginasDeLaApp` de [`lib/main.dart`](lib/main.dart). Las 7 del shell las
 compone [`lib/pages/home/home_shell_config.dart`](lib/pages/home/home_shell_config.dart). Las 6 restantes son
 `AlertasPage`, `DescripCursosPage`, `ChatPage`, `AtRiskStudentsPage`, `DelegadoAnunciosPage` y
 `CreateAnnouncementPage`.
@@ -813,7 +828,7 @@ restaura la rotación al volver (`app_header.dart:100-109`, `horario.dart:678-68
 
 | Pantalla | Archivo | Rol | Qué hace | Services que usa | Mockup |
 |:---|:---|:---|:---|:---|:---|
-| `LoginPage` | [`lib/pages/login/login_page.dart:10`](lib/pages/login/login_page.dart) | Pública | Código/usuario + contraseña, Google SSO y enlace a recuperación | `AuthService` | `InicioSesion.png` |
+| `BienvenidaPage` | [`lib/pages/bienvenida/bienvenida_page.dart`](lib/pages/bienvenida/bienvenida_page.dart) | Pública | La conversación con Ulises, con «Sí, entrar» con código o usuario y contraseña, «Continuar con Google», «¿Olvidaste tu contraseña?», «Soy nuevo» con el registro y el test de especialidad | `AuthService`, `RegistroService`, `SpecialtyTestService` | `ulises-te-recibe-combinada.html` |
 | `ForgotPasswordPage` | [`lib/pages/password_reset/forgot_password_page.dart:10`](lib/pages/password_reset/forgot_password_page.dart) | Pública | Paso 1 del OTP: pedir código por código de alumno o correo | `PasswordResetService` | — |
 | `ResetPasswordPage` | [`lib/pages/password_reset/reset_password_page.dart:14`](lib/pages/password_reset/reset_password_page.dart) | Pública y autenticada | Pasos 2 y 3: validar OTP de 6 dígitos y fijar nueva contraseña | `PasswordResetService`, `AuthService`, `StorageService` | — |
 | `SetupCarreraPage` | [`lib/pages/setup_carrera/setup_carrera_page.dart:12`](lib/pages/setup_carrera/setup_carrera_page.dart) | Alumno | Wizard de 3 pasos: carrera → decisión → especialidades | `AuthService.completeSetup` | `ConfiguracionCarrera.png` |
@@ -849,25 +864,30 @@ Además hay **8 sheets y modales** que no son pantallas y no tienen ruta: `Cours
 filtros de malla (`malla_list_page.dart:461`), el selector de ciclo (`malla_list_page.dart:712`) y el
 `Dialog` con `NetworkingCardPreview`.
 
-#### Las 15 rutas nombradas
+#### Las 20 rutas nombradas
 
 | Ruta | Página | Binding | Argumentos | Definida en |
 |:---|:---|:---|:---|:---|
-| `/login` | `LoginPage` | `LoginBinding`, controller **permanente** | — | `main.dart:111-118` |
-| `/forgot-password` | `ForgotPasswordPage` | `BindingsBuilder` | — | `main.dart:119-125` |
-| `/reset-password` | `ResetPasswordPage` | `BindingsBuilder` | `{identifier, maskedEmail?}` | `main.dart:126-132` |
-| `/setup-carrera` | `SetupCarreraPage` | ninguno | — | `main.dart:133` |
-| `/home` | `HomePage` | 4 `lazyPut`: malla, secciones, asesorías, calificar | — | `main.dart:134-146` |
-| `/malla-clasica` | `MallaPage` | `MallaController` | — | `main.dart:151-157` |
-| `/silabo` | `SilaboViewerPage` | `SilaboViewerController` | `{url, titulo}` | `main.dart:162-168` |
-| `/teacher-home` | `TeacherHomePage` | `TeacherHomeBinding` | — | `main.dart:170-174` |
-| `/teacher-advising-create` | `CreateAdvisingPage` | `CreateAdvisingBinding` | devuelve `true` | `main.dart:175-179` |
-| `/teacher-advising-attendees` | `AttendeesPage` | `AttendeesBinding`, `fenix: true` | `{sessionId, title}` | `main.dart:180-184` |
-| `/teacher-grade-section` | `TeacherGradeSectionPage` | `TeacherGradeSectionBinding` | `{sectionId, courseName, sectionCode, title}` | `main.dart:185-190` |
-| `/mis-notas` | `MisNotasPage` | `MisNotasBinding` | — | `main.dart:191-196` |
-| `/portal-sync` | `PortalSyncPage` | `PortalSyncBinding` | devuelve `true` si cargó | `main.dart:200-204` |
-| `/chatbot` | `ChatbotPage` | ninguno | — | `main.dart:205` |
-| `/networking` | `NetworkingPage` | `NetworkingBinding` | — | `main.dart:206-210` |
+| `/arranque` | `ArranquePage` | ninguno | — | `paginasDeLaApp` |
+| `/login` | `BienvenidaPage` | `LoginBinding`, `LoginController` y `BienvenidaController` **permanentes** | `{pose?, motivo?}` | `paginasDeLaApp` |
+| `/forgot-password` | `ForgotPasswordPage` | `BindingsBuilder` | — | `paginasDeLaApp` |
+| `/reset-password` | `ResetPasswordPage` | `BindingsBuilder` | `{identifier, maskedEmail?}` | `paginasDeLaApp` |
+| `/setup-carrera` | `SetupCarreraPage` | `SetupCarreraBinding` | — | `paginasDeLaApp` |
+| `/test-especialidad` | `SpecialtyTestPage` | `SpecialtyTestBinding` | `{origen: asistente}` o `{origen: perfil}` | `paginasDeLaApp` |
+| `/home` | `HomePage` | 4 `lazyPut`: malla, secciones, asesorías, calificar | `{pestana: horario}` desde la intro y la bienvenida | `paginasDeLaApp` |
+| `/malla-clasica` | `MallaPage` | `MallaController` | — | `paginasDeLaApp` |
+| `/silabo` | `SilaboViewerPage` | `SilaboViewerController` | `{url, titulo}` | `paginasDeLaApp` |
+| `/teacher-home` | `TeacherHomePage` | `TeacherHomeBinding` | — | `paginasDeLaApp` |
+| `/teacher-advising-create` | `CreateAdvisingPage` | `CreateAdvisingBinding` | devuelve `true` | `paginasDeLaApp` |
+| `/teacher-advising-attendees` | `AttendeesPage` | `AttendeesBinding`, `fenix: true` | `{sessionId, title}` | `paginasDeLaApp` |
+| `/teacher-grade-section` | `TeacherGradeSectionPage` | `TeacherGradeSectionBinding` | `{sectionId, courseName, sectionCode, title}` | `paginasDeLaApp` |
+| `/mis-notas` | `MisNotasPage` | `MisNotasBinding` | — | `paginasDeLaApp` |
+| `/mi-record` | `AcademicRecordPage` | `AcademicRecordBinding` | — | `paginasDeLaApp` |
+| `/portal-sync` | `PortalSyncPage` | `PortalSyncBinding` | devuelve `true` si cargó | `paginasDeLaApp` |
+| `/chatbot` | `ChatbotPage` | ninguno | — | `paginasDeLaApp` |
+| `/networking` | `NetworkingPage` | `NetworkingBinding` | — | `paginasDeLaApp` |
+| `/bloque` | `TimeBlockFormPage` | `TimeBlockFormBinding` | una `TimeBlockRule` para editar, o nada para crear | `paginasDeLaApp` |
+| `/mis-bloques` | `TimeBlockListPage` | `TimeBlockListBinding` | — | `paginasDeLaApp` |
 
 > **3 · Por qué `offAllToLogin()` es idempotente.** Todos los caminos que terminan sesión —logout del
 > Perfil (`perfil.dart:1348-1349`), interceptor 401 del `ApiClient` (`api_client.dart:111`), éxito del
@@ -885,16 +905,17 @@ filtros de malla (`malla_list_page.dart:461`), el selector de ciclo (`malla_list
 
 ### Los flujos
 
-#### 1 · Login con código y contraseña
+#### 1 · Entrar con código y contraseña
 
-1. `LoginPage` monta una tarjeta de `maxWidth: 340` (`login_page.dart:59`) con el logo, campo **Código**,
-   campo **Contraseña** con ojo de visibilidad, botón **Entrar**, enlace **¿Olvidaste tu contraseña?** y
-   botón de Google.
-2. El campo Código usa teclado de **texto**, no numérico (`login_page.dart:99-106`): el hint es
-   `Tu código o usuario` porque el docente entra con un usuario alfanumérico institucional, no con un
-   código de 8 dígitos.
-3. `LoginController.submit()` (`login_controller.dart:61-84`) valida que ninguno esté vacío
-   —`Ingresa tu código y contraseña.`— y llama a `AuthService.login()`.
+1. `/login` muestra la bienvenida con Ulises (`lib/pages/bienvenida/bienvenida_page.dart`), una
+   conversación con la franja del sello arriba y el compositor abajo. Sin sesión, al arrancar, Ulises
+   vuela junto a la estrella del splash y pregunta «¿Ya usas ULima++?» con dos botones, «Sí, entrar» y
+   «Soy nuevo». Con el motivo `expirada` o `restablecida`, la conversación empieza directo en E1.
+2. E1 pide el código o usuario con teclado de **texto**, porque el docente entra con un usuario
+   alfanumérico institucional. E2 pide la contraseña, con el ojo, «Entrar», «¿Olvidaste tu contraseña?»
+   y «Soy nuevo».
+3. `LoginController.entrar()` llama a `AuthService.login()` y devuelve un `DesenlaceDelLogin`, sin
+   navegar. Atrapa el fallo crudo de la red y apaga `submitting` en un `finally`.
 4. `AuthService.login()` hace `POST /auth/login {code, password}` (`auth_service.dart:161-164`) y guarda
    token y código. Si el token viene vacío: `No se recibió token de sesión.`
 5. Según el rol, precarga distinto: alumno → `GET /academic-profile/careers` y
@@ -903,7 +924,9 @@ filtros de malla (`malla_list_page.dart:461`), el selector de ciclo (`malla_list
 6. Errores traducidos (`auth_service.dart:26-34`): `USER_NOT_FOUND` e `INVALID_PASSWORD` colapsan al mismo
    mensaje, `Código o contraseña incorrectos.`, para no permitir enumeración de usuarios; `NOT_ENROLLED` →
    `No tienes una matrícula activa.`; cualquier otro código propaga el mensaje del backend.
-7. `Get.offAllNamed(postLoginRoute(user))` (`login_controller.dart:83`).
+7. Con la sesión puesta, `BienvenidaController` consulta `postLoginRoute(user)`. Con `/home`, Ulises
+   dice «¡Hola de nuevo! Te llevo a tu horario 🪶» y la capa del arranque dibuja el paso al horario.
+   Con `/setup-carrera`, el alumno sigue en la conversación con el test de especialidad.
 
 #### 2 · Login con Google
 
@@ -911,12 +934,13 @@ filtros de malla (`malla_list_page.dart:461`), el selector de ciclo (`malla_list
    `clientId: kIsWeb ? googleWebClientId : null` y `serverClientId: kIsWeb ? null : googleWebClientId`,
    scope `email` (`auth_service.dart:49-53`). En Android e iOS el `serverClientId` es obligatorio; sin él
    el `idToken` llega `null` y el backend no puede verificar nada.
-2. **Móvil y escritorio**: `OutlinedButton` con `assets/images/google_logo.svg` →
-   `LoginController.loginWithGoogle()` → `signIn()` interactivo. Si el usuario cancela el selector, el
-   método devuelve `null` y **no se navega** (`login_controller.dart:99-103`).
-3. **Web**: se renderiza el botón oficial de Google Identity Services (`login_page.dart:360-369`) y la
-   cuenta llega por el stream `googleSignIn.onCurrentUserChanged`, suscrito en `onInit`
-   (`login_controller.dart:29-47`).
+2. **Android e iOS**. El botón propio «Continuar con Google» del compositor de E1 llama a
+   `LoginController.entrarConGoogle()`, que abre `signIn()`. Si el usuario cancela el selector, no pasa
+   nada y E1 sigue abierto.
+3. **Web**. E1 dibuja el botón oficial de Google Identity Services con `renderButton`, configurado con
+   `continueWith`, `es`, el tema del sistema y el ancho del compositor
+   (`google_sign_in_button_web.dart`). La cuenta llega por `googleSignIn.onCurrentUserChanged` a
+   `LoginController`, que publica el desenlace en `desenlaceDeGoogleEnWeb` para la bienvenida.
 4. Ambos caminos convergen en `finishGoogleLogin(account)` → `POST /auth/google {idToken}`
    (`auth_service.dart:219-222`).
 5. Errores propios: `INVALID_DOMAIN` → `Debes usar tu correo @aloe.ulima.edu.pe o @ulima.edu.pe.`;
@@ -1429,8 +1453,8 @@ tiene cursos**: sin esta entrada no habría forma de repetir la carga tras una m
 
 ```mermaid
 flowchart TD
-    LOGIN["LoginPage"] --> PLR{"postLoginRoute"}
-    PLR -->|"setupComplete false"| SETUP["SetupCarreraPage"]
+    LOGIN["BienvenidaPage"] --> PLR{"postLoginRoute"}
+    PLR -->|"setupComplete false"| SETUP["Test de especialidad en la conversacion"]
     SETUP --> HOME
     PLR -->|"setupComplete true"| HOME["HomePage - shell alumno"]
 
@@ -1489,7 +1513,7 @@ flowchart TD
 
 ```mermaid
 flowchart TD
-    LOGINT["LoginPage"] --> PLRT{"postLoginRoute - isTeacher"}
+    LOGINT["BienvenidaPage"] --> PLRT{"postLoginRoute - isTeacher"}
     PLRT --> HOMET["HomePage - shell docente"]
 
     HOMET --> HEADT["AppHeader sin campana"]
@@ -1533,8 +1557,8 @@ stateDiagram-v2
     [*] --> Arranque
 
     state "Arranque - tryRestoreSession" as Arranque
-    state "Sin sesion - LoginPage" as SinSesion
-    state "Autenticado sin setup - SetupCarreraPage" as SinSetup
+    state "Sin sesion - BienvenidaPage" as SinSesion
+    state "Autenticado sin setup - test en la conversacion" as SinSetup
     state "Autenticado listo - HomePage" as Listo
     state "Sesion expirada" as Expirada
 
@@ -1544,7 +1568,7 @@ stateDiagram-v2
 
     SinSesion --> SinSetup : login de alumno sin setup
     SinSesion --> Listo : login de docente o alumno con setup
-    SinSetup --> Listo : PUT me specialties y offAllNamed home
+    SinSetup --> Listo : PUT me specialties y paso al horario
 
     Listo --> Listo : replaceToken tras la carga de ciclo
     Listo --> Expirada : cualquier respuesta HTTP 401
@@ -1576,13 +1600,13 @@ Tres transiciones merecen texto:
 
 ### Mockups
 
-17 archivos PNG en `docs/images/UI/`, uno de ellos sin pantalla equivalente. No son documentación
+17 archivos PNG en `docs/images/UI/`, dos de ellos sin pantalla equivalente. No son documentación
 decorativa: `AGENTS.md:47` los declara contrato — *«Respeta mockups en `docs/images/UI` salvo cambio
 aprobado»*.
 
 <table>
 <tr>
-<td width="33%" align="center"><img src="docs/images/UI/InicioSesion.png" alt="Inicio de sesión"><br><sub><code>InicioSesion.png</code><br><b><code>LoginPage</code></b></sub></td>
+<td width="33%" align="center"><img src="docs/images/UI/InicioSesion.png" alt="Inicio de sesión"><br><sub><code>InicioSesion.png</code><br><b>⚠️ Ninguna pantalla.</b> La tarjeta del login la reemplazó la bienvenida con Ulises (<code>BienvenidaPage</code>).</sub></td>
 <td width="33%" align="center"><img src="docs/images/UI/ConfiguracionCarrera.png" alt="Configuración de carrera"><br><sub><code>ConfiguracionCarrera.png</code><br><b><code>SetupCarreraPage</code></b></sub></td>
 <td width="33%" align="center"><img src="docs/images/UI/Perfil.png" alt="Perfil"><br><sub><code>Perfil.png</code><br><b><code>ProfilePage</code></b></sub></td>
 </tr>
@@ -1819,7 +1843,7 @@ consume 66. Los cuatro sin llamador son `GET /`, `GET /health`, `GET /version` y
 
 | Service | Método | Endpoint backend | Modelo | Usado por |
 |:---|:---|:---|:---|:---|
-| `auth_service.dart` | `login` :155 | `POST /auth/login` | `String?` — `null` es éxito, texto es el mensaje de error | `LoginController.login` :73 → `LoginPage` |
+| `auth_service.dart` | `login` :155 | `POST /auth/login` | `String?` — `null` es éxito, texto es el mensaje de error | `LoginController.entrar` → `BienvenidaController` |
 | `auth_service.dart` | `loginWithGoogle` :192 | indirecto vía `finishGoogleLogin` | `String?` | `LoginController` :90, móvil y escritorio |
 | `auth_service.dart` | `finishGoogleLogin` :209 | `POST /auth/google` body `{idToken}` | `String?` | `LoginController` :39; en web vía `onCurrentUserChanged` |
 | `auth_service.dart` | `tryRestoreSession` :129 | `GET /auth/me` | `bool` + llena `Rx<UserModel?>` | `main()` :66, decide `initialRoute` |
@@ -2968,9 +2992,9 @@ escriben inline en cada widget.
 |:---|:---|:---|
 | `ChatbotBubble` | [`lib/components/chatbot_bubble.dart`](lib/components/chatbot_bubble.dart) | `pages/home/home_page.dart` — burbuja flotante de Ulises, arrastrable con snap al borde, respeta *reduce motion* |
 | `ErrorRetry` | [`lib/components/error_retry.dart`](lib/components/error_retry.dart) | **7 pantallas**: alertas, calculadora, anuncios de delegado, los 3 tabs de detalle de curso y alumnos en riesgo |
-| `googleSignInButton()` | [`lib/components/google_sign_in_button.dart`](lib/components/google_sign_in_button.dart) | `pages/login/login_page.dart` — fachada con import condicional |
+| `googleSignInButton()` | [`lib/components/google_sign_in_button.dart`](lib/components/google_sign_in_button.dart) | `pages/bienvenida/widgets/compositor.dart`, en E1 de web. Es la fachada con import condicional y recibe la configuración de GIS |
 | *stub* de Google Sign-In | [`lib/components/google_sign_in_button_stub.dart`](lib/components/google_sign_in_button_stub.dart) | Rama por defecto (móvil): devuelve `SizedBox.shrink()` |
-| *web* de Google Sign-In | [`lib/components/google_sign_in_button_web.dart`](lib/components/google_sign_in_button_web.dart) | Rama `dart.library.html`: botón oficial GIS con una `GlobalKey` fija para evitar el warning de `initialize()` llamado dos veces |
+| *web* de Google Sign-In | [`lib/components/google_sign_in_button_web.dart`](lib/components/google_sign_in_button_web.dart) | Rama `dart.library.html`: botón oficial GIS con `continueWith`, `es`, el tema del sistema y el ancho del compositor, que se vuelve a dibujar al cambiar el tema o el ancho |
 | `SkeletonPulse` | [`lib/components/skeleton.dart`](lib/components/skeleton.dart) | Base de todos los esqueletos y uso suelto en `pages/silabo/silabo_viewer_page.dart` |
 | `SkeletonBox` | [`lib/components/skeleton.dart`](lib/components/skeleton.dart) | Dentro de `SkeletonCard` y suelto en varias páginas |
 | `SkeletonCard` | [`lib/components/skeleton.dart`](lib/components/skeleton.dart) | Vía `SkeletonCardList`; `showAvatar` configurable |
@@ -3287,11 +3311,11 @@ sistema de breakpoints:
 - **Chatbot, umbral de 600 px** (`chatbot_page.dart:31-38`): por encima, dos paneles — lista de
   sesiones y conversación; por debajo, navegación apilada, y el botón atrás **primero cierra la
   conversación** y solo después sale de la pantalla.
-- **Login, `maxWidth: 340`** (`login_page.dart:59`): la tarjeta no se estira en tablet ni en web.
+- **Bienvenida, columna de 600 dp** (`bienvenida_page.dart`). En una pantalla ancha, la conversación y el compositor van en una columna centrada de 600 dp (RF-BIEN-17).
 
 No existe una capa responsive general: el resto de pantallas confía en `ListView` + `Expanded` y
 en el scroll global `ClampingScrollPhysics` que `AppScrollBehavior` impone a toda la app
-(`lib/main.dart:220-226`), que elimina el rebote de iOS por decisión explícita.
+(`lib/main.dart:286-292`), que elimina el rebote de iOS por decisión explícita.
 
 ---
 
@@ -3324,15 +3348,15 @@ cuando la app tiene que reaccionar a ellas.
 
 | ID | Requerimiento | Pantalla | Service | Estado |
 |:---|:---|:---|:---|:---|
-| `RF-APP-01` | Iniciar sesión con código y contraseña; el formulario valida no-vacío y **no llama a la API** si falta un campo (`BR-AUTH-F-01`) | [`lib/pages/login/login_page.dart`](lib/pages/login/login_page.dart) | `AuthService` → `POST /auth/login` | Implementado |
-| `RF-APP-02` | Traducir todo error de login a `Código o contraseña incorrectos.` sin distinguir usuario inexistente de contraseña mala (`BR-AUTH-F-01`) | `login_page.dart` | `AuthService.loginErrorMessage` | Implementado |
+| `RF-APP-01` | Iniciar sesión con código y contraseña; el formulario valida no-vacío y **no llama a la API** si falta un campo (`BR-AUTH-F-01`) | [`lib/pages/bienvenida/bienvenida_page.dart`](lib/pages/bienvenida/bienvenida_page.dart) | `AuthService` → `POST /auth/login` | Implementado |
+| `RF-APP-02` | Traducir todo error de login a `Código o contraseña incorrectos.` sin distinguir usuario inexistente de contraseña mala (`BR-AUTH-F-01`) | `bienvenida_controller.dart` | `AuthService.loginErrorMessage` | Implementado |
 | `RF-APP-03` | Persistir el JWT en el dispositivo bajo la clave `session_token` y **no** persistir el código junto a él (`BR-AUTH-F-02`) | — | `StorageService` (`flutter_secure_storage`) | Implementado |
 | `RF-APP-04` | Restaurar la sesión al arrancar contra `GET /auth/me` y rutear por rol y `setupComplete` (`BR-AUTH-F-03`) | [`lib/main.dart`](lib/main.dart) | `AuthService.tryRestoreSession`, `postLoginRoute` | Implementado |
 | `RF-APP-05` | Cerrar sesión: `POST /auth/logout` best-effort que no bloquea, limpieza de storage y salida a `/login` sin re-autenticación automática (`BR-AUTH-F-04`) | [`lib/pages/perfil/perfil.dart`](lib/pages/perfil/perfil.dart) | `AuthService.logout`, `session_navigation.dart` | Implementado |
 | `RF-APP-06` | Mapear el rol del backend a español: `student→estudiante`, `delegate→delegado`, `subdelegate→subdelegado` (`BR-AUTH-F-05`) | shell completo | `UserModel` | **No implementado**: `UserModel.fromJson` guarda el `role` crudo del backend (`user_model.dart:146`) y no existe ningún `_roleToSpanish` en `lib/`; por eso `isDelegate` (`:93-97`) tiene que aceptar las dos ortografías. Lo único traducido es la etiqueta de presentación `roleLabel` (`:62-91`), que sí cubre `teacher` → `Profesor` y `jp` → `Jefe de Práctica` |
 | `RF-APP-07` | Enviar `Authorization: Bearer` en toda petición salvo `POST /auth/login`, y ante un `401` limpiar sesión y forzar `/login` (`BR-AUTH-F-07`) | transversal | `ApiClient` | Implementado |
-| `RF-APP-08` | Mostrar spinner y deshabilitar el botón `Entrar` mientras el login está en vuelo (`BR-AUTH-F-08`) | `login_page.dart` | `LoginController.submitting` | Implementado |
-| `RF-APP-09` | Iniciar sesión con Google en web y Android restringido a `@aloe.ulima.edu.pe` (alumno) y `@ulima.edu.pe` (docente), sin autoaprovisionamiento (`BR-AUTH-F-10`) | `login_page.dart`, `google_sign_in_button_web.dart` | `AuthService.loginWithGoogle` → `POST /auth/google` | Implementado |
+| `RF-APP-08` | Mostrar spinner y deshabilitar el botón `Entrar` mientras el login está en vuelo (`BR-AUTH-F-08`) | `compositor.dart` | `LoginController.submitting` | Implementado |
+| `RF-APP-09` | Iniciar sesión con Google en web y Android restringido a `@aloe.ulima.edu.pe` (alumno) y `@ulima.edu.pe` (docente), sin autoaprovisionamiento (`BR-AUTH-F-10`) | `compositor.dart`, `google_sign_in_button_web.dart` | `AuthService.loginWithGoogle` → `POST /auth/google` | Implementado |
 | `RF-APP-10` | Restablecer contraseña con OTP de 6 dígitos y contraseña nueva de ≥ 8 caracteres | [`lib/pages/password_reset/reset_password_page.dart`](lib/pages/password_reset/reset_password_page.dart) | `PasswordResetService` | Implementado **sin spec** |
 | `RF-APP-11` | Seleccionar una especialidad principal y varias de interés; la misma no puede ser ambas (**R12**) | [`lib/pages/perfil/perfil.dart`](lib/pages/perfil/perfil.dart), [`lib/pages/setup_carrera/setup_carrera_page.dart`](lib/pages/setup_carrera/setup_carrera_page.dart) | `AuthService.completeSetup` → `PUT /academic-profile/me/specialties` | Implementado |
 | `RF-APP-12` | Reflejar en la malla los electivos de las especialidades elegidas (**R13**) | [`lib/pages/malla/malla_list_page.dart`](lib/pages/malla/malla_list_page.dart) | `MallaService` | Implementado |
@@ -3566,7 +3590,7 @@ institucional y mi contraseña, **para** ver mi información académica sin pasa
 
 | | |
 |:---|:---|
-| **Pantalla** | [`lib/pages/login/login_page.dart`](lib/pages/login/login_page.dart) |
+| **Pantalla** | [`lib/pages/bienvenida/bienvenida_page.dart`](lib/pages/bienvenida/bienvenida_page.dart) |
 | **Services** | `AuthService.login` → `POST /auth/login`; `StorageService.saveToken`; `postLoginRoute` |
 | **Reglas** | `BR-AUTH-F-01` (flujo y mensajes), `BR-AUTH-F-02` (clave `session_token`), `BR-AUTH-F-08` (estado de carga) |
 | **Pruebas** | `test/HU01_jeff/login_error_mapping_test.dart`, `login_navigation_paths_test.dart`, `login_relogin_regression_test.dart` |
@@ -5121,14 +5145,16 @@ Cuatro diferencias concretas respecto a móvil:
    `LoginController.onInit` se suscribe a `googleSignIn.onCurrentUserChanged`
    ([`lib/pages/login/login_controller.dart`](lib/pages/login/login_controller.dart)`:29-32`)
    y de ahí llama a `finishGoogleLogin`. `loginWithGoogle()` solo se usa en móvil.
-3. **El botón se construye una sola vez.** `renderButton()` se guarda en un campo
-   `late final` dentro de `initState`
-   ([`lib/components/google_sign_in_button_web.dart`](lib/components/google_sign_in_button_web.dart)`:24-30`)
-   para que Flutter no destruya y recree el `HtmlElementView`; si se recreara, GIS
-   avisaría con «google.accounts.id.initialize() is called multiple times».
-4. **La UI difiere.** En web se pinta el botón oficial de Google; en móvil, un
-   `OutlinedButton` propio con `assets/images/google_logo.svg`
-   ([`lib/pages/login/login_page.dart`](lib/pages/login/login_page.dart)`:359-368`).
+3. **El botón se construye una vez por configuración.** `renderButton()` se guarda en el
+   `State` ([`lib/components/google_sign_in_button_web.dart`](lib/components/google_sign_in_button_web.dart))
+   y solo se vuelve a crear si cambian el tema o el ancho, así que Flutter no recrea el
+   `HtmlElementView` en cada reconstrucción. Al cambiar el tema, GIS puede avisar
+   «google.accounts.id.initialize() is called multiple times», un aviso que se acepta porque
+   web no se despliega (RF-BIEN-6).
+4. **La UI difiere.** En web se pinta el botón oficial de Google, configurado con `continueWith`,
+   `es` y el tema del sistema. En Android e iOS va el botón propio «Continuar con Google» del
+   compositor de E1, con `assets/images/google_logo.svg`
+   ([`lib/pages/bienvenida/widgets/compositor.dart`](lib/pages/bienvenida/widgets/compositor.dart)).
 
 ---
 

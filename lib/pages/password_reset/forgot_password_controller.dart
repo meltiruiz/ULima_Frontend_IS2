@@ -8,11 +8,15 @@ import '../../services/api_client.dart';
 import '../../services/password_reset_service.dart';
 
 class ForgotPasswordController extends GetxController {
+  /// Inyectable solo para las pruebas. En la app se construye el real.
+  ForgotPasswordController({PasswordResetService? service})
+    : _service = service ?? PasswordResetService();
+
   final identifierController = TextEditingController();
   final errorMessage = RxnString();
   final submitting = false.obs;
 
-  final PasswordResetService _service = PasswordResetService();
+  final PasswordResetService _service;
 
   Future<void> submit() async {
     // Evita dobles envíos por Enter repetido mientras la petición está en vuelo.
@@ -32,7 +36,12 @@ class ForgotPasswordController extends GetxController {
     try {
       final message = await _service.request(identifier);
       Get.toNamed('/reset-password', arguments: {'identifier': identifier});
-      Get.snackbar('Solicitud enviada', message);
+      // Abajo, para no tapar el sello de la cabecera (RF-BIEN-20).
+      Get.snackbar(
+        'Solicitud enviada',
+        message,
+        snackPosition: SnackPosition.BOTTOM,
+      );
     } on ApiException catch (e) {
       errorMessage.value = e.message;
     } catch (_) {

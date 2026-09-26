@@ -1,0 +1,527 @@
+<section class="sp-incremento-root" id="sp-incremento-root" aria-label="Concepto B, Incremento">
+<style>
+  .sp-incremento-root { width: 100%; max-width: 340px; margin: 0 auto; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; color: var(--text-primary, #1d1d1f); }
+  .sp-incremento-root *, .sp-incremento-root *::before, .sp-incremento-root *::after { box-sizing: border-box; }
+
+  /* Marco del teléfono (300 x 620, se escala si el contenedor es más angosto) */
+  .sp-incremento-box { position: relative; width: 100%; max-width: 300px; height: 620px; margin: 0 auto; }
+  .sp-incremento-phone { position: absolute; left: 0; top: 0; width: 300px; height: 620px; padding: 6px; border-radius: 38px; background: #0e0e10; box-shadow: inset 0 0 0 1px rgba(255,255,255,.09), 0 18px 40px -20px rgba(0,0,0,.6); transform-origin: 0 0; }
+  .sp-incremento-screen { position: relative; width: 288px; height: 608px; border-radius: 32px; overflow: hidden; isolation: isolate; background: #FEFDFC; font-family: Roboto, "Helvetica Neue", Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+
+  /* Pantalla falsa de la app (debajo de todo). La fila de la cabecera va en una capa sobre la cortina. */
+  .sp-incremento-app { position: absolute; inset: 0; z-index: 1; }
+  .sp-incremento-head { position: absolute; left: 0; top: 0; right: 0; height: 80px; background: #FF6600; z-index: 2; }
+  .sp-incremento-headfg { position: absolute; left: 0; top: 0; right: 0; height: 80px; z-index: 4; pointer-events: none; }
+  .sp-incremento-row { position: absolute; left: 16px; right: 16px; top: 40px; height: 24px; display: flex; align-items: center; }
+  .sp-incremento-hstar { width: 20.8px; height: 20.8px; flex: none; margin-right: 8px; overflow: visible; }
+  .sp-incremento-wm { color: #fff; font-size: 16px; line-height: 1; font-weight: 700; font-style: italic; letter-spacing: .2px; white-space: nowrap; }
+  .sp-incremento-bell { position: relative; margin-left: auto; width: 24px; height: 24px; flex: none; }
+  .sp-incremento-bell svg { width: 24px; height: 24px; display: block; }
+  .sp-incremento-bell i { position: absolute; right: 1px; top: 1px; width: 7px; height: 7px; border-radius: 50%; background: #1D6FDB; box-shadow: 0 0 0 1.5px #FF6600; }
+  .sp-incremento-body { position: absolute; left: 0; right: 0; top: 80px; bottom: 0; z-index: 1; will-change: transform; }
+  .sp-incremento-date { height: 38px; background: #FDE6D8; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; color: #1f1f1f; font-size: 12.8px; font-weight: 700; }
+  .sp-incremento-date svg { width: 16px; height: 16px; }
+  .sp-incremento-week { height: 22px; display: flex; align-items: center; justify-content: center; font-size: 9px; color: #6b6b6b; border-bottom: 1px solid #ededed; background: #fff; }
+  .sp-incremento-grid { position: absolute; left: 0; right: 0; top: 60px; bottom: 60px; overflow: hidden; background: #FEFDFC; }
+  .sp-incremento-hour { position: absolute; left: 0; right: 0; height: 1px; background: #efefef; }
+  .sp-incremento-hour span { position: absolute; left: 8px; top: -6px; font-size: 8px; color: #9a9a9a; background: #FEFDFC; padding-right: 3px; }
+  .sp-incremento-blk { position: absolute; left: 46px; right: 10px; border-radius: 10px; color: #fff; text-align: center; padding-top: 9px; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .sp-incremento-blk b { display: block; font-size: 9.6px; letter-spacing: .2px; }
+  .sp-incremento-blk small { display: block; font-size: 8px; opacity: .92; margin-top: 2px; }
+  .sp-incremento-blk em { position: absolute; left: 8px; bottom: 8px; font-style: normal; font-size: 7px; font-weight: 700; color: #1f1f1f; background: #fff; border-radius: 4px; padding: 3px 6px; }
+  .sp-incremento-nav { position: absolute; left: 0; right: 0; bottom: 0; height: 60px; background: #1E1E24; display: flex; justify-content: space-around; padding-top: 9px; }
+  .sp-incremento-nav div { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 8px; color: rgba(255,255,255,.68); width: 20%; }
+  .sp-incremento-nav svg { width: 17px; height: 17px; }
+  .sp-incremento-nav .sp-incremento-on { color: #FF6600; font-weight: 600; }
+  .sp-incremento-pill { position: absolute; left: 50%; bottom: 5px; width: 92px; height: 4px; margin-left: -46px; border-radius: 2px; background: #fff; opacity: .45; }
+
+  /* Capas del splash */
+  .sp-incremento-curtain { position: absolute; left: 0; top: 0; width: 100%; height: 608px; background: #E77330; z-index: 3; will-change: height; }
+  .sp-incremento-fx { position: absolute; left: 0; top: 0; width: 288px; height: 608px; z-index: 5; overflow: visible; pointer-events: none; }
+  .sp-incremento-status { position: absolute; left: 0; right: 0; top: 0; height: 20px; z-index: 6; display: flex; align-items: center; justify-content: space-between; padding: 0 18px 0 20px; color: #fff; font-size: 10.5px; font-weight: 600; pointer-events: none; }
+  .sp-incremento-status svg { width: 42px; height: 10px; }
+
+  /* Controles y fases, con las variables del companion */
+  .sp-incremento-controls { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; max-width: 300px; margin: 12px auto 0; font-size: 12px; color: var(--text-secondary, #86868b); }
+  .sp-incremento-btn { appearance: none; -webkit-appearance: none; display: inline-flex; align-items: center; gap: 5px; margin: 0; padding: 5px 12px; border: 1px solid var(--border, #d1d1d6); border-radius: 999px; background: var(--bg-secondary, #fff); color: var(--text-primary, #1d1d1f); font-family: inherit; font-size: 12px; font-weight: 600; line-height: 1.2; cursor: pointer; }
+  .sp-incremento-btn:hover { border-color: #E77330; }
+  .sp-incremento-btn:focus-visible { outline: 2px solid #E77330; outline-offset: 2px; }
+  .sp-incremento-btn svg { width: 12px; height: 12px; }
+  .sp-incremento-chk { display: inline-flex; align-items: center; gap: 4px; cursor: pointer; user-select: none; -webkit-user-select: none; }
+  .sp-incremento-chk input { margin: 0; accent-color: #E77330; }
+  .sp-incremento-clock { width: 100%; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-tertiary, var(--text-secondary, #86868b)); }
+  .sp-incremento-phases { list-style: none; display: flex; flex-wrap: wrap; gap: 4px; max-width: 300px; margin: 8px auto 0; padding: 0; }
+  .sp-incremento-phases li { margin: 0; padding: 2px 7px; border: 1px solid var(--border, #d1d1d6); border-radius: 999px; font-size: 10.5px; line-height: 1.4; color: var(--text-secondary, #86868b); transition: background-color .15s, color .15s, opacity .15s; }
+  .sp-incremento-phases li.sp-incremento-is-on { background: #E77330; border-color: #E77330; color: #fff; }
+  .sp-incremento-phases li.sp-incremento-is-skip { opacity: .35; text-decoration: line-through; }
+
+  /* Texto del concepto */
+  .sp-incremento-meta { max-width: 300px; margin: 14px auto 0; }
+  .sp-incremento-kicker { margin: 0; font-size: 11px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--text-secondary, #86868b); }
+  .sp-incremento-title { margin: 2px 0 6px; font-size: 18px; font-weight: 700; line-height: 1.25; color: var(--text-primary, #1d1d1f); }
+  .sp-incremento-p { margin: 0 0 8px; font-size: 13.5px; line-height: 1.45; color: var(--text-primary, #1d1d1f); }
+  .sp-incremento-flutter { margin: 8px 0 0; padding-top: 8px; border-top: 1px solid var(--border, #d1d1d6); font-size: 12px; line-height: 1.5; color: var(--text-secondary, #86868b); }
+  .sp-incremento-flutter code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-primary, #1d1d1f); }
+</style>
+
+<div class="sp-incremento-box">
+  <div class="sp-incremento-phone">
+    <div class="sp-incremento-screen" role="img" aria-label="Maqueta animada del concepto Incremento. La estrella gira, late, aparecen los dos signos más y la estrella vuela a la cabecera de la aplicación.">
+
+      <div class="sp-incremento-app">
+        <div class="sp-incremento-head"></div>
+        <div class="sp-incremento-body">
+          <div class="sp-incremento-date">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#E4572E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>
+            <span>Viernes, 25 de septiembre</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="#E4572E" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
+          <div class="sp-incremento-week">Semana 7 del ciclo</div>
+          <div class="sp-incremento-grid">
+            <div class="sp-incremento-hour" style="top:12px"><span>7 am</span></div>
+            <div class="sp-incremento-hour" style="top:64px"><span>8 am</span></div>
+            <div class="sp-incremento-hour" style="top:116px"><span>9 am</span></div>
+            <div class="sp-incremento-hour" style="top:168px"><span>10 am</span></div>
+            <div class="sp-incremento-hour" style="top:220px"><span>11 am</span></div>
+            <div class="sp-incremento-hour" style="top:272px"><span>12 pm</span></div>
+            <div class="sp-incremento-hour" style="top:324px"><span>1 pm</span></div>
+            <div class="sp-incremento-hour" style="top:376px"><span>2 pm</span></div>
+            <div class="sp-incremento-blk" style="top:14px;height:98px;background:#E5489B"><b>PROGRAMACIÓN WEB</b><small>C2-104</small></div>
+            <div class="sp-incremento-blk" style="top:170px;height:150px;background:#4A9AE6"><b>ING. DE SOFTWARE II</b><small>L3-402</small><em>PRÁCTICA CALIFICADA 1</em></div>
+            <div class="sp-incremento-blk" style="top:378px;height:80px;background:#F26B1D"><b>GESTIÓN DE PROYECTOS</b><small>W-301</small></div>
+          </div>
+          <div class="sp-incremento-nav">
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="5" r="2.5"/><circle cx="5" cy="19" r="2.5"/><circle cx="19" cy="19" r="2.5"/><path d="M12 7.5v4M12 11.5l-5.2 5.4M12 11.5l5.2 5.4"/></svg>Malla</div>
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M8 6h8M8 11h.01M12 11h.01M16 11h.01M8 15h.01M12 15h.01M16 15h.01M8 18.5h8"/></svg>Notas</div>
+            <div class="sp-incremento-on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Horario</div>
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h18v12H9l-5 4v-4H3z"/></svg>Chats</div>
+            <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="10" r="3"/><path d="M7 20.7a6 6 0 0 1 10 0"/></svg>Perfil</div>
+          </div>
+          <div class="sp-incremento-pill"></div>
+        </div>
+      </div>
+
+      <div class="sp-incremento-curtain"></div>
+      <div class="sp-incremento-headfg">
+        <div class="sp-incremento-row">
+          <svg class="sp-incremento-hstar" viewBox="-354.8 -354.8 709.6 709.6" aria-hidden="true"></svg>
+          <span class="sp-incremento-wm"><span class="sp-incremento-wm-a">ULIMA</span><span class="sp-incremento-wm-pp"><span>+</span><span>+</span></span></span>
+          <span class="sp-incremento-bell">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+            <i></i>
+          </span>
+        </div>
+      </div>
+      <svg class="sp-incremento-fx" viewBox="0 0 288 608" aria-hidden="true"></svg>
+      <div class="sp-incremento-status" aria-hidden="true">
+        <span>9:41</span>
+        <svg viewBox="0 0 42 10" fill="#fff"><rect x="0" y="6" width="2" height="4" rx=".5"/><rect x="3" y="4" width="2" height="6" rx=".5"/><rect x="6" y="2" width="2" height="8" rx=".5"/><rect x="9" y="0" width="2" height="10" rx=".5"/><path d="M19 9.6l-1.6-1.8a2.4 2.4 0 0 1 3.2 0zM15.6 6a5 5 0 0 1 6.8 0l-1 1.1a3.6 3.6 0 0 0-4.8 0zM13.8 4a7.6 7.6 0 0 1 10.4 0l-1 1.1a6.2 6.2 0 0 0-8.4 0z"/><rect x="28" y="1" width="12" height="8" rx="2" fill="none" stroke="#fff" stroke-width="1"/><rect x="29.5" y="2.5" width="8" height="5" rx="1"/><rect x="40.6" y="3.5" width="1.2" height="3" rx=".5"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="sp-incremento-controls">
+  <button type="button" class="sp-incremento-btn sp-incremento-replay"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>Repetir</button>
+  <label class="sp-incremento-chk"><input type="checkbox" class="sp-incremento-slow">Carga lenta</label>
+  <label class="sp-incremento-chk"><input type="checkbox" class="sp-incremento-rm">Sin movimiento</label>
+  <label class="sp-incremento-chk"><input type="checkbox" class="sp-incremento-guides">Círculo seguro</label>
+  <span class="sp-incremento-clock" aria-live="off">nativo</span>
+</div>
+<ol class="sp-incremento-phases" aria-label="Fases de la animación">
+  <li data-sp-phase="nativo">Nativo</li>
+  <li data-sp-phase="giro">Giro 45°</li>
+  <li data-sp-phase="latido">Latido</li>
+  <li data-sp-phase="mas">++</li>
+  <li data-sp-phase="espera">Espera</li>
+  <li data-sp-phase="vuelo">Vuelo</li>
+  <li data-sp-phase="app">Aplicación</li>
+</ol>
+
+<div class="sp-incremento-meta">
+  <p class="sp-incremento-kicker">Concepto B</p>
+  <h3 class="sp-incremento-title">Incremento</h3>
+  <p class="sp-incremento-p">La estrella del <i>splash</i> nativo gira 45° con un resorte y, por su simetría de orden ocho, termina idéntica. Sus rombos laten hacia afuera como un «+1», un «+» sale de detrás de la estrella, el segundo nace de él con rebote y, al final, la estrella vuela a la cabecera mientras el naranja se recoge en ella.</p>
+  <p class="sp-incremento-p">Se siente nuevo porque el logo escenifica su propio nombre, un incremento, y el arranque no tiene ningún corte, ya que el primer cuadro de Flutter repite el <i>splash</i> y el último ya es la aplicación real.</p>
+  <p class="sp-incremento-flutter">En Flutter, la entrada es una capa sobre el <code>Navigator</code> con un <code>CustomPainter</code> de los ocho rombos. Un <code>AnimationController</code> de 1,15&nbsp;s con una <code>SpringSimulation</code> para el giro y otro de 0,62&nbsp;s para el vuelo suman 1,77&nbsp;s, y la capa se retira cuando la estrella aterriza en el logo de <code>AppHeader</code>.</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var script = document.currentScript;
+  var root = (script && script.closest && script.closest('.sp-incremento-root')) || document.getElementById('sp-incremento-root');
+  if (!root || root.getAttribute('data-sp-ready') === '1') return;
+  root.setAttribute('data-sp-ready', '1');
+
+  var NS = 'http://www.w3.org/2000/svg';
+  // Id del clipPath único por instancia sin crear globales.
+  var CLIP_ID = 'sp-incremento-clip-' + document.querySelectorAll('.sp-incremento-root[data-sp-ready]').length;
+
+  // Pantalla de 288 x 608 px, que equivale a 360 dp de ancho (0,8 px por dp).
+  var W = 288, H = 608, CX = 144, CY = 304, R = 354.8;
+  var K0 = 72 / R;          // estrella de 180 dp en el splash, dentro del círculo seguro de 192 dp
+  var KE = 10.4 / R;        // estrella de 26 dp en la cabecera
+  var HX = 26.4, HY = 52;   // centro del logo en la cabecera (20 dp de margen, fila a 50 dp)
+  var HEAD_H = 80;          // alto de la cabecera (50 + 30 + 20 dp)
+  var NATIVE = 700;         // tiempo que la maqueta muestra el splash nativo
+  var SHIFT = -36;          // corrimiento óptico del conjunto cuando aparecen los ++
+  var CROSS_FROM = 190;     // los ++ nacen detrás de la estrella
+  var CROSS_HOME = [[309, -133], [403, -133]];
+  var CLIP_X = 236;
+
+  // Geometría real. Los ocho rombos salen de Universidad_de_Lima_logo.svg, centrados en (590.2, 394.3).
+  var RH = [
+    [0, '226.8,-93.9 109,0 226.8,93.8 354.8,0'],
+    [45, '77.1,77 94,226.7 250.9,250.9 226.8,93.9'],
+    [90, '0,108.9 -93.9,226.7 0,354.8 93.9,226.7'],
+    [135, '-77,77 -226.7,93.9 -250.9,250.9 -93.9,226.7'],
+    [180, '-109,0 -226.8,-93.9 -354.8,0 -226.8,93.8'],
+    [-135, '-77,-77.1 -93.9,-226.8 -250.9,-250.9 -226.7,-94'],
+    [-90, '0,-109 93.9,-226.8 0,-354.8 -93.9,-226.8'],
+    [-45, '77.1,-77.1 226.8,-94 250.9,-250.9 94,-226.8']
+  ];
+  // Hueco central relleno, retraído 8 unidades para dejar la rendija naranja del ícono.
+  var INNER = '96.2,0 200.1,82.8 68,67.9 82.9,200 0,96.1 -82.8,200 -67.9,67.9 -200,82.8 -96.2,0 -200.1,-82.9 -67.9,-68 -82.8,-200.1 0,-96.2 82.9,-200.1 68,-68 200.1,-82.9';
+  // Cruz de los ++ medida en el ícono (117 px de lado y 28 px de trazo sobre 1539 px).
+  var CROSS = '-9,-37 9,-37 9,-9 37,-9 37,9 9,9 9,37 -9,37 -9,9 -37,9 -37,-9 -9,-9';
+
+  function q(sel) { return root.querySelector(sel); }
+  function mk(tag, attrs, parent) {
+    var e = document.createElementNS(NS, tag);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  var box = q('.sp-incremento-box');
+  var phone = q('.sp-incremento-phone');
+  var screenEl = q('.sp-incremento-screen');
+  var curtain = q('.sp-incremento-curtain');
+  var fx = q('.sp-incremento-fx');
+  var body = q('.sp-incremento-body');
+  var hstar = q('.sp-incremento-hstar');
+  var wmA = q('.sp-incremento-wm-a');
+  var wmPP = q('.sp-incremento-wm-pp');
+  var bell = q('.sp-incremento-bell');
+  var clock = q('.sp-incremento-clock');
+  var chkSlow = q('.sp-incremento-slow');
+  var chkRM = q('.sp-incremento-rm');
+  var chkGuide = q('.sp-incremento-guides');
+  var chips = Array.prototype.slice.call(root.querySelectorAll('[data-sp-phase]'));
+  var chipVuelo = root.querySelector('[data-sp-phase="vuelo"]');
+
+  // Construcción del SVG animado
+  var defs = mk('defs', {}, fx);
+  var cp = mk('clipPath', { id: CLIP_ID, clipPathUnits: 'userSpaceOnUse' }, defs);
+  mk('rect', { x: CLIP_X, y: -5000, width: 10000, height: 10000 }, cp);
+
+  var guide = mk('g', { opacity: 0 }, fx);
+  mk('rect', { x: CX - 115.2, y: CY - 115.2, width: 230.4, height: 230.4, fill: 'none', stroke: 'rgba(255,255,255,.55)', 'stroke-width': 1, 'stroke-dasharray': '2 4' }, guide);
+  mk('circle', { cx: CX, cy: CY, r: 76.8, fill: 'none', stroke: '#fff', 'stroke-width': 1.3, 'stroke-dasharray': '4 4' }, guide);
+  var gt1 = mk('text', { x: CX, y: CY - 121, 'text-anchor': 'middle', fill: 'rgba(255,255,255,.8)', 'font-size': 8.5, 'font-family': 'system-ui, sans-serif' }, guide);
+  gt1.textContent = 'lienzo del ícono, 288 dp';
+  var gt2 = mk('text', { x: CX, y: CY + 130, 'text-anchor': 'middle', fill: '#fff', 'font-size': 8.5, 'font-family': 'system-ui, sans-serif' }, guide);
+  gt2.textContent = 'círculo seguro, 192 dp';
+
+  var lock = mk('g', {}, fx);
+  var crossG = mk('g', {}, lock);
+  var crosses = [mk('polygon', { points: CROSS, fill: '#fff', opacity: 0 }, crossG), mk('polygon', { points: CROSS, fill: '#fff', opacity: 0 }, crossG)];
+  var star = mk('g', {}, lock);
+  var ring = mk('circle', { cx: 0, cy: 0, r: 250, fill: 'none', stroke: '#fff', opacity: 0 }, star);
+  var inner = mk('polygon', { points: INNER, fill: '#fff' }, star);
+  var rh = RH.map(function (d) {
+    var g = mk('g', {}, star);
+    mk('polygon', { points: d[1], fill: '#fff' }, g);
+    var a = d[0] * Math.PI / 180;
+    return { g: g, ux: Math.cos(a), uy: Math.sin(a) };
+  });
+  // Logo estático de la cabecera, con la misma geometría
+  mk('polygon', { points: INNER, fill: '#fff' }, hstar);
+  RH.forEach(function (d) { mk('polygon', { points: d[1], fill: '#fff' }, hstar); });
+
+  // Curvas
+  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function smooth(a, b, x) { var t = clamp01((x - a) / (b - a)); return t * t * (3 - 2 * t); }
+  function easeOutCubic(p) { var u = 1 - p; return 1 - u * u * u; }
+  function easeInOutCubic(p) { return p < 0.5 ? 4 * p * p * p : 1 - Math.pow(-2 * p + 2, 3) / 2; }
+  function easeOutBack(p, s) { var u = p - 1; return 1 + (s + 1) * u * u * u + s * u * u; }
+  // Resorte amortiguado normalizado de 0 a 1 (equivale a SpringSimulation)
+  function spring(t, w0, z) {
+    if (t <= 0) return 0;
+    var wd = w0 * Math.sqrt(1 - z * z);
+    return 1 - Math.exp(-z * w0 * t) * (Math.cos(wd * t) + (z * w0 / wd) * Math.sin(wd * t));
+  }
+  function bezier(x1, y1, x2, y2) {
+    var cx = 3 * x1, bx = 3 * (x2 - x1) - cx, ax = 1 - cx - bx;
+    var cy = 3 * y1, by = 3 * (y2 - y1) - cy, ay = 1 - cy - by;
+    function X(t) { return ((ax * t + bx) * t + cx) * t; }
+    function Y(t) { return ((ay * t + by) * t + cy) * t; }
+    function dX(t) { return (3 * ax * t + 2 * bx) * t + cx; }
+    return function (p) {
+      if (p <= 0) return 0;
+      if (p >= 1) return 1;
+      var t = p, i;
+      for (i = 0; i < 8; i++) {
+        var e = X(t) - p, d = dX(t);
+        if (Math.abs(e) < 1e-5 || Math.abs(d) < 1e-6) break;
+        t -= e / d;
+      }
+      if (!(t >= 0 && t <= 1) || Math.abs(X(t) - p) > 1e-3) {
+        var lo = 0, hi = 1; t = p;
+        for (i = 0; i < 40; i++) { var x = X(t); if (Math.abs(x - p) < 1e-5) break; if (x < p) lo = t; else hi = t; t = (lo + hi) / 2; }
+      }
+      return Y(t);
+    };
+  }
+  var EMPH = bezier(0.2, 0, 0, 1); // Easing.emphasized de Material 3, aproximado
+  function quad(a, c, b, t) { var u = 1 - t; return u * u * a + 2 * u * t * c + t * t * b; }
+  var C_SPLASH = [0xE7, 0x73, 0x30], C_HEAD = [0xFF, 0x66, 0x00];
+  function mix(t) {
+    var r = Math.round(C_SPLASH[0] + (C_HEAD[0] - C_SPLASH[0]) * t);
+    var g = Math.round(C_SPLASH[1] + (C_HEAD[1] - C_SPLASH[1]) * t);
+    var b = Math.round(C_SPLASH[2] + (C_HEAD[2] - C_SPLASH[2]) * t);
+    return 'rgb(' + r + ',' + g + ',' + b + ')';
+  }
+  function f(n, d) { return (+n).toFixed(d); }
+
+  // Plan de cada reproducción
+  var S = null, raf = 0, t0 = 0, lastPhase = '';
+  function schedule() {
+    var reduced = chkRM.checked, slow = chkSlow.checked;
+    var loadDone = slow ? 3600 : 900;          // la inicialización real corre en paralelo
+    var introEnd = reduced ? 200 : 1150;
+    var fs = Math.max(introEnd, loadDone);
+    var ticks = [];
+    if (!reduced) {
+      for (var tt = 1400; tt < fs; tt += 1300) {
+        ticks.push(tt);
+        if (fs < tt + 700) fs = tt + 700;       // no despega a mitad de un tic
+      }
+    }
+    return { reduced: reduced, slow: slow, fs: fs, ticks: ticks, end: fs + (reduced ? 260 : 620), targets: null, guide: chkGuide.checked };
+  }
+
+  function measure() {
+    var fallback = [{ x: 101, y: 52, w: 8 }, { x: 111, y: 52, w: 8 }];
+    var sr = screenEl.getBoundingClientRect();
+    var sc = sr.width / W;
+    if (!sc || !isFinite(sc)) return fallback;
+    var spans = wmPP.children, out = [];
+    var ctx = null;
+    try { ctx = document.createElement('canvas').getContext('2d'); } catch (err) { ctx = null; }
+    for (var i = 0; i < 2; i++) {
+      var r = spans[i].getBoundingClientRect();
+      if (!r.width) return fallback;
+      var x = (r.left - sr.left) / sc, y = (r.top - sr.top) / sc;
+      var m = null;
+      if (ctx) {
+        var cs = getComputedStyle(spans[i]);
+        ctx.font = cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+        m = ctx.measureText('+');
+      }
+      if (m && m.fontBoundingBoxAscent != null && m.actualBoundingBoxAscent != null) {
+        // Centro de la tinta del glifo, no de su caja de línea
+        out.push({
+          x: x + (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2,
+          y: y + m.fontBoundingBoxAscent - (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2,
+          w: m.actualBoundingBoxLeft + m.actualBoundingBoxRight
+        });
+      } else {
+        out.push({ x: x + r.width / sc / 2, y: y + (r.height / sc) * 0.56, w: (r.width / sc) * 0.86 });
+      }
+    }
+    return out;
+  }
+
+  function phaseOf(F) {
+    if (F < 0) return 'nativo';
+    if (F >= S.end) return 'app';
+    if (F >= S.fs) return 'vuelo';
+    if (S.reduced) return (S.slow && F >= 200) ? 'espera' : 'mas';
+    if (F < 300) return 'giro';
+    if (F < 480) return 'latido';
+    if (F < 1150) return 'mas';
+    return 'espera';
+  }
+
+  function render(tm) {
+    var F = tm - NATIVE;
+    var Lx = CX, Ly = CY, k = K0, th = 0, off = 0, inS = 1;
+    var ringO = 0, ringR = 250, ringW = 10, shift = 0, clipOn = true;
+    var cr = [{ x: CROSS_HOME[0][0], y: CROSS_HOME[0][1], s: 1, o: 0 }, { x: CROSS_HOME[1][0], y: CROSS_HOME[1][1], s: 1, o: 0 }];
+    var curtH = H, curtT = 0, curtR = 0, curtO = 1, fxO = 1, bodyY = 0, headO = 0, ppO = 0, hstarO = 0, lockOn = true;
+    var done = F >= S.end;
+    var i;
+
+    if (F >= 0 && !S.reduced) {
+      // 1. Giro de 45° con resorte
+      th = 45 * spring(F / 1000, 15.708, 0.55);
+      // 2. Latido, los rombos salen como un +1 y la estrella interior se contrae
+      var bp = (F - 180) / 380;
+      if (bp > 0 && bp < 1) {
+        var b = bp < 0.32 ? easeOutCubic(bp / 0.32) : 1 - easeInOutCubic((bp - 0.32) / 0.68);
+        off = 24 * b; inS = 1 - 0.05 * b;
+      }
+      var rp = (F - 230) / 560;
+      if (rp > 0 && rp < 1) { ringR = 250 + 290 * easeOutCubic(rp); ringW = 12 * (1 - rp) + 1.5; ringO = 0.42 * Math.pow(1 - rp, 1.6); }
+      // 3. El primer + sale de detrás de la estrella y el segundo nace del primero, como i++
+      shift = SHIFT * easeInOutCubic(clamp01((F - 480) / 580));
+      var c1 = (F - 480) / 440;
+      if (c1 > 0) {
+        var e1 = easeOutBack(Math.min(c1, 1), 1.6);
+        cr[0].x = CROSS_FROM + (CROSS_HOME[0][0] - CROSS_FROM) * e1;
+        cr[0].s = 0.72 + 0.28 * e1;
+        cr[0].o = 1;
+      }
+      var c2 = (F - 700) / 420;
+      if (c2 > 0) {
+        var e2 = easeOutBack(Math.min(c2, 1), 1.5);
+        cr[1].x = cr[0].x + (CROSS_HOME[1][0] - CROSS_HOME[0][0]) * e2;
+        cr[1].s = cr[0].s * (0.8 + 0.2 * e2);
+        cr[1].o = 1;
+      }
+      clipOn = F < 920;
+      // 4. Espera en bucle si la carga tarda, un tic de 45° y un asentimiento de los ++
+      S.ticks.forEach(function (tt) {
+        if (F <= tt) return;
+        th += 45 * spring((F - tt) / 1000, 12.566, 0.72);
+        var tp = (F - tt) / 420;
+        if (tp < 1) { var sb = Math.sin(Math.PI * tp); off += 8 * sb; inS -= 0.02 * sb; }
+        for (var j = 0; j < 2; j++) {
+          var nq = (F - (tt + 60 + 110 * j)) / 320;
+          if (nq > 0 && nq < 1) cr[j].s *= 1 + 0.14 * Math.sin(Math.PI * nq);
+        }
+      });
+      Lx = CX + shift * K0;
+      // 5. Vuelo compartido hacia la cabecera y el fondo que se recoge
+      if (F >= S.fs) {
+        if (!S.targets) S.targets = measure();
+        var pf = clamp01((F - S.fs) / 600), e = EMPH(pf);
+        var sx = CX + SHIFT * K0, sy = CY;
+        Lx = quad(sx, HX, HX, e);          // arco que entra al hueco del logo desde abajo
+        Ly = quad(sy, HY + 150, HY, e);
+        k = K0 * Math.pow(KE / K0, e);
+        th += 45 * easeInOutCubic(pf);
+        var cq = clamp01((F - S.fs - 150) / 450), eq = easeInOutCubic(cq); // los ++ viajan pegados y se sueltan a mitad del vuelo
+        for (i = 0; i < 2; i++) {
+          var T = S.targets[i];
+          var hx = Lx + k * CROSS_HOME[i][0], hy = Ly + k * CROSS_HOME[i][1];
+          var px = hx + (T.x - hx) * eq, py = hy + (T.y - hy) * eq;
+          var size = 74 * k + (T.w - 74 * k) * eq;
+          cr[i].x = (px - Lx) / k; cr[i].y = (py - Ly) / k; cr[i].s = size / (74 * k);
+          cr[i].o = 1 - smooth(0.75, 1, cq);
+        }
+        ppO = smooth(0.6, 0.95, cq);
+        var ec = EMPH(clamp01((F - S.fs - 20) / 600));
+        curtH = H + (HEAD_H - H) * ec;
+        curtT = ec;
+        curtR = Math.min(60 * Math.sin(Math.PI * ec), curtH / 2);
+        bodyY = 26 * (1 - ec);
+        headO = smooth(0.62, 0.95, pf);    // el texto llega junto con la estrella
+      }
+    } else if (F >= 0) {
+      // Reducir movimiento, nada se desplaza, los ++ aparecen por fundido y se pasa a la app por fundido
+      var o = smooth(0, 200, F);
+      cr[0].o = o; cr[1].o = o; clipOn = false;
+      if (F >= S.fs) {
+        var pr = clamp01((F - S.fs) / 260);
+        curtO = 1 - pr; fxO = 1 - pr; headO = 1; ppO = 1; hstarO = 1;
+      }
+    }
+    if (done) { lockOn = false; hstarO = 1; headO = 1; ppO = 1; curtO = 0; fxO = 1; bodyY = 0; }
+
+    // Aplicar
+    lock.style.display = lockOn ? '' : 'none';
+    lock.setAttribute('transform', 'translate(' + f(Lx, 3) + ' ' + f(Ly, 3) + ') scale(' + f(k, 5) + ')');
+    star.setAttribute('transform', 'rotate(' + f(th, 3) + ')');
+    inner.setAttribute('transform', 'scale(' + f(inS, 4) + ')');
+    for (i = 0; i < rh.length; i++) rh[i].g.setAttribute('transform', 'translate(' + f(rh[i].ux * off, 2) + ' ' + f(rh[i].uy * off, 2) + ')');
+    ring.setAttribute('r', f(ringR, 1));
+    ring.setAttribute('stroke-width', f(ringW, 2));
+    ring.setAttribute('opacity', f(ringO, 3));
+    for (i = 0; i < 2; i++) {
+      crosses[i].setAttribute('transform', 'translate(' + f(cr[i].x, 2) + ' ' + f(cr[i].y, 2) + ') scale(' + f(cr[i].s, 4) + ')');
+      crosses[i].setAttribute('opacity', f(cr[i].o, 3));
+    }
+    if (clipOn) crossG.setAttribute('clip-path', 'url(#' + CLIP_ID + ')'); else crossG.removeAttribute('clip-path');
+    guide.setAttribute('opacity', (S.guide && F < 520 && !done) ? 1 : 0);
+    fx.style.opacity = f(fxO, 3);
+    curtain.style.height = f(curtH, 2) + 'px';
+    curtain.style.backgroundColor = mix(curtT);
+    curtain.style.borderRadius = '0 0 ' + f(curtR, 1) + 'px ' + f(curtR, 1) + 'px';
+    curtain.style.opacity = f(curtO, 3);
+    body.style.transform = bodyY ? 'translateY(' + f(bodyY, 2) + 'px)' : '';
+    wmA.style.opacity = f(headO, 3);
+    bell.style.opacity = f(headO, 3);
+    wmPP.style.opacity = f(ppO, 3);
+    hstar.style.opacity = f(hstarO, 3);
+
+    clock.textContent = F < 0 ? 'nativo' : 'Flutter +' + (Math.min(F, S.end) / 1000).toFixed(2).replace('.', ',') + ' s' + (done ? ' (total)' : '');
+    var ph = phaseOf(F);
+    if (ph !== lastPhase) {
+      lastPhase = ph;
+      chips.forEach(function (c) {
+        var id = c.getAttribute('data-sp-phase');
+        var skip = (S.reduced && (id === 'giro' || id === 'latido')) || (!S.slow && id === 'espera');
+        c.classList.toggle('sp-incremento-is-on', id === ph);
+        c.classList.toggle('sp-incremento-is-skip', skip);
+      });
+    }
+    return done;
+  }
+
+  function loop(now) {
+    var tm = now - t0;
+    var finished = render(tm) && tm > NATIVE + S.end + 40;
+    raf = finished ? 0 : requestAnimationFrame(loop);
+  }
+
+  var startedAt = -1e9;
+  function play() {
+    if (raf) cancelAnimationFrame(raf);
+    S = schedule();
+    lastPhase = '';
+    chipVuelo.textContent = S.reduced ? 'Fundido' : 'Vuelo';
+    render(0);
+    t0 = performance.now();
+    startedAt = t0;
+    raf = requestAnimationFrame(loop);
+  }
+
+  // Escala el teléfono si el contenedor mide menos de 300 px
+  var lastW = -1;
+  function fit() {
+    var w = box.clientWidth || 300;
+    if (w === lastW) return;
+    lastW = w;
+    var s = Math.min(1, w / 300);
+    phone.style.transform = s < 1 ? 'scale(' + s.toFixed(4) + ')' : '';
+    box.style.height = (620 * s).toFixed(1) + 'px';
+  }
+  fit();
+  if (typeof ResizeObserver === 'function') new ResizeObserver(function () { requestAnimationFrame(fit); }).observe(box);
+  else window.addEventListener('resize', fit);
+
+  // Los controles no deben marcar la opción del companion que envuelve al concepto.
+  q('.sp-incremento-replay').addEventListener('click', function (ev) { ev.stopPropagation(); play(); });
+  q('.sp-incremento-controls').addEventListener('click', function (ev) { ev.stopPropagation(); });
+  [chkSlow, chkRM, chkGuide].forEach(function (c) { c.addEventListener('change', play); });
+
+  // Arranca sola al cargar y, si nadie la vio, se repite la primera vez que la mitad del teléfono entra en pantalla
+  play();
+  if (typeof IntersectionObserver === 'function') {
+    var seen = false;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (seen || !en.isIntersecting || en.intersectionRatio < 0.5) return;
+        seen = true;
+        if (performance.now() - startedAt > 450) play();
+        io.disconnect();
+      });
+    }, { threshold: [0, 0.5] });
+    io.observe(box);
+  }
+})();
+</script>
+</section>

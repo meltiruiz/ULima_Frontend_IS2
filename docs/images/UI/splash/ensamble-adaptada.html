@@ -1,0 +1,466 @@
+<div class="sp-ensad" id="sp-ensad-root">
+<style>
+.sp-ensad{max-width:340px;margin:0 auto;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;color:var(--text-primary,#1d1d1f);line-height:1.45;text-align:left}
+.sp-ensad *,.sp-ensad *::before,.sp-ensad *::after{box-sizing:border-box}
+.sp-ensad p,.sp-ensad h3{margin:0;padding:0}
+.sp-ensad-phone{width:100%;max-width:300px;margin:0 auto;padding:8px;border-radius:42px;background:#101012;box-shadow:inset 0 0 0 1px rgba(255,255,255,.07),0 18px 40px -18px rgba(0,0,0,.55)}
+.sp-ensad-glass{border-radius:34px;overflow:hidden;background:#E77330;transform:translateZ(0)}
+.sp-ensad-screen{display:block;width:100%;height:auto;aspect-ratio:300/620}
+.sp-ensad-screen text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.sp-ensad-controls{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:center;margin-top:14px}
+.sp-ensad-btn{-webkit-appearance:none;appearance:none;border:0;margin:0;border-radius:999px;padding:7px 15px 7px 12px;font-family:inherit;font-size:13px;font-weight:600;line-height:1.2;background:var(--text-primary,#1d1d1f);color:var(--bg-secondary,#fff);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+.sp-ensad-btn svg{display:block;width:14px;height:14px}
+.sp-ensad-btn:focus-visible,.sp-ensad-toggle input:focus-visible{outline:2px solid #FF6600;outline-offset:2px}
+.sp-ensad-toggle{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--text-secondary,#6e6e73);cursor:pointer;-webkit-user-select:none;user-select:none}
+.sp-ensad-toggle input{accent-color:#FF6600;width:15px;height:15px;margin:0}
+.sp-ensad .sp-ensad-phase{display:flex;align-items:center;justify-content:center;gap:7px;margin-top:10px;min-height:1.45em;font-size:12px;color:var(--text-secondary,#86868b)}
+.sp-ensad-dot{width:7px;height:7px;border-radius:50%;background:#8e8e93;flex:none;transition:background .2s}
+.sp-ensad-dot[data-f="flutter"]{background:#FF6600}
+.sp-ensad-dot[data-f="app"]{background:#34c759}
+.sp-ensad-copy{margin-top:18px;padding-top:14px;border-top:1px solid var(--border,#d1d1d6)}
+.sp-ensad-kicker{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-secondary,#86868b)}
+.sp-ensad .sp-ensad-title{font-size:18px;font-weight:700;line-height:1.25;margin:2px 0 6px;color:var(--text-primary,#1d1d1f)}
+.sp-ensad .sp-ensad-text{font-size:13.5px;margin:0 0 8px}
+.sp-ensad .sp-ensad-flutter{font-size:12.5px;color:var(--text-secondary,#86868b);margin:10px 0 0}
+.sp-ensad-chip{display:inline-block;margin-right:6px;padding:1px 7px;border-radius:999px;border:1px solid var(--border,#d1d1d6);font-size:11px;font-weight:600;color:var(--text-primary,#1d1d1f);vertical-align:1px}
+.sp-ensad code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em}
+</style>
+
+<div class="sp-ensad-phone" id="sp-ensad-phone">
+<div class="sp-ensad-glass">
+<svg class="sp-ensad-screen" id="sp-ensad-screen" viewBox="0 0 300 620" role="img" aria-label="Maqueta animada del concepto Ensamble adaptado a la spec, de la estrella completa del splash nativo a la pantalla de la aplicación">
+  <defs>
+    <linearGradient id="sp-ensad-bandgrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity="1"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="sp-ensad-sweepgrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#fff" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#fff" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <mask id="sp-ensad-bandmask" maskUnits="userSpaceOnUse" x="0" y="-150" width="1200" height="1100">
+      <rect id="sp-ensad-band" x="-80" y="-700" width="160" height="1400" fill="url(#sp-ensad-bandgrad)"/>
+    </mask>
+    <clipPath id="sp-ensad-brandclip"><rect id="sp-ensad-brandrect" x="40" y="34" width="0" height="40"/></clipPath>
+    <path id="sp-ensad-cross" d="M-8.7-36.3H8.7V-8.7H36.3V8.7H8.7V36.3H-8.7V8.7H-36.3V-8.7H-8.7Z"/>
+  </defs>
+
+  <!-- App (destino final) -->
+  <g id="sp-ensad-app">
+    <rect x="0" y="0" width="300" height="620" fill="#F5F5F7"/>
+    <g id="sp-ensad-c0">
+      <text x="16" y="113" font-size="14" font-weight="700" fill="#1c1c1e">Esta semana</text>
+      <text x="16" y="128" font-size="9.5" fill="#6e6e73">2 clases hoy y un parcial el jueves</text>
+    </g>
+    <g id="sp-ensad-c1">
+      <rect x="14" y="140" width="272" height="68" rx="12" fill="#fff" stroke="#e9e9ee"/>
+      <text x="28" y="160" font-size="8" font-weight="700" letter-spacing=".5" fill="#C24E00">HOY · 10:00</text>
+      <text x="28" y="177" font-size="12" font-weight="700" fill="#1c1c1e">Ingeniería de Software I</text>
+      <text x="28" y="194" font-size="9.5" fill="#6e6e73">Aula E-305 · Sección 715</text>
+      <path d="M268 170l5 5-5 5" fill="none" stroke="#c7c7cc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="sp-ensad-c2">
+      <rect x="14" y="218" width="272" height="68" rx="12" fill="#fff" stroke="#e9e9ee"/>
+      <text x="28" y="238" font-size="8" font-weight="700" letter-spacing=".5" fill="#C24E00">JUE 2 OCT</text>
+      <text x="28" y="255" font-size="12" font-weight="700" fill="#1c1c1e">Parcial de Estadística</text>
+      <text x="28" y="272" font-size="9.5" fill="#6e6e73">Pesa 25 % del promedio</text>
+      <path d="M268 248l5 5-5 5" fill="none" stroke="#c7c7cc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="sp-ensad-c3">
+      <rect x="14" y="296" width="272" height="68" rx="12" fill="#fff" stroke="#e9e9ee"/>
+      <text x="28" y="316" font-size="8" font-weight="700" letter-spacing=".5" fill="#C24E00">ANUNCIO</text>
+      <text x="28" y="333" font-size="12" font-weight="700" fill="#1c1c1e">Cambio de aula del laboratorio</text>
+      <text x="28" y="350" font-size="9.5" fill="#6e6e73">Delegado de aula</text>
+      <path d="M268 326l5 5-5 5" fill="none" stroke="#c7c7cc" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+    <g id="sp-ensad-c4">
+      <rect x="14" y="374" width="272" height="68" rx="12" fill="#fff" stroke="#e9e9ee"/>
+      <rect x="28" y="390" width="54" height="7" rx="3.5" fill="#ececf0"/>
+      <rect x="28" y="405" width="170" height="10" rx="5" fill="#ececf0"/>
+      <rect x="28" y="422" width="110" height="7" rx="3.5" fill="#ececf0"/>
+    </g>
+    <g id="sp-ensad-c5">
+      <rect x="14" y="452" width="272" height="68" rx="12" fill="#fff" stroke="#e9e9ee"/>
+      <rect x="28" y="468" width="46" height="7" rx="3.5" fill="#ececf0"/>
+      <rect x="28" y="483" width="150" height="10" rx="5" fill="#ececf0"/>
+      <rect x="28" y="500" width="90" height="7" rx="3.5" fill="#ececf0"/>
+    </g>
+    <g id="sp-ensad-nav">
+      <rect x="0" y="560" width="300" height="60" fill="#1E1E24"/>
+      <g fill="none" stroke="#fff" stroke-opacity=".68" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round">
+        <g transform="translate(30 580)"><circle cx="0" cy="-5" r="2.3"/><circle cx="-5.5" cy="4.5" r="2.3"/><circle cx="5.5" cy="4.5" r="2.3"/><path d="M-1.2-3 -4.3 2.6M1.2-3 4.3 2.6"/></g>
+        <g transform="translate(90 580)"><rect x="-5.5" y="-7" width="11" height="14" rx="2"/><path d="M-3-4H3M-3 0h.01M0 0h.01M3 0h.01M-3 3.5h.01M0 3.5h.01M3 3.5h.01"/></g>
+        <g transform="translate(150 580)" stroke="#FF6600" stroke-opacity="1"><rect x="-6.5" y="-5.5" width="13" height="12" rx="2"/><path d="M-6.5-1.5H6.5M-3-7.5v3M3-7.5v3"/></g>
+        <g transform="translate(210 580)"><path d="M-6.5-6.5H6.5V3H-1.5L-5 6.5V3H-6.5Z"/></g>
+        <g transform="translate(270 580)"><circle cx="0" cy="0" r="7"/><circle cx="0" cy="-1.8" r="2.4"/><path d="M-4.4 5.2C-3.4 3.3-1.8 2.6 0 2.6S3.4 3.3 4.4 5.2"/></g>
+      </g>
+      <g font-size="7.5" fill="#fff" fill-opacity=".68" text-anchor="middle">
+        <text x="30" y="600">Malla</text><text x="90" y="600">Notas</text><text x="150" y="600" fill="#FF6600" fill-opacity="1" font-weight="600">Horario</text><text x="210" y="600">Chats</text><text x="270" y="600">Perfil</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- Fondo naranja que termina siendo la cabecera -->
+  <path id="sp-ensad-panel" d="M0 0H300V620H0Z" fill="#E77330"/>
+  <rect id="sp-ensad-sweep" x="-55" y="-700" width="110" height="1400" fill="url(#sp-ensad-sweepgrad)" display="none"/>
+
+  <!-- Logo en unidades del SVG institucional (centro de la estrella 590.2, 394.3) -->
+  <g id="sp-ensad-logo" transform="translate(150 310) scale(0.2114) translate(-590.2 -394.3)">
+    <circle id="sp-ensad-ring" cx="590.2" cy="394.3" r="370" fill="none" stroke="#fff" stroke-width="16" opacity="0" display="none"/>
+    <g id="sp-ensad-glow" mask="url(#sp-ensad-bandmask)" display="none">
+      <!-- Silueta del logo con los polígonos sin retraer: la banda solo asoma por las rendijas, sin desenfoque -->
+      <g fill="#fff" stroke="#fff" stroke-width="1.2" stroke-linejoin="round">
+        <polygon points="496.3 167.5 590.2 285.3 684.1 167.5 667.3 317.2 817 300.4 699.2 394.3 817 488.1 667.3 471.3 684.1 621 590.2 503.2 496.3 621 513.2 471.3 363.4 488.1 481.2 394.3 363.4 300.4 513.2 317.2"/>
+        <polygon points="590.2 285.3 684.1 167.5 590.2 39.5 496.3 167.5"/>
+        <polygon points="667.3 317.2 817 300.3 841.1 143.4 684.2 167.5"/>
+        <polygon points="817 300.4 699.2 394.3 817 488.1 945 394.3"/>
+        <polygon points="667.3 471.3 684.2 621 841.1 645.2 817 488.2"/>
+        <polygon points="590.2 503.2 496.3 621 590.2 749.1 684.1 621"/>
+        <polygon points="513.2 471.3 363.5 488.2 339.3 645.2 496.3 621"/>
+        <polygon points="481.2 394.3 363.4 300.4 235.4 394.3 363.4 488.1"/>
+        <polygon points="513.2 317.2 496.3 167.5 339.3 143.4 363.5 300.3"/>
+      </g>
+    </g>
+    <g fill="#fff">
+      <polygon id="sp-ensad-star" points="501.1 179.2 590.2 290.9 679.3 179.2 663.3 321.2 805.3 305.2 693.6 394.3 805.3 483.3 663.3 467.3 679.3 609.3 590.2 497.6 501.1 609.3 517.2 467.3 375.1 483.3 486.8 394.3 375.1 305.2 517.2 321.2"/>
+      <polygon id="sp-ensad-r0" points="590.2 279.7 679.7 167.4 590.2 45.4 500.7 167.4"/>
+      <polygon id="sp-ensad-r1" points="671.3 313.2 813.9 297.1 836.9 147.6 687.4 170.6"/>
+      <polygon id="sp-ensad-r2" points="817.1 304.8 704.8 394.3 817.1 483.7 939.1 394.3"/>
+      <polygon id="sp-ensad-r3" points="671.3 475.3 687.4 617.9 836.9 641.0 813.9 491.4"/>
+      <polygon id="sp-ensad-r4" points="590.2 508.8 500.7 621.1 590.2 743.2 679.7 621.1"/>
+      <polygon id="sp-ensad-r5" points="509.2 475.3 366.6 491.4 343.5 641.0 493.1 617.9"/>
+      <polygon id="sp-ensad-r6" points="475.6 394.3 363.3 304.8 241.3 394.3 363.3 483.7"/>
+      <polygon id="sp-ensad-r7" points="509.2 313.2 493.1 170.6 343.5 147.6 366.6 297.1"/>
+    </g>
+  </g>
+
+  <!-- Los «++» viven fuera del logo porque viajan solos hasta la cabecera -->
+  <circle id="sp-ensad-pring0" r="6" fill="none" stroke="#fff" opacity="0" display="none"/>
+  <circle id="sp-ensad-pring1" r="6" fill="none" stroke="#fff" opacity="0" display="none"/>
+  <use id="sp-ensad-p0" href="#sp-ensad-cross" fill="#fff" opacity="0"/>
+  <use id="sp-ensad-p1" href="#sp-ensad-cross" fill="#fff" opacity="0"/>
+
+  <!-- Cabecera -->
+  <g clip-path="url(#sp-ensad-brandclip)">
+    <text id="sp-ensad-brand" x="44" y="62" font-size="17" font-weight="800" font-style="italic" letter-spacing=".2" fill="#fff">ULIMA</text>
+  </g>
+  <g id="sp-ensad-bell" opacity="0" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M263.5 60.5h13l-1.6-2.2v-5a4.9 4.9 0 0 0-9.8 0v5z"/><path d="M268.3 63.6a1.8 1.8 0 0 0 3.4 0"/>
+  </g>
+
+  <!-- Splash nativo: imagen estática, la estrella completa sin «++» dentro del círculo seguro. Sin movimiento, los «++» aparecen aquí por fundido. -->
+  <g id="sp-ensad-native">
+    <rect x="0" y="0" width="300" height="620" fill="#E77330"/>
+    <g transform="translate(150 310) scale(0.2114) translate(-590.2 -394.3)" fill="#fff">
+      <polygon points="501.1 179.2 590.2 290.9 679.3 179.2 663.3 321.2 805.3 305.2 693.6 394.3 805.3 483.3 663.3 467.3 679.3 609.3 590.2 497.6 501.1 609.3 517.2 467.3 375.1 483.3 486.8 394.3 375.1 305.2 517.2 321.2"/>
+      <polygon points="590.2 279.7 679.7 167.4 590.2 45.4 500.7 167.4"/>
+      <polygon points="671.3 313.2 813.9 297.1 836.9 147.6 687.4 170.6"/>
+      <polygon points="817.1 304.8 704.8 394.3 817.1 483.7 939.1 394.3"/>
+      <polygon points="671.3 475.3 687.4 617.9 836.9 641.0 813.9 491.4"/>
+      <polygon points="590.2 508.8 500.7 621.1 590.2 743.2 679.7 621.1"/>
+      <polygon points="509.2 475.3 366.6 491.4 343.5 641.0 493.1 617.9"/>
+      <polygon points="475.6 394.3 363.3 304.8 241.3 394.3 363.3 483.7"/>
+      <polygon points="509.2 313.2 493.1 170.6 343.5 147.6 366.6 297.1"/>
+      <g id="sp-ensad-nfull" opacity="0">
+        <use href="#sp-ensad-cross" transform="translate(897 260.8)"/>
+        <use href="#sp-ensad-cross" transform="translate(991.4 260.8)"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Barra de estado y gesto del sistema -->
+  <g fill="#fff">
+    <text x="20" y="18" font-size="11" font-weight="600">9:41</text>
+    <circle cx="150" cy="14" r="5" fill="#0b0b0c"/>
+    <rect x="235" y="14" width="2.2" height="3.5" rx=".6"/><rect x="238.7" y="12" width="2.2" height="5.5" rx=".6"/><rect x="242.4" y="10" width="2.2" height="7.5" rx=".6"/><rect x="246.1" y="8" width="2.2" height="9.5" rx=".6"/>
+    <path d="M252.5 11.2a8 8 0 0 1 11 0L258 17.2z"/>
+    <rect x="268.5" y="8.5" width="18" height="9" rx="2.5" fill="none" stroke="#fff" stroke-opacity=".85"/>
+    <rect x="270.5" y="10.5" width="12" height="5" rx="1"/>
+    <rect x="287.3" y="11" width="1.6" height="4" rx=".8" fill-opacity=".85"/>
+  </g>
+  <rect id="sp-ensad-pill" x="105" y="610" width="90" height="3.5" rx="1.75" fill="#fff" fill-opacity=".7"/>
+</svg>
+</div>
+</div>
+
+<div class="sp-ensad-controls">
+  <button type="button" class="sp-ensad-btn" id="sp-ensad-replay"><svg viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4"/><path d="M2.5 2.2v3.6h3.6"/></svg>Repetir</button>
+  <label class="sp-ensad-toggle"><input type="checkbox" id="sp-ensad-slow">Carga lenta</label>
+  <label class="sp-ensad-toggle"><input type="checkbox" id="sp-ensad-reduce">Sin movimiento</label>
+  <label class="sp-ensad-toggle"><input type="checkbox" id="sp-ensad-alt">Arranque alternativo</label>
+</div>
+<p class="sp-ensad-phase"><span class="sp-ensad-dot" id="sp-ensad-dot"></span><span id="sp-ensad-phase">Nativo, imagen fija</span></p>
+
+<div class="sp-ensad-copy">
+  <p class="sp-ensad-kicker">Concepto A, adaptado a la spec</p>
+  <h3 class="sp-ensad-title">Ensamble</h3>
+  <p class="sp-ensad-text">El <i>splash</i> nativo es el mismo para las tres variantes y muestra la estrella completa, sin «++», dentro del círculo seguro de Android. En Flutter, los ocho rombos se abren juntos en espiral, así que el logo queda desarmado, y vuelven a encajar uno a uno en sentido horario con un rebote leve. Después un destello asoma por las rendijas y los «++» saltan uno tras otro, como un contador que suma.</p>
+  <p class="sp-ensad-text">Con «Arranque alternativo», los rombos se apagan en su sitio y vuelven a entrar uno a uno en espiral desde afuera, como en la maqueta original (<code>ensamble.html</code>). Es la alternativa de la decisión 3 de la spec. Si la carga se alarga, los rombos laten en ronda y hacen de indicador de progreso.</p>
+  <p class="sp-ensad-flutter"><span class="sp-ensad-chip">Referencia</span>Entrada de 1,25&nbsp;s y salida de 0,53&nbsp;s. Donde esta maqueta y <code>specs/features/splash/splash.spec.md</code> difieren, manda la spec (RF-SPL-7).</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var P = 'sp-ensad-';
+  var root = document.getElementById(P + 'root');
+  if (!root || root.getAttribute('data-sp-init') === '1') return;
+  root.setAttribute('data-sp-init', '1');
+  function el(id) { return document.getElementById(P + id); }
+
+  // Geometría (unidades del SVG institucional, viewBox 0 0 1180.4 1080).
+  var CX = 590.2, CY = 394.3;
+  var K0 = 0.2114;          // px por unidad en el splash: R = 90 dp, 75 px con 300 px = 360 dp, dentro del círculo seguro de 96 dp
+  var K1 = 0.0285;          // px por unidad del logo ya en la cabecera
+  var KC = 0.138;           // px por unidad de cada cruz convertida en glifo
+  var SPLASH = [150, 310], HEAD = [28, 56], LOGO_CTRL = [132, 84];
+  var PLUS_POS = [[897.0, 260.8], [991.4, 260.8]];
+  // Rombos en sentido horario desde arriba: centroide y dirección hacia afuera.
+  var RH = [
+    [590.2, 164.9, 0, -1], [752.4, 232.1, 0.7071, -0.7071], [819.5, 394.3, 1, 0], [752.4, 556.4, 0.7071, 0.7071],
+    [590.2, 623.6, 0, 1], [428.1, 556.4, -0.7071, 0.7071], [360.9, 394.3, -1, 0], [428.1, 232.1, -0.7071, -0.7071]
+  ];
+
+  // Línea de tiempo en ms. tau = 0 es el primer cuadro de Flutter (runApp inmediato).
+  // Intro de 1250 ms y salida de 530 ms, 1,78 s en total (tope de 1,8 s).
+  // Por defecto (RF-SPL-7): los ocho rombos se abren juntos de 80 a 260 ms y el rombo k
+  // vuelve desde 260 + 50·k durante 264 ms, así que el último encaja a los 874 ms.
+  var NATIVE = 700, OPEN0 = 80, OPEN1 = 260, BACK_STAG = 50, BACK_DUR = 264;
+  var OPEN_OFF = 200, OPEN_ANG = -60, OPEN_SC = 0.6, OPEN_OP = 0.4;
+  // Alternativa de la decisión 3: se apagan en su sitio de 80 a 200 ms y el rombo k entra
+  // desde afuera como en la maqueta original, desde 200 + 45·k durante 340 ms (hasta 855 ms).
+  var ALT_FADE0 = 80, ALT_FADE1 = 200, ALT_START = 200, ALT_STAG = 45, ALT_DUR = 340;
+  var GLINT = 720, GLINT_DUR = 360, RING_DUR = 540, PLUS = [860, 930], PLUS_DUR = 300;
+  var INTRO_END = 1250, TR_DUR = 530, LOAD_FAST = 900, LOAD_SLOW = 3600, FADE = 220;
+
+  var n = {
+    phone: el('phone'), panel: el('panel'), sweep: el('sweep'), logo: el('logo'), ring: el('ring'),
+    glow: el('glow'), band: el('band'), star: el('star'), native: el('native'), nfull: el('nfull'), brand: el('brand'),
+    brandRect: el('brandrect'), bell: el('bell'), pill: el('pill'), nav: el('nav'),
+    phase: el('phase'), dot: el('dot'), replay: el('replay'), slow: el('slow'), reduce: el('reduce'), alt: el('alt')
+  };
+  var rh = [], cards = [], plus = [el('p0'), el('p1')], pring = [el('pring0'), el('pring1')];
+  var i;
+  for (i = 0; i < 8; i++) rh.push(el('r' + i));
+  for (i = 0; i < 6; i++) cards.push(el('c' + i));
+
+  function clamp(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function lerp(a, b, x) { return a + (b - a) * x; }
+  function outCubic(x) { return 1 - Math.pow(1 - x, 3); }
+  function inOutCubic(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  function outBack(x, s) { var c = s + 1; return 1 + c * Math.pow(x - 1, 3) + s * Math.pow(x - 1, 2); }
+  function quad(a, c, b, t) { var u = 1 - t; return u * u * a + 2 * u * t * c + t * t * b; }
+  function f(v) { return (Math.round(v * 100) / 100).toString(); }
+  function mix(c1, c2, t) {
+    return 'rgb(' + Math.round(lerp(c1[0], c2[0], t)) + ',' + Math.round(lerp(c1[1], c2[1], t)) + ',' + Math.round(lerp(c1[2], c2[2], t)) + ')';
+  }
+  function show(node, on) { node.setAttribute('display', on ? 'inline' : 'none'); }
+
+  var brandLen = 50;
+  function measureBrand() {
+    try { var w = n.brand.getComputedTextLength(); if (w > 10) brandLen = w; } catch (e) { /* sin medida, queda el valor por defecto */ }
+  }
+
+  var lastPhase = '';
+  function setPhase(txt, kind) {
+    if (txt === lastPhase) return;
+    lastPhase = txt;
+    n.phase.textContent = txt;
+    n.dot.setAttribute('data-f', kind);
+  }
+
+  // Pose de la intro animada en el instante tau, con la carga lista en loadAt.
+  function pose(tau, loadAt) {
+    var trStart = Math.max(INTRO_END, loadAt);
+    var qRaw = clamp((tau - trStart) / TR_DUR);
+    var q = inOutCubic(qRaw);
+
+    // Espera en bucle: una onda recorre los rombos en sentido horario.
+    var waitAmp = 0, ph = (tau - INTRO_END) / 1100;
+    if (loadAt > INTRO_END && tau > INTRO_END) waitAmp = clamp((tau - INTRO_END) / 300) * (1 - clamp(qRaw * 3));
+
+    var kick = 0;
+    for (var k = 0; k < 8; k++) {
+      var r = RH[k], off, ang, sc, op, start, dur;
+      if (!altMode) {
+        // Apertura común y encaje uno a uno en sentido horario.
+        var po = outCubic(clamp((tau - OPEN0) / (OPEN1 - OPEN0)));
+        start = OPEN1 + k * BACK_STAG; dur = BACK_DUR;
+        var p = clamp((tau - start) / dur);
+        if (p <= 0) {
+          off = OPEN_OFF * po; ang = OPEN_ANG * po; sc = 1 - (1 - OPEN_SC) * po; op = 1 - (1 - OPEN_OP) * po;
+        } else {
+          off = OPEN_OFF * (1 - outBack(p, 1.25)); ang = OPEN_ANG * (1 - outCubic(p));
+          sc = OPEN_SC + (1 - OPEN_SC) * outCubic(p); op = OPEN_OP + (1 - OPEN_OP) * clamp((tau - start) / 50);
+        }
+      } else {
+        // Se apagan en su sitio y entran desde afuera, como en la maqueta original.
+        start = ALT_START + k * ALT_STAG; dur = ALT_DUR;
+        var p2 = clamp((tau - start) / dur);
+        if (p2 <= 0) {
+          off = 0; ang = 0; sc = 1; op = 1 - clamp((tau - ALT_FADE0) / (ALT_FADE1 - ALT_FADE0));
+        } else {
+          off = 260 * (1 - outBack(p2, 1.25)); ang = -80 * (1 - outCubic(p2));
+          sc = 0.45 + 0.55 * outCubic(p2); op = clamp(p2 / 0.22);
+        }
+      }
+      var x = (tau - start - dur * 0.45) / 190;
+      if (x > 0 && x < 1) kick += Math.sin(Math.PI * x);
+      if (waitAmp > 0) { var s = Math.sin(2 * Math.PI * (ph - k / 8)); off += waitAmp * 20 * (s > 0 ? Math.pow(s, 6) : 0); }
+      rh[k].setAttribute('transform',
+        'rotate(' + f(ang) + ' ' + CX + ' ' + CY + ') translate(' + f(r[2] * off) + ' ' + f(r[3] * off) + ') ' +
+        'translate(' + r[0] + ' ' + r[1] + ') scale(' + sc.toFixed(4) + ') translate(' + (-r[0]) + ' ' + (-r[1]) + ')');
+      rh[k].setAttribute('opacity', f(op));
+    }
+    // La estrella absorbe cada encaje con una compresión mínima.
+    var ss = 1 - 0.022 * Math.min(kick, 1.4);
+    n.star.setAttribute('transform', 'translate(' + CX + ' ' + CY + ') scale(' + ss.toFixed(4) + ') translate(' + (-CX) + ' ' + (-CY) + ')');
+
+    // Destello: halo que cruza el logo en diagonal y se cuela por las rendijas.
+    var g = (tau - GLINT) / GLINT_DUR;
+    if (g > 0 && g < 1) {
+      var m = lerp(-560, 560, g), env = Math.sin(Math.PI * g);
+      show(n.glow, true); show(n.sweep, true);
+      n.glow.setAttribute('opacity', f(env));
+      n.band.setAttribute('transform', 'translate(' + f(CX + m * 0.7071) + ' ' + f(CY - m * 0.7071) + ') rotate(-45)');
+      n.sweep.setAttribute('opacity', f(env));
+      n.sweep.setAttribute('transform', 'translate(' + f(SPLASH[0] + m * K0 * 0.7071) + ' ' + f(SPLASH[1] - m * K0 * 0.7071) + ') rotate(-45)');
+    } else { show(n.glow, false); show(n.sweep, false); }
+    var rg = (tau - GLINT) / RING_DUR;
+    if (rg > 0 && rg < 1) {
+      show(n.ring, true);
+      n.ring.setAttribute('r', f(lerp(370, 640, outCubic(rg))));
+      n.ring.setAttribute('stroke-width', f(lerp(16, 3, rg)));
+      n.ring.setAttribute('opacity', f(0.35 * (1 - rg)));
+    } else show(n.ring, false);
+
+    // Transición: el fondo se recoge en cabecera y el logo vuela a la esquina.
+    var qp = inOutCubic(clamp(qRaw / 0.9));
+    var h = lerp(620, 84, qp), b = 110 * Math.sin(Math.PI * qp);
+    n.panel.setAttribute('d', 'M0 0H300V' + f(h) + 'Q150 ' + f(h + b) + ' 0 ' + f(h) + 'Z');
+    n.panel.setAttribute('fill', mix([231, 115, 48], [255, 102, 0], qp));
+    var lx = quad(SPLASH[0], LOGO_CTRL[0], HEAD[0], q), ly = quad(SPLASH[1], LOGO_CTRL[1], HEAD[1], q);
+    var lk = K0 * Math.pow(K1 / K0, q);
+    n.logo.setAttribute('transform', 'translate(' + f(lx) + ' ' + f(ly) + ') scale(' + lk.toFixed(5) + ') translate(' + (-CX) + ' ' + (-CY) + ')');
+
+    // Los «++» saltan como un contador y después viajan tras «ULIMA».
+    for (var j = 0; j < 2; j++) {
+      var pp = clamp((tau - PLUS[j]) / PLUS_DUR);
+      var sx = SPLASH[0] + (PLUS_POS[j][0] - CX) * K0, sy = SPLASH[1] + (PLUS_POS[j][1] - CY) * K0;
+      var hx = 44 + brandLen + 7 + j * 11, hy = HEAD[1] - 0.5;
+      var qj = inOutCubic(clamp((qRaw - j * 0.04) / 0.96));
+      var px = quad(sx, sx, hx, qj), py = quad(sy, hy, hy, qj);
+      var pop = pp <= 0 ? 0 : outBack(pp, 2.4);
+      var psc = K0 * pop * Math.pow(KC / K0, qj);
+      var rot = -90 * (1 - outCubic(pp));
+      plus[j].setAttribute('opacity', pp <= 0 ? '0' : f(clamp(pp / 0.12)));
+      plus[j].setAttribute('transform', 'translate(' + f(px) + ' ' + f(py) + ') skewX(' + f(-12 * qj) + ') rotate(' + f(rot) + ') scale(' + psc.toFixed(4) + ')');
+      // Onda breve que sale de la cruz cuando el salto ya terminó.
+      var rt = (tau - PLUS[j] - PLUS_DUR * 0.5) / 300;
+      if (rt > 0 && rt < 1 && qRaw < 0.25) {
+        show(pring[j], true);
+        pring[j].setAttribute('cx', f(sx)); pring[j].setAttribute('cy', f(sy));
+        pring[j].setAttribute('r', f(lerp(12, 30, outCubic(rt))));
+        pring[j].setAttribute('stroke-width', f(lerp(1.4, 0.3, rt)));
+        pring[j].setAttribute('opacity', f(0.55 * (1 - rt) * (1 - qRaw * 4)));
+      } else show(pring[j], false);
+    }
+
+    // Cabecera y contenido de la app.
+    var a = outCubic(clamp((qRaw - 0.68) / 0.32));
+    n.brandRect.setAttribute('width', f(a * (brandLen + 10)));
+    n.brand.setAttribute('opacity', f(a));
+    n.bell.setAttribute('opacity', f(clamp((qRaw - 0.6) / 0.4)));
+    // La página aparece como un todo entre el 30 % y el 70 % de la salida y sube 20 dp (RF-SPL-11).
+    var e = outCubic(clamp((qRaw - 0.3) / 0.4));
+    for (var c = 0; c < cards.length; c++) {
+      cards[c].setAttribute('opacity', f(e));
+      cards[c].setAttribute('transform', 'translate(0 ' + f(17 * (1 - e)) + ')');
+    }
+    n.nav.setAttribute('opacity', f(e));
+    n.nav.setAttribute('transform', 'translate(0 ' + f(17 * (1 - e)) + ')');
+    n.pill.setAttribute('fill-opacity', f(lerp(0.7, 0.45, qp)));
+
+    return { trStart: trStart, qRaw: qRaw };
+  }
+
+  var raf = 0, t0 = 0, reduceMode = false, altMode = false, loadAt = LOAD_FAST;
+
+  function frame(now) {
+    var tau = now - t0 - NATIVE;
+    var done = false;
+    if (reduceMode) {
+      // Sin movimiento: el resto del logo y los «++» aparecen por fundido, nada se desplaza,
+      // y cuando la carga termina la aplicación entra con otro fundido.
+      var o = tau < loadAt ? 1 : 1 - clamp((tau - loadAt) / FADE);
+      n.native.setAttribute('opacity', f(o));
+      n.nfull.setAttribute('opacity', f(clamp(tau / 200)));
+      show(n.native, o > 0);
+      if (tau < 0) setPhase('Nativo, imagen fija', 'native');
+      else if (tau < loadAt) setPhase('Flutter quieto, la carga corre en paralelo', 'flutter');
+      else if (o > 0) setPhase('Fundido a la aplicación', 'flutter');
+      else { setPhase('Aplicación lista', 'app'); done = true; }
+    } else {
+      show(n.native, tau < 0);
+      n.native.setAttribute('opacity', '1');
+      n.nfull.setAttribute('opacity', '0');
+      var st = pose(Math.max(tau, 0), loadAt);
+      if (tau < 0) setPhase('Nativo, imagen fija', 'native');
+      else if (tau < INTRO_END) setPhase('Flutter anima, la carga corre en paralelo', 'flutter');
+      else if (tau < st.trStart) setPhase('La carga sigue, espera en bucle', 'flutter');
+      else if (st.qRaw < 1) setPhase('Salida a la aplicación', 'flutter');
+      else { setPhase('Aplicación lista', 'app'); done = true; }
+    }
+    raf = done ? 0 : requestAnimationFrame(frame);
+  }
+
+  function play() {
+    if (raf) cancelAnimationFrame(raf);
+    reduceMode = n.reduce.checked;
+    altMode = n.alt.checked;
+    loadAt = n.slow.checked ? LOAD_SLOW : LOAD_FAST;
+    measureBrand();
+    if (reduceMode) pose(1e7, 0);
+    t0 = (window.performance && performance.now) ? performance.now() : Date.now();
+    frame(t0);
+  }
+
+  // Vista quieta inicial: el splash nativo, igual al primer cuadro de Flutter.
+  n.reduce.checked = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+  show(n.native, true);
+  setPhase('Nativo, imagen fija', 'native');
+
+  // Los controles no deben marcar la opción del companion que envuelve al concepto.
+  n.replay.addEventListener('click', function (ev) { ev.stopPropagation(); play(); });
+  n.replay.parentNode.addEventListener('click', function (ev) { ev.stopPropagation(); });
+  n.slow.addEventListener('change', play);
+  n.reduce.addEventListener('change', play);
+  n.alt.addEventListener('change', play);
+
+  // Para revisar un instante concreto desde la consola (no se usa en la maqueta).
+  root.spSeek = function (ms, slow, alt) {
+    if (raf) { cancelAnimationFrame(raf); raf = 0; }
+    reduceMode = false; altMode = !!alt; measureBrand();
+    var la = slow ? LOAD_SLOW : LOAD_FAST;
+    n.native.setAttribute('opacity', '1');
+    n.nfull.setAttribute('opacity', '0');
+    show(n.native, ms < NATIVE);
+    pose(Math.max(ms - NATIVE, 0), la);
+  };
+
+  // Arranca sola la primera vez que la mitad del teléfono está en pantalla.
+  if ('IntersectionObserver' in window) {
+    var io = new IntersectionObserver(function (entries) {
+      for (var k = 0; k < entries.length; k++) {
+        if (entries[k].isIntersecting) { io.disconnect(); play(); return; }
+      }
+    }, { threshold: 0.5 });
+    io.observe(n.phone);
+  } else {
+    play();
+  }
+})();
+</script>
+</div>

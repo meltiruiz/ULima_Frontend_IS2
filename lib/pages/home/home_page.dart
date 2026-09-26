@@ -10,8 +10,28 @@ import 'package:ulima_plus/components/chatbot_bubble.dart';
 import 'package:ulima_plus/configs/themes.dart';
 
 import '../horario/horario_controller.dart';
+import '../splash/estado_de_la_capa.dart';
 import 'home_controller.dart';
 import 'home_shell_config.dart';
+
+/// La clave del argumento de ruta que elige la pestaña inicial (RF-SPL-20).
+const String argumentoDePestana = 'pestana';
+
+/// Lo pasan la intro del splash y la bienvenida al llegar a /home (S-31).
+const Map<String, String> abrirEnHorario = <String, String>{
+  argumentoDePestana: 'horario',
+};
+
+/// El índice con el que abre el shell. Con `{'pestana': 'horario'}` es la
+/// pestaña Horario, que se busca por su etiqueta y así sirve para todos los
+/// roles (S-24). Sin argumento, o con otro valor, es la primera (S-25).
+int indiceDePestanaInicial(Object? argumentos, List<String> etiquetas) {
+  if (argumentos is Map && argumentos[argumentoDePestana] == 'horario') {
+    final i = etiquetas.indexOf('Horario');
+    if (i >= 0) return i;
+  }
+  return 0;
+}
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -59,10 +79,31 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  bool _argumentoLeido = false;
+
   @override
-  void initState() {
-    super.initState();
-    _applyPreferredOrientations();
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_argumentoLeido) return;
+    _argumentoLeido = true;
+    // El argumento se lee una sola vez, al montarse (RF-SPL-20).
+    _currentIndex = indiceDePestanaInicial(
+      ModalRoute.of(context)?.settings.arguments,
+      [for (final i in _config.footerItems) i.label],
+    );
+    // Bajo la capa del arranque la app sigue en vertical, y las orientaciones
+    // se piden cuando la capa se retira (S-26).
+    if (EstadoDeLaCapa.cubre.value) {
+      EstadoDeLaCapa.cubre.addListener(_alRetirarseLaCapa);
+    } else {
+      _applyPreferredOrientations();
+    }
+  }
+
+  void _alRetirarseLaCapa() {
+    if (EstadoDeLaCapa.cubre.value) return;
+    EstadoDeLaCapa.cubre.removeListener(_alRetirarseLaCapa);
+    if (mounted) _applyPreferredOrientations();
   }
 
   void _onTabTap(int index) {
@@ -98,6 +139,7 @@ class _HomePageState extends State<HomePage> {
   @override
   void dispose() {
     SystemChrome.setPreferredOrientations(_portraitOnly);
+    EstadoDeLaCapa.cubre.removeListener(_alRetirarseLaCapa);
     super.dispose();
   }
 

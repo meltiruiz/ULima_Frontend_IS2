@@ -24,6 +24,11 @@ targets:
 > Contraparte de backend: `ULima_Backend_IS2/specs/features/academic-record/academic-record.spec.md`
 > (RS-BE-19 a RS-BE-29). Esta spec consume `GET` y `DELETE /academic-record/me`, y manda
 > `consent: true` a `POST /portal-sync/import` y `POST /auth/register`.
+>
+> Nota del 2026-09-25 por la bienvenida con Ulises (`specs/features/bienvenida/bienvenida.spec.md`),
+> **aprobada por el dueño el 2026-09-26** junto con esa spec e implementada el 2026-09-26. En el
+> registro dentro de la conversación, el consentimiento de RF-REC-6 es una tarjeta con los mismos
+> textos (ver «Nota de la bienvenida con Ulises» al final).
 
 ## User Stories
 
@@ -215,3 +220,23 @@ portal. No se mezclan ni se nombran igual.
   solo donde el backend lo tenga (RS-BE-25).
 - Mostrar el récord a otros roles, o desde el chatbot.
 - Recordar el consentimiento entre importaciones.
+
+## Nota de la bienvenida con Ulises (2026-09-25, aprobada el 2026-09-26)
+
+Nace con `specs/features/bienvenida/bienvenida.spec.md` (RF-BIEN-7), y el dueño la aprueba con
+ella el 2026-09-26. Toca RF-REC-6 en su forma y no en su contenido, y el resto de esta spec sigue
+igual.
+
+- **RF-REC-6, en el registro.** RF-REC-6 habla de una sola pantalla de consentimiento. Desde la
+  bienvenida, el registro corre dentro de la conversación con Ulises y la ruta `/registro` sale,
+  así que en el registro el consentimiento es una tarjeta de Ulises con los textos literales de
+  `PortalConsentView`, tomados de sus constantes, y las respuestas rápidas «Acepto» y «Volver»
+  (turno N3 de RF-BIEN-7). Va en el mismo lugar que hoy, después de las contraseñas y antes de la
+  contraseña de miUlima, nunca entre el código del authenticator y el envío. Sin aceptación, el
+  registro no se envía, y el cuerpo de `POST /auth/register` sigue llevando `consent: true`.
+- **Portal Sync.** Sigue mostrando la pantalla `PortalConsentView` sin cambios, así que los dos
+  lugares donde ULima++ pide la contraseña del portal dicen exactamente lo mismo.
+- **Targets.** No cambian. La tarjeta vive en `lib/pages/bienvenida/**`, que está en los targets
+  de la bienvenida, y lee las constantes de `PortalConsentView` sin cambiarlas.
+- **Test Links.** `test/HU34_jeff/registro_consent_test.dart` sigue, con sus casos 10 a 12
+  montando la conversación en lugar de la pantalla del registro.

@@ -1,0 +1,447 @@
+<div class="sp-codigo-root" id="sp-codigo-root">
+<style>
+.sp-codigo-root{width:100%;max-width:320px;margin:0 auto;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;color:var(--text-primary,#1d1d1f);line-height:1.5;-webkit-font-smoothing:antialiased;}
+.sp-codigo-root *{box-sizing:border-box;}
+.sp-codigo-phone{position:relative;width:300px;max-width:100%;aspect-ratio:300/620;margin:0 auto;padding:7px;border-radius:40px;background:#0e0e10;box-shadow:0 0 0 1px rgba(0,0,0,.32),0 22px 44px -22px rgba(0,0,0,.55);}
+.sp-codigo-scr{width:100%;height:100%;border-radius:33px;overflow:hidden;background:#E77330;isolation:isolate;transform:translateZ(0);}
+.sp-codigo-svg{display:block;width:100%;height:100%;}
+.sp-codigo-stages{display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:12px auto 0;max-width:300px;font-size:11.5px;line-height:1.2;color:var(--text-secondary,#86868b);}
+.sp-codigo-st{display:inline-flex;align-items:center;gap:5px;white-space:nowrap;transition:color .15s;}
+.sp-codigo-st::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--border,#d1d1d6);transition:background .15s;}
+.sp-codigo-st.sp-codigo-on{color:var(--text-primary,#1d1d1f);font-weight:600;}
+.sp-codigo-st.sp-codigo-on::before{background:#E77330;}
+.sp-codigo-sep{flex:0 1 14px;height:1px;min-width:6px;background:var(--border,#d1d1d6);}
+.sp-codigo-time{margin-left:auto;font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Roboto Mono",Consolas,monospace;font-variant-numeric:tabular-nums;white-space:nowrap;}
+.sp-codigo-ctrl{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:12px auto 0;max-width:300px;}
+.sp-codigo-btn{font:inherit;font-size:12.5px;font-weight:600;line-height:1.2;margin:0;padding:6px 12px;border-radius:999px;border:1px solid var(--border,#d1d1d6);background:var(--bg-secondary,#fff);color:var(--text-primary,#1d1d1f);cursor:pointer;-webkit-tap-highlight-color:transparent;}
+.sp-codigo-btn:hover{border-color:var(--text-secondary,#86868b);}
+.sp-codigo-btn:focus-visible{outline:2px solid var(--accent,#0071e3);outline-offset:2px;}
+.sp-codigo-play{background:var(--text-primary,#1d1d1f);color:var(--bg-primary,#f5f5f7);border-color:var(--text-primary,#1d1d1f);}
+.sp-codigo-play:hover{border-color:var(--text-primary,#1d1d1f);opacity:.88;}
+.sp-codigo-btn[aria-pressed="true"]{border-color:#E77330;color:#E77330;background:rgba(231,115,48,.1);}
+.sp-codigo-txtblk{max-width:300px;margin:14px auto 0;}
+.sp-codigo-kick{margin:0;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-secondary,#86868b);}
+.sp-codigo-name{margin:2px 0 6px;font-size:18px;font-weight:700;line-height:1.25;color:var(--text-primary,#1d1d1f);}
+.sp-codigo-p{margin:0 0 8px;font-size:13.5px;line-height:1.45;color:var(--text-primary,#1d1d1f);}
+.sp-codigo-p strong{color:var(--text-primary,#1d1d1f);font-weight:600;}
+.sp-codigo-fl{margin:10px 0 0;padding-top:9px;border-top:1px solid var(--border,#d1d1d6);font-size:12.5px;line-height:1.5;color:var(--text-secondary,#86868b);}
+.sp-codigo-fl code{font-family:ui-monospace,"SF Mono",SFMono-Regular,Menlo,"Roboto Mono",Consolas,monospace;font-size:.95em;color:var(--text-primary,#1d1d1f);}
+</style>
+
+<div class="sp-codigo-phone" role="img" aria-label="Maqueta animada del concepto Código. La estrella del splash sube, se escribe ULima++ en letra monoespaciada, los signos más saltan a la esquina de la estrella y el logo viaja a la cabecera de la aplicación, donde se completa ULIMA++.">
+<div class="sp-codigo-scr">
+<svg class="sp-codigo-svg" viewBox="0 0 286 606" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">
+  <defs>
+    <g id="sp-codigo-starshape">
+      <polygon points="-213.4,-88.5 -72.5,-72.6 -88.4,-213.4 0,-102.6 88.5,-213.5 72.6,-72.6 213.5,-88.5 102.6,0 213.4,88.3 72.6,72.5 88.5,213.4 0,102.5 -88.4,213.3 -72.5,72.5 -213.4,88.3 -102.6,0"/>
+      <polygon points="-83.8,-83.9 -100,-227.7 -250.9,-250.9 -227.6,-100.1"/>
+      <polygon points="83.9,-83.9 227.7,-100.1 250.9,-250.9 100.1,-227.7"/>
+      <polygon points="0,-118.6 90.2,-231.8 0,-354.8 -90.2,-231.8"/>
+      <polygon points="118.6,0 231.8,90.1 354.8,0 231.8,-90.2"/>
+      <polygon points="83.9,83.8 100.1,227.6 250.9,250.9 227.7,100"/>
+      <polygon points="0,118.5 -90.2,231.7 0,354.8 90.2,231.7"/>
+      <polygon points="-118.6,0 -231.8,-90.2 -354.8,0 -231.8,90.1"/>
+      <polygon points="-83.8,83.8 -227.6,100 -250.9,250.9 -100,227.6"/>
+    </g>
+  </defs>
+
+  <!-- App falsa (Horario de hoy) -->
+  <rect x="0" y="0" width="286" height="606" fill="#F5F5F7"/>
+  <g class="sp-codigo-body" opacity="0">
+    <text x="18" y="110" font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="13" font-weight="700" fill="#1A1A1A">Horario de hoy</text>
+    <g font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="10" fill="#8E8E93">
+      <text x="18" y="140">08:00</text>
+      <text x="18" y="212">10:00</text>
+      <text x="18" y="284">14:00</text>
+    </g>
+    <g>
+      <rect x="56" y="126" width="212" height="60" rx="11" fill="#FFD8C2"/>
+      <rect x="56" y="126" width="4" height="60" rx="2" fill="#FF7A1A"/>
+      <rect x="70" y="140" width="118" height="8" rx="4" fill="#1A1A1A" opacity=".78"/>
+      <rect x="70" y="156" width="74" height="6" rx="3" fill="#A55E36" opacity=".55"/>
+      <rect x="70" y="168" width="52" height="6" rx="3" fill="#A55E36" opacity=".4"/>
+      <rect x="56" y="198" width="212" height="60" rx="11" fill="#FFD8C2"/>
+      <rect x="56" y="198" width="4" height="60" rx="2" fill="#FF7A1A"/>
+      <rect x="70" y="212" width="96" height="8" rx="4" fill="#1A1A1A" opacity=".78"/>
+      <rect x="70" y="228" width="84" height="6" rx="3" fill="#A55E36" opacity=".55"/>
+      <rect x="70" y="240" width="46" height="6" rx="3" fill="#A55E36" opacity=".4"/>
+      <rect x="56" y="270" width="212" height="60" rx="11" fill="#FFFFFF" stroke="#E5E5EA"/>
+      <rect x="70" y="284" width="108" height="8" rx="4" fill="#1A1A1A" opacity=".7"/>
+      <rect x="70" y="300" width="62" height="6" rx="3" fill="#8E8E93" opacity=".5"/>
+      <rect x="70" y="312" width="40" height="6" rx="3" fill="#8E8E93" opacity=".35"/>
+    </g>
+    <text x="18" y="362" font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="13" font-weight="700" fill="#1A1A1A">Alertas</text>
+    <rect x="18" y="374" width="250" height="52" rx="11" fill="#FFFFFF" stroke="#E5E5EA"/>
+    <circle cx="40" cy="400" r="9" fill="#FFE3D1"/>
+    <rect x="58" y="392" width="126" height="7" rx="3.5" fill="#1A1A1A" opacity=".7"/>
+    <rect x="58" y="405" width="88" height="6" rx="3" fill="#8E8E93" opacity=".45"/>
+    <!-- barra inferior -->
+    <rect x="0" y="548" width="286" height="58" fill="#1E1E24"/>
+    <g fill="none" stroke="#FFFFFF" stroke-opacity=".68" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <g transform="translate(28.6 566)"><circle cx="0" cy="-4" r="2.4"/><circle cx="-5" cy="5" r="2.4"/><circle cx="5" cy="5" r="2.4"/><path d="M-1.2 -1.9 L-3.8 2.9 M1.2 -1.9 L3.8 2.9"/></g>
+      <g transform="translate(85.8 566)"><rect x="-6" y="-7" width="12" height="14" rx="2"/><path d="M-3 -3.5 H3 M-3 1 H-2 M2 1 H3 M-3 4 H-2 M2 4 H3"/></g>
+      <g transform="translate(143 566)" stroke="#FF6600" stroke-opacity="1"><rect x="-7" y="-6" width="14" height="13" rx="2"/><path d="M-7 -1.5 H7 M-3.5 -8 V-4.5 M3.5 -8 V-4.5"/></g>
+      <g transform="translate(200.2 566)"><path d="M-7 -5.5 Q-7 -7 -5.5 -7 H5.5 Q7 -7 7 -5.5 V2.5 Q7 4 5.5 4 H-1 L-4.5 7 V4 H-5.5 Q-7 4 -7 2.5 Z"/></g>
+      <g transform="translate(257.4 566)"><circle cx="0" cy="-3" r="3.3"/><path d="M-6 7 Q-6 1.5 0 1.5 Q6 1.5 6 7"/></g>
+    </g>
+    <g font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="8.5" text-anchor="middle" fill="#FFFFFF" fill-opacity=".68">
+      <text x="28.6" y="590">Malla</text><text x="85.8" y="590">Notas</text><text x="143" y="590" fill="#FF6600" fill-opacity="1" font-weight="600">Horario</text><text x="200.2" y="590">Chats</text><text x="257.4" y="590">Perfil</text>
+    </g>
+  </g>
+
+  <!-- Fondo naranja, pantalla completa en el splash y cabecera al final -->
+  <rect class="sp-codigo-cover" x="0" y="0" width="286" height="606" fill="#E77330"/>
+
+  <!-- Contenido de la cabecera -->
+  <text class="sp-codigo-wm" x="48" y="59" font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="17" font-style="italic" font-weight="800" fill="#FFFFFF">ULIMA</text>
+  <g class="sp-codigo-bell" opacity="0" transform="translate(257 53)" fill="none" stroke="#FFFFFF" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-7 5 H7 L5.4 3 V-1.6 A5.4 5.4 0 0 0 -5.4 -1.6 V3 Z"/><path d="M-2 7.6 A2 2 0 0 0 2 7.6"/>
+  </g>
+
+  <!-- Anillo del incremento -->
+  <circle class="sp-codigo-ring" cx="143" cy="303" r="70" fill="none" stroke="#FFFFFF" stroke-width="2" opacity="0"/>
+
+  <!-- Estrella (misma geometría que el ícono) -->
+  <g class="sp-codigo-star" fill="#FFFFFF" transform="translate(143 303) scale(0.19166)"><use href="#sp-codigo-starshape"/></g>
+
+  <!-- Línea de código -->
+  <text class="sp-codigo-code" x="95" y="358" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,'Roboto Mono','JetBrains Mono',Consolas,'Liberation Mono',monospace" font-size="23" font-weight="600" fill="#FFFFFF" opacity="0"></text>
+  <rect class="sp-codigo-caret" x="95" y="340" width="2.2" height="23" fill="#FFFFFF" opacity="0"/>
+  <rect class="sp-codigo-wait" x="0" y="0" width="2.2" height="17" fill="#FFFFFF" opacity="0"/>
+
+  <!-- Los dos «+» -->
+  <g class="sp-codigo-p0" fill="#FFFFFF" opacity="0"><rect/><rect/></g>
+  <g class="sp-codigo-p1" fill="#FFFFFF" opacity="0"><rect/><rect/></g>
+
+  <!-- Capa estática para «sin movimiento» -->
+  <g class="sp-codigo-snap" opacity="0">
+    <rect x="0" y="0" width="286" height="606" fill="#E77330"/>
+    <g fill="#FFFFFF" transform="translate(143 303) scale(0.19166)"><use href="#sp-codigo-starshape"/></g>
+    <g class="sp-codigo-snapplus" fill="#FFFFFF" opacity="0">
+      <rect x="195.2" y="275.7" width="14" height="3.3"/><rect x="200.5" y="270.4" width="3.3" height="14"/>
+      <rect x="213.2" y="275.7" width="14" height="3.3"/><rect x="218.5" y="270.4" width="3.3" height="14"/>
+    </g>
+  </g>
+
+  <!-- Barra de estado -->
+  <g fill="#FFFFFF">
+    <text x="20" y="19" font-family="system-ui,-apple-system,Roboto,sans-serif" font-size="11" font-weight="600">10:24</text>
+    <path d="M226 18.5 L233.5 11 V18.5 Z" opacity=".95"/>
+    <path d="M238 13.2 A7 7 0 0 1 248 13.2 L243 18.6 Z" opacity=".95"/>
+    <rect x="252.5" y="11" width="15" height="8" rx="2" fill="none" stroke="#FFFFFF" stroke-width="1.1"/>
+    <rect x="254" y="12.5" width="9.5" height="5" rx="1"/>
+    <rect x="268.2" y="13.4" width="1.4" height="3.2" rx=".6"/>
+  </g>
+  <circle cx="143" cy="14" r="5.2" fill="#0e0e10"/>
+</svg>
+</div>
+</div>
+
+<div class="sp-codigo-stages" aria-hidden="true">
+  <span class="sp-codigo-st" data-st="nativo">Nativo</span>
+  <span class="sp-codigo-sep"></span>
+  <span class="sp-codigo-st" data-st="flutter">Flutter</span>
+  <span class="sp-codigo-sep"></span>
+  <span class="sp-codigo-st" data-st="app">Aplicación</span>
+  <span class="sp-codigo-time">0,00 s</span>
+</div>
+
+<div class="sp-codigo-ctrl">
+  <button type="button" class="sp-codigo-btn sp-codigo-play" data-sp-act="play">Repetir</button>
+  <button type="button" class="sp-codigo-btn" data-sp-opt="slow" aria-pressed="false">Cámara lenta</button>
+  <button type="button" class="sp-codigo-btn" data-sp-opt="load" aria-pressed="false">Carga lenta</button>
+  <button type="button" class="sp-codigo-btn" data-sp-opt="still" aria-pressed="false">Sin movimiento</button>
+</div>
+
+<div class="sp-codigo-txtblk">
+  <p class="sp-codigo-kick">Concepto C</p>
+  <h3 class="sp-codigo-name">Código</h3>
+  <p class="sp-codigo-p">La estrella sube y debajo se teclea «ULima» con un cursor que parpadea. Los «++» saltan del texto a la esquina de la estrella, se engrosan hasta ser los del logo y el texto se desvanece. Al salir, el logo vuela a la cabecera y los «++» cierran «ULIMA++».</p>
+  <p class="sp-codigo-p">Es un guiño al operador de incremento que reconoce cualquier alumno de Sistemas, y el logo se arma a la vista. Si la carga tarda, el cursor parpadea junto a los «++» como un programa que espera.</p>
+  <p class="sp-codigo-fl">En Flutter, un <code>AnimationController</code> de 1,33&nbsp;s con un <code>Interval</code> por fase guía un <code>CustomPainter</code> que dibuja los ocho rombos del SVG, el texto con <code>TextPainter</code> y cada «+» sobre una curva de Bézier. Otro de 0,42&nbsp;s hace la salida, 1,75&nbsp;s en total, y la ruta cambia sin transición cuando el logo ya ocupa su lugar en la cabecera. La letra monoespaciada entra como fuente del proyecto, sin paquetes nuevos.</p>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById('sp-codigo-root');
+  if (!root || root.getAttribute('data-sp-ready') === '1') return;
+  root.setAttribute('data-sp-ready', '1');
+  function q(s) { return root.querySelector(s); }
+
+  // ---- Geometría (pantalla de 286 x 606, 360 dp) ----
+  var CX = 143, CY = 303;          // centro de la ventana, igual que el splash nativo
+  var R0 = 68;                     // radio de la estrella en el splash (0,89 del círculo seguro)
+  var UNIT = 354.8;                // radio de la estrella en unidades del SVG original
+  var PX = [308.7, 402.5], PY = -133.8, PA = 36.4, PT = 8.7; // «++» del ícono, en unidades del SVG
+  var FS = 23, BASE = 358;         // línea de código
+  var RISE_Y = 258, RISE_R = 56;
+  var HDR = { x: 29, y: 53, r: 12, h: 80 };
+  var WMX = 48, WMY = 59, WMFS = 17;
+
+  // ---- Tiempos (ms desde el primer cuadro de Flutter) ----
+  var NATIVE = 700;
+  var T_CHAR = [250, 318, 386, 454, 522];
+  var T_PLUS = [610, 680];
+  var FLY = [780, 830], FLY_D = 380;
+  var RET0 = 820, RET1 = 1210;
+  var LOGO_DONE = 1330, TR = 420;
+
+  var ORANGE = [231, 115, 48], HEADER = [255, 102, 0], TINT = [255, 231, 163], WHITE = [255, 255, 255];
+
+  var el = {
+    body: q('.sp-codigo-body'), cover: q('.sp-codigo-cover'), bell: q('.sp-codigo-bell'),
+    wm: q('.sp-codigo-wm'), ring: q('.sp-codigo-ring'), star: q('.sp-codigo-star'),
+    code: q('.sp-codigo-code'), caret: q('.sp-codigo-caret'), wait: q('.sp-codigo-wait'),
+    snap: q('.sp-codigo-snap'), snapPlus: q('.sp-codigo-snapplus'), time: q('.sp-codigo-time'),
+    phone: q('.sp-codigo-phone')
+  };
+  var plus = ['.sp-codigo-p0', '.sp-codigo-p1'].map(function (s) {
+    var g = q(s), r = g.querySelectorAll('rect');
+    return { g: g, h: r[0], v: r[1] };
+  });
+  var stages = Array.prototype.slice.call(root.querySelectorAll('.sp-codigo-st'));
+
+  var opt = { slow: false, load: false, still: false };
+  var CW = 0.6 * FS, LEFT = CX - 3.5 * CW, WMEND = WMX + 60;
+  var raf = 0, t0 = 0, playedAt = 0, startedHidden = false, lastCode = null, lastWm = null, lastStage = '';
+
+  // ---- utilidades ----
+  function clamp01(x) { return x < 0 ? 0 : x > 1 ? 1 : x; }
+  function seg(t, a, b) { return clamp01((t - a) / (b - a)); }
+  function lerp(a, b, p) { return a + (b - a) * p; }
+  function eOut(x) { return 1 - Math.pow(1 - x, 3); }
+  function eIO(x) { return x < 0.5 ? 4 * x * x * x : 1 - Math.pow(-2 * x + 2, 3) / 2; }
+  function eBack(x) { var c1 = 1.70158, c3 = c1 + 1; return 1 + c3 * Math.pow(x - 1, 3) + c1 * Math.pow(x - 1, 2); }
+  function mix(c1, c2, p) {
+    return 'rgb(' + Math.round(lerp(c1[0], c2[0], p)) + ',' + Math.round(lerp(c1[1], c2[1], p)) + ',' + Math.round(lerp(c1[2], c2[2], p)) + ')';
+  }
+  function bez(p0, c, p1, e) {
+    var a = (1 - e) * (1 - e), b = 2 * (1 - e) * e, d = e * e;
+    return { x: a * p0.x + b * c.x + d * p1.x, y: a * p0.y + b * c.y + d * p1.y };
+  }
+  function f(n) { return (Math.round(n * 100) / 100).toString(); }
+  function attr(node, k, v) { node.setAttribute(k, v); }
+
+  function measure() {
+    var w = 0;
+    try { el.code.textContent = 'ULima'; w = el.code.getComputedTextLength() / 5; } catch (e) { w = 0; }
+    CW = (w > 6 && w < 24) ? w : 0.6 * FS;
+    LEFT = CX - 3.5 * CW;
+    attr(el.code, 'x', f(LEFT));
+    el.code.textContent = '';
+    lastCode = '';
+    var ww = 0;
+    try { el.wm.textContent = 'ULIMA'; ww = el.wm.getComputedTextLength(); } catch (e) { ww = 0; }
+    lastWm = 'ULIMA';
+    WMEND = WMX + ((ww > 25 && ww < 110) ? ww : 0.68 * WMFS * 5);
+  }
+
+  // Posición de la estrella en el tiempo t (sin la salida).
+  function starBase(t) {
+    var p = eOut(seg(t, 0, 320));
+    var y = lerp(CY, RISE_Y, p), r = lerp(R0, RISE_R, p);
+    var b = eIO(seg(t, RET0, RET1));
+    y = lerp(y, CY, b); r = lerp(r, R0, b);
+    var k = seg(t, RET1, LOGO_DONE);
+    if (k > 0 && k < 1) r *= 1 + 0.035 * Math.sin(Math.PI * k);
+    return { x: CX, y: y, r: r };
+  }
+  function starAt(t, tr0) {
+    var s = starBase(t);
+    var u = seg(t, tr0, tr0 + TR);
+    if (u <= 0) return s;
+    var e = eIO(seg(u, 0, 0.9));
+    var p = bez({ x: CX, y: CY }, { x: CX, y: 118 }, { x: HDR.x, y: HDR.y }, e);
+    return { x: p.x, y: p.y, r: lerp(R0, HDR.r, e) };
+  }
+  function attached(k, s) {
+    var sc = s.r / UNIT;
+    return { x: s.x + PX[k] * sc, y: s.y + PY * sc, a: PA * sc, th: PT * sc };
+  }
+
+  function drawCross(c, st) {
+    if (!st || st.op <= 0.002) { attr(c.g, 'opacity', '0'); return; }
+    var a = st.a * st.sc, th = st.th * st.sc;
+    attr(c.g, 'opacity', f(st.op));
+    attr(c.g, 'fill', st.col);
+    attr(c.g, 'transform', 'translate(' + f(st.x) + ' ' + f(st.y) + ') rotate(' + f(st.rot) + ') skewX(' + f(st.sk) + ')');
+    attr(c.h, 'x', f(-a)); attr(c.h, 'y', f(-th)); attr(c.h, 'width', f(2 * a)); attr(c.h, 'height', f(2 * th));
+    attr(c.v, 'x', f(-th)); attr(c.v, 'y', f(-a)); attr(c.v, 'width', f(2 * th)); attr(c.v, 'height', f(2 * a));
+  }
+
+  function setCode(s) { if (s !== lastCode) { el.code.textContent = s; lastCode = s; } }
+  function setWm(s) { if (s !== lastWm) { el.wm.textContent = s; lastWm = s; } }
+
+  // Escena animada completa en el instante t.
+  function scene(t, tr0) {
+    var u = seg(t, tr0, tr0 + TR), eu = eIO(u);
+    var s = starAt(t, tr0);
+
+    // fondo naranja que se recoge en la cabecera
+    attr(el.cover, 'height', f(lerp(606, HDR.h, eu)));
+    attr(el.cover, 'fill', mix(ORANGE, HEADER, eu));
+    var ob = eOut(seg(u, 0.35, 1));
+    attr(el.body, 'opacity', f(ob));
+    attr(el.body, 'transform', 'translate(0 ' + f((1 - ob) * 16) + ')');
+    // la marca de la cabecera se teclea mientras llegan los «++»
+    setWm('ULIMA'.slice(0, u <= 0.55 ? 0 : Math.min(5, 1 + Math.floor((u - 0.55) / 0.07))));
+    attr(el.bell, 'opacity', f(eOut(seg(u, 0.62, 1))));
+
+    // estrella
+    attr(el.star, 'transform', 'translate(' + f(s.x) + ' ' + f(s.y) + ') scale(' + (s.r / UNIT).toFixed(5) + ')');
+
+    // anillo cuando el segundo «+» aterriza
+    var rk = seg(t, RET1 - 20, RET1 + 200);
+    if (rk > 0 && rk < 1) {
+      attr(el.ring, 'cx', f(CX)); attr(el.ring, 'cy', f(CY));
+      attr(el.ring, 'r', f(R0 * lerp(1.02, 1.5, eOut(rk))));
+      attr(el.ring, 'stroke-width', f(lerp(1.8, 0.4, rk)));
+      attr(el.ring, 'opacity', f(0.38 * (1 - rk)));
+    } else attr(el.ring, 'opacity', '0');
+
+    // texto tecleado
+    var n = 0;
+    for (var i = 0; i < T_CHAR.length; i++) if (t >= T_CHAR[i]) n++;
+    setCode('ULima'.slice(0, n));
+    var fade = seg(t, 790, 960);
+    var textOp = t >= T_CHAR[0] ? 1 - fade : 0;
+    attr(el.code, 'opacity', f(textOp));
+    attr(el.code, 'transform', 'translate(0 ' + f(eOut(fade) * 8) + ')');
+
+    // cursor de la línea
+    var np = (t >= T_PLUS[0] ? 1 : 0) + (t >= T_PLUS[1] ? 1 : 0);
+    var cpos = t >= FLY[0] ? 5 : n + np;
+    var cop = seg(t, 160, 240) * (1 - fade);
+    attr(el.caret, 'x', f(LEFT + cpos * CW + 1));
+    attr(el.caret, 'y', f(BASE - 18 + eOut(fade) * 8));
+    attr(el.caret, 'opacity', f(t < 0 ? 0 : cop));
+
+    // los «++»
+    for (var k = 0; k < 2; k++) {
+      var st = null;
+      var p0 = { x: LEFT + (5.5 + k) * CW, y: BASE - 0.34 * FS };
+      var a0 = 0.25 * FS, th0 = 0.052 * FS;
+      if (t >= T_PLUS[k]) {
+        var pop = 0.55 + 0.45 * eBack(seg(t, T_PLUS[k], T_PLUS[k] + 110));
+        st = { x: p0.x, y: p0.y, a: a0, th: th0, rot: 0, sk: 0, sc: pop, op: seg(t, T_PLUS[k], T_PLUS[k] + 50), col: mix(TINT, WHITE, 0) };
+        var fl = seg(t, FLY[k], FLY[k] + FLY_D);
+        if (fl > 0) {
+          var e = eIO(fl), tg = attached(k, starBase(t));
+          var c = { x: tg.x + 26, y: Math.min(p0.y, tg.y) - 62 };
+          var p = bez(p0, c, tg, e);
+          st = { x: p.x, y: p.y, a: lerp(a0, tg.a, e), th: lerp(th0, tg.th, e), rot: 90 * e, sk: 0, sc: 1, op: 1, col: mix(TINT, WHITE, e) };
+        }
+        if (fl >= 1) {
+          var tg2 = attached(k, s);
+          var land = seg(t, FLY[k] + FLY_D, FLY[k] + FLY_D + 150);
+          st = { x: tg2.x, y: tg2.y, a: tg2.a, th: tg2.th, rot: 0, sk: 0, sc: 1 + 0.12 * Math.sin(Math.PI * land), op: 1, col: 'rgb(255,255,255)' };
+          if (u > 0.45) {
+            // se sueltan de la estrella a mitad de la salida y van al final de la marca
+            var d0 = attached(k, starAt(tr0 + 0.45 * TR, tr0));
+            var v = eIO(seg(u, 0.45, 1));
+            var wx = WMEND + (0.36 + 0.62 * k) * WMFS, wy = WMY - 0.34 * WMFS;
+            st.x = lerp(d0.x, wx, v); st.y = lerp(d0.y, wy, v);
+            st.a = lerp(d0.a, 0.26 * WMFS, v); st.th = lerp(d0.th, 0.07 * WMFS, v);
+            st.sk = -10 * v; st.sc = 1;
+          }
+        }
+      }
+      drawCross(plus[k], st);
+    }
+
+    // espera en bucle con el cursor junto a los «++»
+    var w = t - LOGO_DONE;
+    if (w > 0 && tr0 > LOGO_DONE && t < tr0 + 140) {
+      var sc = s.r / UNIT;
+      var wop = w < 200 ? w / 200 : 0.5 + 0.5 * Math.cos(2 * Math.PI * (w - 200) / 1060);
+      wop *= 1 - seg(t, tr0, tr0 + 120);
+      attr(el.wait, 'x', f(s.x + (PX[1] + PA + 22) * sc));
+      attr(el.wait, 'y', f(s.y + PY * sc - PA * sc * 1.2));
+      attr(el.wait, 'height', f(PA * sc * 2.4));
+      attr(el.wait, 'opacity', f(wop));
+    } else attr(el.wait, 'opacity', '0');
+  }
+
+  function stageUI(t, tr0) {
+    var name = t < 0 ? 'nativo' : t < tr0 ? 'flutter' : 'app';
+    if (name !== lastStage) {
+      stages.forEach(function (sp) { sp.classList.toggle('sp-codigo-on', sp.getAttribute('data-st') === name); });
+      lastStage = name;
+    }
+    var shown = t < 0 ? 0 : Math.min(t, tr0 + (opt.still ? 250 : TR));
+    el.time.textContent = (shown / 1000).toFixed(2).replace('.', ',') + ' s';
+  }
+
+  function loadDone() { return opt.load ? 3600 : 900; }
+
+  function render(t) {
+    var tr0;
+    if (opt.still) {
+      tr0 = Math.max(300, loadDone());
+      scene(1e7, LOGO_DONE);                       // app ya lista debajo
+      attr(el.snap, 'opacity', f(t < 0 ? 1 : 1 - seg(t, tr0, tr0 + 250)));
+      attr(el.snapPlus, 'opacity', f(t < 0 ? 0 : seg(t, 0, 200)));
+    } else {
+      tr0 = Math.max(LOGO_DONE, loadDone());
+      attr(el.snap, 'opacity', '0');
+      scene(t, tr0);
+    }
+    stageUI(t, tr0);
+    return tr0 + (opt.still ? 250 : TR);
+  }
+
+  function frame(now) {
+    var speed = opt.slow ? 1 / 3 : 1;
+    var t = (now - t0 - NATIVE) * speed;   // el splash nativo dura lo mismo a cualquier velocidad
+    var end = render(t);
+    raf = t < end + 40 ? requestAnimationFrame(frame) : 0;
+  }
+
+  function play() {
+    if (raf) cancelAnimationFrame(raf);
+    measure();
+    t0 = performance.now();
+    playedAt = t0;
+    startedHidden = !!document.hidden;
+    lastStage = '';
+    render(-NATIVE);
+    raf = requestAnimationFrame(frame);
+  }
+
+  root.addEventListener('click', function (ev) {
+    var b = ev.target.closest('button');
+    if (!b || !root.contains(b)) return;
+    ev.stopPropagation();   // Repetir y las opciones no deben marcar la opción del companion
+    var o = b.getAttribute('data-sp-opt');
+    if (o) {
+      opt[o] = !opt[o];
+      b.setAttribute('aria-pressed', opt[o] ? 'true' : 'false');
+    }
+    play();
+  });
+
+  // Si el teléfono no estaba a la vista al cargar, se repite la primera vez que aparece.
+  if ('IntersectionObserver' in window) {
+    var seen = false;
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!seen && en.isIntersecting && en.intersectionRatio >= 0.5) {
+          seen = true;
+          if (performance.now() - playedAt > 400) play();
+          io.disconnect();
+        }
+      });
+    }, { threshold: [0, 0.5] });
+    io.observe(el.phone);
+  }
+
+  // Si la pestaña estaba oculta al arrancar, la animación empieza cuando se muestra.
+  document.addEventListener('visibilitychange', function () {
+    if (!document.hidden && startedHidden) play();
+  });
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', play);
+  else play();
+})();
+</script>
+</div>

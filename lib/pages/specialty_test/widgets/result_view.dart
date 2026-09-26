@@ -91,7 +91,7 @@ class _ResultViewState extends State<ResultView> with TickerProviderStateMixin {
       // que necesita, hasta el 85 % de la pantalla, y desplaza (RF-TEST-13).
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => _HojaDelEmpate(ganadoras: r.winners),
+      builder: (_) => HojaDelEmpate(ganadoras: r.winners),
     );
     if (elegida != null) await _c.elegirPrincipal(elegida);
   }
@@ -134,7 +134,7 @@ class _ResultViewState extends State<ResultView> with TickerProviderStateMixin {
                         children: [
                           AnimatedBuilder(
                             animation: _entrada,
-                            builder: (context, _) => _TarjetaGanadora(
+                            builder: (context, _) => TarjetaGanadora(
                               resultado: r,
                               contenido: contenido,
                               avance: Curves.easeOut.transform(_entrada.value),
@@ -145,11 +145,11 @@ class _ResultViewState extends State<ResultView> with TickerProviderStateMixin {
                             ),
                           ),
                           const SizedBox(height: 8),
-                          _FilaDeElectivos(ganadoras: ganadoras, empate: r.tie),
+                          FilaDeElectivos(ganadoras: ganadoras, empate: r.tie),
                           const SizedBox(height: 10),
-                          const _EncabezadoDeLasDemas(),
+                          const EncabezadoDeLasDemas(),
                           for (var i = 0; i < r.others.length; i++)
-                            _FilaDelRanking(
+                            FilaDelRanking(
                               key: ResultView.filaKey(r.others[i].specialtyId),
                               puesto: r.ranking.indexOf(r.others[i]) + 1,
                               entrada: r.others[i],
@@ -221,7 +221,7 @@ class _ResultViewState extends State<ResultView> with TickerProviderStateMixin {
                         animation: _confeti,
                         builder: (context, _) => CustomPaint(
                           key: ResultView.confetiKey,
-                          painter: _Confeti(_confeti.value),
+                          painter: PintorDelConfeti(_confeti.value),
                         ),
                       ),
                     ),
@@ -256,8 +256,8 @@ class _UlisesDelResultado extends StatelessWidget {
 }
 
 /// Los colores de la tarjeta de la número uno en el tema.
-class _ColoresDeLaTarjeta {
-  _ColoresDeLaTarjeta(TestSpecialty? e, Brightness b)
+class ColoresDeLaTarjeta {
+  ColoresDeLaTarjeta(TestSpecialty? e, Brightness b)
     : oscuro = b == Brightness.dark,
       color = colorDeEspecialidad(e, b) ?? MaterialTheme.iconoNaranja(b) {
     final tarjeta = MaterialTheme.cardBg(b);
@@ -291,8 +291,9 @@ class _ColoresDeLaTarjeta {
   late final Color insigniaTexto;
 }
 
-class _TarjetaGanadora extends StatelessWidget {
-  const _TarjetaGanadora({
+class TarjetaGanadora extends StatelessWidget {
+  const TarjetaGanadora({
+    super.key,
     required this.resultado,
     required this.contenido,
     required this.avance,
@@ -314,7 +315,7 @@ class _TarjetaGanadora extends StatelessWidget {
     final r = resultado;
     final primera = r.ranking.first;
     final especialidad = contenido.specialtyByKey(primera.key);
-    final k = _ColoresDeLaTarjeta(especialidad, b);
+    final k = ColoresDeLaTarjeta(especialidad, b);
     final nombres = r.winners.map((w) => w.name).toList();
     final afinidad = (primera.affinity * avance).round();
     final resumen = r.tie
@@ -419,7 +420,7 @@ class _TarjetaGanadora extends StatelessWidget {
                       ),
                     ),
                   const SizedBox(height: 8),
-                  _Medidor(
+                  MedidorDeAfinidad(
                     fraccion: afinidad / 100,
                     pista: k.tinta.withValues(alpha: 0.24),
                   ),
@@ -427,7 +428,7 @@ class _TarjetaGanadora extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 9),
-            _Motivo(
+            MotivoDelResultado(
               texto: motivo,
               porIa: r.reasonByAi,
               colores: k,
@@ -457,8 +458,12 @@ class _TarjetaGanadora extends StatelessWidget {
 }
 
 /// El medidor de 6 px, decorativo porque el número está en la pastilla.
-class _Medidor extends StatelessWidget {
-  const _Medidor({required this.fraccion, required this.pista});
+class MedidorDeAfinidad extends StatelessWidget {
+  const MedidorDeAfinidad({
+    super.key,
+    required this.fraccion,
+    required this.pista,
+  });
 
   final double fraccion;
   final Color pista;
@@ -491,8 +496,9 @@ class _Medidor extends StatelessWidget {
 
 /// El motivo, cortado en cuatro líneas con «Leer más», y la insignia «IA»
 /// si lo redactó Cohere.
-class _Motivo extends StatefulWidget {
-  const _Motivo({
+class MotivoDelResultado extends StatefulWidget {
+  const MotivoDelResultado({
+    super.key,
     required this.texto,
     required this.porIa,
     required this.colores,
@@ -502,15 +508,15 @@ class _Motivo extends StatefulWidget {
 
   final String texto;
   final bool porIa;
-  final _ColoresDeLaTarjeta colores;
+  final ColoresDeLaTarjeta colores;
   final bool abierto;
   final VoidCallback onTap;
 
   @override
-  State<_Motivo> createState() => _MotivoState();
+  State<MotivoDelResultado> createState() => _MotivoState();
 }
 
-class _MotivoState extends State<_Motivo> {
+class _MotivoState extends State<MotivoDelResultado> {
   static const TextStyle _estilo = TextStyle(fontSize: 12.5, height: 1.38);
 
   final GlobalKey _parrafo = GlobalKey(debugLabel: 'motivo');
@@ -627,8 +633,12 @@ class _MotivoState extends State<_Motivo> {
 }
 
 /// La fila de electivos de la ganadora, o de las dos con empate, con «Ver».
-class _FilaDeElectivos extends StatelessWidget {
-  const _FilaDeElectivos({required this.ganadoras, required this.empate});
+class FilaDeElectivos extends StatelessWidget {
+  const FilaDeElectivos({
+    super.key,
+    required this.ganadoras,
+    required this.empate,
+  });
 
   final List<TestSpecialty> ganadoras;
   final bool empate;
@@ -733,8 +743,8 @@ class _FilaDeElectivos extends StatelessWidget {
   }
 }
 
-class _EncabezadoDeLasDemas extends StatelessWidget {
-  const _EncabezadoDeLasDemas();
+class EncabezadoDeLasDemas extends StatelessWidget {
+  const EncabezadoDeLasDemas({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -775,8 +785,8 @@ class _EncabezadoDeLasDemas extends StatelessWidget {
 
 /// Una fila desde el puesto 2 (o el 3 con empate), con su corazón de 48 px
 /// o, si es la principal, la estrella con «Tu principal».
-class _FilaDelRanking extends StatelessWidget {
-  const _FilaDelRanking({
+class FilaDelRanking extends StatelessWidget {
+  const FilaDelRanking({
     super.key,
     required this.puesto,
     required this.entrada,
@@ -988,8 +998,8 @@ class _FilaDelRanking extends StatelessWidget {
 }
 
 /// La hoja «¿Cuál eliges como principal?» del empate (decisión abierta 11).
-class _HojaDelEmpate extends StatelessWidget {
-  const _HojaDelEmpate({required this.ganadoras});
+class HojaDelEmpate extends StatelessWidget {
+  const HojaDelEmpate({super.key, required this.ganadoras});
 
   final List<RankingEntry> ganadoras;
 
@@ -1048,8 +1058,8 @@ class _HojaDelEmpate extends StatelessWidget {
 
 /// Confeti decorativo, una sola vez. Semilla fija para que las pruebas vean
 /// siempre lo mismo.
-class _Confeti extends CustomPainter {
-  _Confeti(this.t);
+class PintorDelConfeti extends CustomPainter {
+  PintorDelConfeti(this.t);
 
   final double t;
 
@@ -1081,5 +1091,5 @@ class _Confeti extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_Confeti old) => old.t != t;
+  bool shouldRepaint(PintorDelConfeti old) => old.t != t;
 }

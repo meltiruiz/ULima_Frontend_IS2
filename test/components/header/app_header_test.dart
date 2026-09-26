@@ -3,9 +3,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:ulima_plus/components/header/app_header.dart';
+import 'package:ulima_plus/components/logo/estrella_del_logo.dart';
+import 'package:ulima_plus/configs/themes.dart';
 import 'package:ulima_plus/models/user_model.dart';
 import 'package:ulima_plus/pages/alertas/alertas_page.dart';
 import 'package:ulima_plus/pages/horario/horario_controller.dart';
+import 'package:ulima_plus/pages/splash/puntos_de_aterrizaje.dart';
 import 'package:ulima_plus/services/alert_service.dart';
 import 'package:ulima_plus/services/auth_service.dart';
 
@@ -201,6 +204,90 @@ void main() {
       expect(orientaciones, <List<Object?>>[
         <String>['DeviceOrientation.portraitUp'],
       ]);
+    });
+  });
+
+  group('BR-SHELL-F-04 · la estrella junto a «ULIMA++»', () {
+    tearDown(PuntosDeAterrizaje.reiniciar);
+
+    Future<void> montar(
+      WidgetTester tester,
+      UserModel usuario, {
+      Brightness brillo = Brightness.light,
+    }) async {
+      Get.put<AuthService>(_FakeAuthService(usuario));
+      if (!usuario.isTeacher) Get.put<AlertService>(_AlertasSinRed());
+      const tema = MaterialTheme(TextTheme());
+      await tester.pumpWidget(
+        GetMaterialApp(
+          theme: brillo == Brightness.light ? tema.light() : tema.dark(),
+          home: Scaffold(
+            body: Align(alignment: Alignment.topCenter, child: AppHeader()),
+          ),
+        ),
+      );
+      await tester.pump();
+    }
+
+    for (final usuario in [_alumna(), _docente()]) {
+      testWidgets('la estrella de 26 dp va a 10 dp a la izquierda del texto, '
+          'centrada en su línea, para ${usuario.role}', (tester) async {
+        await montar(tester, usuario);
+        final estrella = tester.getRect(find.byType(EstrellaDelLogo));
+        final texto = tester.getRect(find.text('ULIMA++'));
+        expect(estrella.width, 26);
+        expect(estrella.height, 26);
+        expect(texto.left - estrella.right, closeTo(10, 0.01));
+        expect(estrella.center.dy, closeTo(texto.center.dy, 0.5));
+        // El alto no cambia, con 50 + 30 + 20 y el borde de 2.
+        expect(tester.getSize(find.byType(AppHeader)).height, 102);
+      });
+    }
+
+    testWidgets('la estrella es decorativa y el enlace sigue siendo solo el '
+        'texto', (tester) async {
+      await montar(tester, _alumna());
+      final estrella = find.byType(EstrellaDelLogo);
+      expect(
+        find.descendant(of: estrella, matching: find.byType(ExcludeSemantics)),
+        findsOneWidget,
+      );
+      expect(
+        find.ancestor(of: estrella, matching: find.byType(InkWell)),
+        findsNothing,
+      );
+      expect(
+        find.bySemanticsLabel('Abrir promoción de Don Belisario'),
+        findsOneWidget,
+      );
+    });
+
+    for (final brillo in Brightness.values) {
+      testWidgets('declara íconos claros en la barra de estado en '
+          '${brillo.name}', (tester) async {
+        await montar(tester, _alumna(), brillo: brillo);
+        final region = tester.widget<AnnotatedRegion<SystemUiOverlayStyle>>(
+          find.descendant(
+            of: find.byType(AppHeader),
+            matching: find.byType(AnnotatedRegion<SystemUiOverlayStyle>),
+          ),
+        );
+        expect(region.value.statusBarIconBrightness, Brightness.light);
+        expect(region.value.statusBarBrightness, Brightness.dark);
+      });
+    }
+
+    testWidgets('informa dónde quedan su estrella y su texto una vez que se '
+        'dibuja', (tester) async {
+      await montar(tester, _alumna());
+      final medida = PuntosDeAterrizaje.cabecera.value;
+      expect(medida, isNotNull);
+      expect(medida!.estrella, tester.getRect(find.byType(EstrellaDelLogo)));
+      expect(medida.texto, tester.getRect(find.text('ULIMA++')));
+      expect(medida.cabecera, tester.getRect(find.byType(AppHeader)));
+      expect(medida.estilo.fontSize, 20);
+      expect(medida.estilo.fontStyle, FontStyle.italic);
+      expect(medida.color, MaterialTheme.primaryColor);
     });
   });
 }

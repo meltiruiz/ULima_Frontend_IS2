@@ -73,15 +73,19 @@ flutter_launcher_icons:
   image_path: "assets/images/UL_fondo_naranja_grande.png"
   min_sdk_android: 21
 
-# Splash al abrir la app: fondo naranja de marca (#E77330, tomado del ícono) con
-# el logo ULima++ centrado (la misma imagen del ícono, así el splash "hereda" el
-# logo sin costuras). Regenerar con: dart run flutter_native_splash:create
+# Splash al abrir la app (RF-SPL-1 de specs/features/splash/splash.spec.md).
+# La estrella del logo, blanca y sin «++», sobre el naranja de marca de borde a
+# borde, en los temas claro y oscuro. El PNG lo escribe
+# test/splash/splash_png_nativo_test.dart con --update-goldens desde la misma
+# geometría de la intro, y el ícono del launcher no cambia. Regenerar con
+#   flutter test --update-goldens test/splash/splash_png_nativo_test.dart
+#   dart run flutter_native_splash:create
 flutter_native_splash:
   color: "#E77330"
-  image: assets/images/UL_fondo_naranja_grande.png
+  image: assets/splash/splash_estrella.png
   android_12:
     color: "#E77330"
-    image: assets/images/UL_fondo_naranja_grande.png
+    image: assets/splash/splash_estrella.png
 
 
 # For information on the generic Dart part of this file, see the

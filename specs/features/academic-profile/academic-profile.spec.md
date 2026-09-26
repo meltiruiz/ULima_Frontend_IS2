@@ -13,6 +13,11 @@ targets:
 > aprobada por el dueño ese día junto con esa spec e implementada en la rama
 > `feat/test-especialidad-fe`.** Cambia el asistente de configuración y el Perfil (ver «Enmienda
 > por el test de especialidad» al final). El código de esa rama sigue el texto enmendado.
+>
+> Nota del 2026-09-25 por la bienvenida con Ulises (`specs/features/bienvenida/bienvenida.spec.md`),
+> **aprobada por el dueño el 2026-09-26** junto con esa spec e implementada el 2026-09-26. Desde el
+> arranque y desde la bienvenida, ningún alumno pasa por el asistente de carrera, que queda sin
+> llegadas y no cambia (ver «Nota de la bienvenida con Ulises» al final).
 
 ## User Stories
 
@@ -166,6 +171,27 @@ rama `feat/test-especialidad-fe`. El detalle está en `specs/features/specialty-
   especialidades activas y `PUT /academic-profile/me/specialties` responde
   `404 SPECIALTY_NOT_FOUND` para una inactiva. `getEspecialidadName()` sigue devolviendo una
   cadena vacía para un id desconocido, y la malla ya descarta esos nombres.
+
+## Nota de la bienvenida con Ulises (2026-09-25, aprobada el 2026-09-26)
+
+Nace con `specs/features/bienvenida/bienvenida.spec.md` (RF-BIEN-21) y con RF-SPL-12 de
+`specs/features/splash/splash.spec.md`, y el dueño la aprueba con esas specs el 2026-09-26, con la
+decisión B-10 de la bienvenida en la opción que elige ese día junto con S-29 del splash. Se
+escribe sobre la versión de esta spec que trae la enmienda del test, ya en `main`. No cambia
+ningún requisito de esta spec.
+
+- **Asistente.** El alumno con cuenta que todavía no elige su especialidad ya no llega a
+  `/setup-carrera`. Al abrir la app con su sesión, la intro hace el relevo a la bienvenida, y al
+  entrar con su código o con Google sigue en la conversación, donde Ulises le toma el test y
+  después lo lleva a su horario. Así `/setup-carrera` queda sin llegadas desde el arranque y desde
+  la bienvenida, y su código no cambia. Quitar el asistente, con el origen `asistente` de la spec
+  del test, va en un cambio aparte («Qué NO entra» de la bienvenida).
+- **Perfil.** Sigue abriendo el test en `/test-especialidad` con `origen: perfil`, y la tarjeta
+  del último resultado no cambia.
+- **Destino tras el login.** `postLoginRoute` no cambia y sigue dando `/setup-carrera` para ese
+  alumno. La intro y la bienvenida traducen esa ruta en el test dentro de la conversación.
+- **Targets.** No cambian. `lib/pages/setup_carrera/**` no está en los targets del splash ni en
+  los de la bienvenida, así que ninguna de las dos lo toca.
 
 ## Verification
 

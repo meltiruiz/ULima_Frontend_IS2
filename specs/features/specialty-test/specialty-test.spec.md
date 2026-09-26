@@ -45,6 +45,13 @@ targets:
 > Todos los `[@test]` apuntan a pruebas que ya existen en `test/HU36_jeff/`, así que ninguno
 > lleva la marca *(pendiente)* (decisión abierta 21).
 > Los ejemplos usan datos inventados.
+> Enmienda del 2026-09-25 por la bienvenida con Ulises (`specs/features/bienvenida/bienvenida.spec.md`),
+> **aprobada por el dueño el 2026-09-26** junto con esa spec e implementada el 2026-09-26. Suma el
+> origen `bienvenida`, con el que el alumno que crea su cuenta en la conversación y el alumno con
+> cuenta que todavía no elige su especialidad hacen el test con Ulises, sin la ruta
+> `/test-especialidad` y sin el asistente de carrera. El detalle está en «Enmienda de la
+> bienvenida con Ulises», al final. Sus pruebas están en `test/bienvenida/`, y desde esa fecha
+> el código sigue la enmienda.
 
 ## El problema
 
@@ -1124,3 +1131,59 @@ del backend citan cada punto por su número.
 - Una revisión manual en un iPhone SE, en claro y en oscuro, del asistente, las 14 preguntas, un
   desempate, el resultado y la tarjeta del Perfil, repetida con VoiceOver, con el texto más
   grande y con reducir movimiento.
+
+## Enmienda de la bienvenida con Ulises (2026-09-25, aprobada el 2026-09-26)
+
+Nace con `specs/features/bienvenida/bienvenida.spec.md` (RF-BIEN-10, RF-BIEN-12, RF-BIEN-16 y
+RF-BIEN-21, con las decisiones B-10, B-13, B-14, B-15 y B-34), y el dueño la aprueba con ella el
+2026-09-26, con la decisión B-10 en la opción que elige ese día junto con S-29 del splash. Cambia
+los puntos de esta lista, y el resto de la spec sigue igual. La implementación del test ya está en
+`main` desde `87403a1`, así que la enmienda toca código ya escrito, como el controlador del test y
+sus vistas.
+
+- **RF-TEST-1.** Suma un origen `bienvenida`. El alumno que crea su cuenta en la conversación, y
+  el que tiene cuenta y todavía no elige su especialidad, hacen el test en ella, sin la ruta
+  `/test-especialidad`, sin el paso de carrera y sin `/setup-carrera` (decisión B-10 y RF-BIEN-21
+  de la bienvenida). Ni el arranque ni la bienvenida llevan al asistente, que queda sin llegadas y
+  sigue en el código hasta un cambio aparte. En «Destino tras el login», `postLoginRoute` sigue
+  igual y sigue dando `/setup-carrera` para ese alumno, pero la intro y la bienvenida lo traducen
+  en el test de la conversación (RF-SPL-12 del splash). El Perfil sigue abriendo la ruta con
+  `origen: perfil`. Con origen `bienvenida`, `SpecialtyTestBinding` no crea el controlador del
+  test. Lo crea la bienvenida al empezar T0, sin `Get.put`, y lo cierra ella al pasar al horario,
+  al reiniciarse, también tras un 401, y en el `dispose` de su página. Las reglas que viven en ese
+  controlador, una sola evaluación en vuelo, el descarte del paso tras un atrás desde la espera y
+  los guardados de uno en uno, no cambian (decisión B-34).
+- **RF-TEST-2.** Con origen `bienvenida`, el contenido se pide una vez en T0 y no hay precarga.
+  Las respuestas siguen solo en memoria. Una evaluación o un `PUT` que responde después del cierre
+  del controlador se descarta sin tocar la pantalla, y la guarda por dueño y el `clear()` de
+  `logout()` siguen igual.
+- **RF-TEST-3.** Con origen `bienvenida` no hay pantalla de bienvenida del test. Su papel lo toma
+  T0, con «¿Empezamos tu test de especialidad? Son T preguntas cortas.», «Empezar el test» y
+  «Saltar y elegir por mi cuenta», y sus estados de carga, error y no disponible pasan a burbujas
+  de Ulises (RF-BIEN-10). No hay «Seguir el test» ni «Empezar de nuevo», porque no hay pausa.
+- **RF-TEST-4.** Con origen `bienvenida` no hay barra de 52 px, plumas, historial plegado ni
+  pausa. La franja con el sello hace de cabecera, el contador va en el rótulo del compositor,
+  «Pregunta anterior» es un enlace del compositor y la conversación entera es el historial. Las
+  reglas de las líneas de Ulises, del sello de bloque y del atrás no cambian.
+- **RF-TEST-5 y RF-TEST-6.** El duelo y la escala se dibujan también en el compositor, con las
+  tarjetas compactas de la maqueta de la bienvenida (decisión B-13) y la tarea de la escala en la
+  burbuja de Ulises.
+- **RF-TEST-7.** Con origen `bienvenida`, la espera no tiene «la barra y las plumas llenas»,
+  porque no hay barra. Es la burbuja con `ulises.loading` y su indicador, con el compositor vacío.
+- **RF-TEST-8.** Con origen `bienvenida`, el resultado va dentro de la conversación, que desplaza,
+  y la regla «sin scroll» no aplica (decisión B-15). El atrás del sistema no hace nada, como en el
+  asistente. El confeti se dibuja bajo la franja del sello.
+- **RF-TEST-9.** Con origen `bienvenida`, «Elegir como principal» y «Decidir después» terminan con
+  la despedida y el paso al horario de RF-BIEN-11, en lugar de `Get.offAllNamed('/home')`.
+- **RF-TEST-11.** Con origen `bienvenida`, los textos de la tabla son burbujas de Ulises, y la fila
+  del 401 sigue RF-BIEN-12, porque en `/login` el interceptor no navega.
+- **RF-TEST-13.** Con origen `bienvenida`, la burbuja de Ulises no es región viva y el foco del
+  lector pasa a la primera burbuja nueva (RF-BIEN-16).
+- **«Textos nuevos» y «Pantallas y archivos».** Suman el origen `bienvenida` y los widgets que se
+  dibujan en el compositor.
+- **Targets.** No cambian, porque `lib/pages/specialty_test/**` ya está en ellos. La spec de la
+  bienvenida también lo tiene en los suyos, porque es ella la que hace estos cambios.
+- **Test Links.** Las pruebas de la enmienda son
+  `test/bienvenida/bienvenida_test_especialidad_test.dart` y
+  `test/bienvenida/bienvenida_sin_especialidad_test.dart`, y las de
+  `test/HU36_jeff/` siguen en verde.

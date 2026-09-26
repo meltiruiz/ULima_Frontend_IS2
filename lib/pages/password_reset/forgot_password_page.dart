@@ -17,6 +17,7 @@ class ForgotPasswordPage extends StatelessWidget {
 
     return PasswordResetScaffold(
       palette: palette,
+      conSello: true,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,

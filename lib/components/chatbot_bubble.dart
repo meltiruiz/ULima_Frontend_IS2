@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
+import '../pages/splash/puntos_de_aterrizaje.dart';
+
 /// Burbuja flotante del chatbot (Ulises).
 ///
 /// - Sin fondo ni texto: solo la carita de Ulises, para que tape lo mínimo.
@@ -29,6 +31,18 @@ class _ChatbotBubbleState extends State<ChatbotBubble>
   bool _dragging = false;
 
   static const double _margin = 12;
+
+  final GlobalKey _clave = GlobalKey();
+  bool _informada = false;
+
+  /// Informa su lugar inicial una vez, después de su primer cuadro, como la
+  /// cabecera informa su estrella (RF-BIEN-11).
+  void _informar() {
+    final caja = _clave.currentContext?.findRenderObject() as RenderBox?;
+    if (!mounted || caja == null || !caja.hasSize) return;
+    PuntosDeAterrizaje.burbuja.value =
+        caja.localToGlobal(Offset.zero) & caja.size;
+  }
 
   @override
   void initState() {
@@ -75,35 +89,48 @@ class _ChatbotBubbleState extends State<ChatbotBubble>
         // "Simular mi avance" de la malla (que va abajo a la derecha).
         _pos ??= Offset(_margin, maxH - bubble - _margin);
         final pos = Offset(clampX(_pos!.dx), clampY(_pos!.dy));
+        if (!_informada) {
+          _informada = true;
+          WidgetsBinding.instance.addPostFrameCallback((_) => _informar());
+        }
 
         return Stack(
           children: [
             Positioned(
               left: pos.dx,
               top: pos.dy,
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: () => Get.toNamed('/chatbot'),
-                onPanStart: (_) => setState(() => _dragging = true),
-                onPanUpdate: (d) => setState(() {
-                  _pos = Offset(
-                    clampX(pos.dx + d.delta.dx),
-                    clampY(pos.dy + d.delta.dy),
-                  );
-                }),
-                onPanEnd: (_) => setState(() {
-                  _dragging = false;
-                  // Snap al borde horizontal más cercano; conserva la altura.
-                  final goRight = (_pos!.dx + bubble / 2) > maxW / 2;
-                  _pos = Offset(
-                    goRight ? (maxW - bubble - _margin) : _margin,
-                    clampY(_pos!.dy),
-                  );
-                }),
-                child: _BubbleVisual(
-                  pulse: _pulse,
-                  size: bubble,
-                  dragging: _dragging,
+              // Oculta solo mientras la capa trae a Ulises en el paso al
+              // horario. En cualquier otra llegada aparece con la página
+              // (decisiones S-28 y B-16).
+              child: ValueListenableBuilder<bool>(
+                valueListenable: PuntosDeAterrizaje.ulisesEnVuelo,
+                builder: (context, enVuelo, hijo) =>
+                    Opacity(opacity: enVuelo ? 0 : 1, child: hijo),
+                child: GestureDetector(
+                  key: _clave,
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => Get.toNamed('/chatbot'),
+                  onPanStart: (_) => setState(() => _dragging = true),
+                  onPanUpdate: (d) => setState(() {
+                    _pos = Offset(
+                      clampX(pos.dx + d.delta.dx),
+                      clampY(pos.dy + d.delta.dy),
+                    );
+                  }),
+                  onPanEnd: (_) => setState(() {
+                    _dragging = false;
+                    // Snap al borde horizontal más cercano; conserva la altura.
+                    final goRight = (_pos!.dx + bubble / 2) > maxW / 2;
+                    _pos = Offset(
+                      goRight ? (maxW - bubble - _margin) : _margin,
+                      clampY(_pos!.dy),
+                    );
+                  }),
+                  child: _BubbleVisual(
+                    pulse: _pulse,
+                    size: bubble,
+                    dragging: _dragging,
+                  ),
                 ),
               ),
             ),

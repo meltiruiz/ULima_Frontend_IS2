@@ -1,5 +1,10 @@
 import 'package:flutter/widgets.dart';
 
-/// Stub para plataformas no-web: en móvil se usa el botón propio que llama a
-/// `GoogleSignIn.signIn()`, así que aquí no se renderiza nada.
-Widget googleSignInButton() => const SizedBox.shrink();
+import '../domain/bienvenida/bienvenida_turnos.dart';
+
+/// Stub para plataformas que no son web. En móvil la bienvenida usa su botón
+/// propio, que llama a `GoogleSignIn.signIn()`, así que aquí no se dibuja
+/// nada.
+Widget googleSignInButton({
+  required ConfiguracionDelBotonDeGoogle configuracion,
+}) => const SizedBox.shrink();
